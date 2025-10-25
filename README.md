@@ -38,4 +38,95 @@ SmartWaste Nairobi is a comprehensive full-stack solution designed to address Na
 - **Authentication:** JWT-based security
 - **API:** RESTful architecture
 
-## 📁 Project Structure
+
+## ⚙️ Installation & Setup
+
+### Prerequisites
+- Node.js (v16 or higher)
+- npm or yarn package manager
+- MongoDB database
+- Expo Go app (for mobile testing)
+
+### Mobile App Setup
+```bash
+# Navigate to mobile app directory
+cd SmartWaste_Mobile
+
+# Install dependencies
+npm install
+
+# Start development server
+npx expo start
+
+# Scan QR code with Expo Go (Android) or Camera app (iOS)
+
+### Web Frontend Setup
+
+# Navigate to web frontend
+cd SmartWaste_Web/frontend
+
+# Install dependencies
+npm install
+
+# Start development server
+npm start
+
+# Application will open at http://localhost:3000
+
+### Backend API Setup
+
+# Navigate to backend
+cd SmartWaste_Web/backend
+
+# Install dependencies
+npm install
+
+# Start MongoDB service first
+mongod
+
+# Start development server (in a new terminal)
+npm run dev
+
+# API will run at http://localhost:3000
+
+## 🎨 Designs & Screenshots
+
+### Mobile Application
+| Splash Screen | Landing Page | Report Waste |
+|---------------|--------------|--------------|
+| ![Splash](./screenshots/Splash_Screening.jpg) | ![Landing](./screenshots/Landing_Page.jpg) | ![Report](./screenshots/Report_Page.jpg) |
+
+| Status Tracking | Settings |
+|-----------------|----------|
+| ![Status](./screenshots/Status_Page.jpg) | ![Settings](./screenshots/Settings_Page.jpg) |
+
+### Web Dashboard
+| Login | Dashboard | Collection Points |
+|-------|-----------|-------------------|
+| ![Login](./screenshots/Login.png) | ![Dashboard](./screenshots/Dashboard.png) | ![Collection](./screenshots/CollectionPoints.png) |
+
+| Schedule Management |
+|---------------------|
+| ![Schedule](./screenshots/Schedule.png) |
+
+```markdown
+## 🚀 Deployment Plan
+
+### Current Development Stage
+- ✅ Mobile app frontend complete
+- ✅ Web dashboard frontend complete  
+- ✅ Backend API structure ready
+- ✅ Database models defined
+- 🔄 Backend integration in progress
+
+### Next Phase Deployment
+1. **Backend Integration** - Connect mobile/web to API
+2. **Database Deployment** - MongoDB Atlas cloud database
+3. **Mobile App** - Expo App Store deployment
+4. **Web Dashboard** - Netlify hosting
+5. **Backend API** - DigitalOcean
+```
+
+## 👥 Developer
+
+**Pauline Mutuku**
