@@ -58,6 +58,7 @@ npm install
 npx expo start
 
 # Scan QR code with Expo Go (Android) or Camera app (iOS)
+```
 
 ## Web Frontend Setup
 
@@ -129,6 +130,6 @@ npm run dev
 
 ## 👥 Developer
 
-**Pauline Mutuku**
+[**Pauline Mutuku**](https://github.com/paulinemutuku)
 ```
 
