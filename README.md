@@ -1,6 +1,3 @@
-Here's the corrected README with proper formatting:
-
-```markdown
 # SmartWaste Nairobi - Urban Waste Collection Optimization System
 
 ## 📱 Project Overview
@@ -61,7 +58,6 @@ npm install
 npx expo start
 
 # Scan QR code with Expo Go (Android) or Camera app (iOS)
-```
 
 ### Web Frontend Setup
 ```bash
