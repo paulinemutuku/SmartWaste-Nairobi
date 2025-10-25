@@ -1,3 +1,6 @@
+Here's the corrected README with proper formatting:
+
+```markdown
 # SmartWaste Nairobi - Urban Waste Collection Optimization System
 
 ## 📱 Project Overview
@@ -38,7 +41,6 @@ SmartWaste Nairobi is a comprehensive full-stack solution designed to address Na
 - **Authentication:** JWT-based security
 - **API:** RESTful architecture
 
-
 ## ⚙️ Installation & Setup
 
 ### Prerequisites
@@ -59,9 +61,10 @@ npm install
 npx expo start
 
 # Scan QR code with Expo Go (Android) or Camera app (iOS)
+```
 
 ### Web Frontend Setup
-
+```bash
 # Navigate to web frontend
 cd SmartWaste_Web/frontend
 
@@ -72,9 +75,10 @@ npm install
 npm start
 
 # Application will open at http://localhost:3000
+```
 
 ### Backend API Setup
-
+```bash
 # Navigate to backend
 cd SmartWaste_Web/backend
 
@@ -87,7 +91,8 @@ mongod
 # Start development server (in a new terminal)
 npm run dev
 
-# API will run at http://localhost:3000
+# API will run at http://localhost:5000
+```
 
 ## 🎨 Designs & Screenshots
 
@@ -109,7 +114,6 @@ npm run dev
 |---------------------|
 | ![Schedule](./screenshots/Schedule.png) |
 
-```markdown
 ## 🚀 Deployment Plan
 
 ### Current Development Stage
@@ -125,8 +129,9 @@ npm run dev
 3. **Mobile App** - Expo App Store deployment
 4. **Web Dashboard** - Netlify hosting
 5. **Backend API** - DigitalOcean
-```
 
 ## 👥 Developer
 
 **Pauline Mutuku**
+```
+
