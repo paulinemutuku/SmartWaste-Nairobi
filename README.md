@@ -99,7 +99,7 @@ npm run dev
 ### Mobile Application
 | Splash Screen | Landing Page | Report Waste |
 |---------------|--------------|--------------|
-| ![Splash](./screenshots/Splash_Screening.jpg) | ![Landing](./screenshots/Landing_Page.jpg) | ![Report](./screenshots/Report_Page.jpg) |
+| ![Splash](./screenshots/Splash_Screen.jpg) | ![Landing](./screenshots/Landing_Page.jpg) | ![Report](./screenshots/Report_Page.jpg) |
 
 | Status Tracking | Settings |
 |-----------------|----------|
