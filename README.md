@@ -59,7 +59,8 @@ npx expo start
 
 # Scan QR code with Expo Go (Android) or Camera app (iOS)
 
-### Web Frontend Setup
+## Web Frontend Setup
+
 ```bash
 # Navigate to web frontend
 cd SmartWaste_Web/frontend
