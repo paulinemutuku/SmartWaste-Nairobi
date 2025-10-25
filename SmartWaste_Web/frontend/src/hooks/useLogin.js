@@ -3,7 +3,7 @@ import { useAuthContext } from "./useAuthContext";
 
 export const useLogin = () => {
   const [error, setError] = useState(null);
-  const [isLoading, setIsLoading] = useState(false); // Setting initial loading state to false
+  const [isLoading, setIsLoading] = useState(false); 
 
   const { dispatch } = useAuthContext();
 
@@ -25,10 +25,8 @@ export const useLogin = () => {
         setIsLoading(false);
         setError(json.error);
       } else {
-        // save the user to local storage
         localStorage.setItem("user", JSON.stringify(json));
 
-        // update the auth context
         dispatch({ type: "LOGIN", payload: json });
         setIsLoading(false);
       }

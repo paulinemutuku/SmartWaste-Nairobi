@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import "bootstrap/dist/css/bootstrap.min.css"; // Import Bootstrap CSS
+import "bootstrap/dist/css/bootstrap.min.css"; 
 import "./schedule.css";
 
 function ScheduleComponent() {
@@ -15,7 +15,7 @@ function ScheduleComponent() {
   useEffect(() => {
     fetchCollectors();
     fetchSchedule();
-    fetchMqttData(); // Fetch MQTT data on component mount
+    fetchMqttData(); 
   }, []);
 
   const fetchCollectors = async () => {
@@ -60,7 +60,6 @@ function ScheduleComponent() {
 
   const handleScheduleTrip = async () => {
     try {
-      // Check if mqttData exists and filledLevel is higher than 30
       if (mqttData && mqttData.filledLevel > 30) {
         const response = await axios.post(
           "http://localhost:1337/api/scheduleCollection",
@@ -71,7 +70,7 @@ function ScheduleComponent() {
           }
         );
         setResponseMessage(response.data.message);
-        fetchSchedule(); // Fetch the updated schedule after scheduling the trip
+        fetchSchedule(); 
       } else {
         setResponseMessage("Cannot schedule trip: Bins are not filled.");
       }

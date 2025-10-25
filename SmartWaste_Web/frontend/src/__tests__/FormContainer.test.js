@@ -4,7 +4,6 @@ import "@testing-library/jest-dom";
 import FormContainer from "../components/Log in/FormContainer";
 import { AuthContextProvider } from "../context/AuthContext";
 
-// Mock the useLogin hook
 jest.mock("../hooks/useLogin", () => ({
   useLogin: jest.fn(() => ({
     login: jest.fn(),
@@ -21,9 +20,7 @@ describe("FormContainer", () => {
       </AuthContextProvider>
     );
 
-    // Add your assertions here based on the rendered output
     expect(screen.getByText("Welcome Back!")).toBeInTheDocument();
-    // Add more assertions as needed
   });
 
   it("submits form correctly", async () => {
@@ -35,7 +32,6 @@ describe("FormContainer", () => {
       </AuthContextProvider>
     );
 
-    // Simulate user input
     fireEvent.change(screen.getByLabelText(/email/i), {
       target: { value: "test@example.com" },
     });
@@ -43,14 +39,11 @@ describe("FormContainer", () => {
       target: { value: "password123" },
     });
 
-    // Simulate form submission
     fireEvent.click(screen.getByText("Login"));
 
-    // Wait for the login function to be called
     await waitFor(() =>
       expect(login).toHaveBeenCalledWith("test@example.com", "password123")
     );
 
-    // Add more assertions based on the behavior after form submission
   });
 });

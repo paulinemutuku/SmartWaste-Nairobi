@@ -16,8 +16,6 @@ body {
   height: 100vh;
 }
 
-/* Header css Strat */
-
 .header {
   grid-area: header;
   height: 60px;
@@ -41,9 +39,6 @@ body {
   border-radius: 20px;
 }
 
-/* Header css End */
-
-/* Sidebar css Start*/
 
 #sidebar {
   grid-area: sidebar;
@@ -96,15 +91,10 @@ body {
 .sidebar-responsive {
   display: inline !important;
   position: absolute;
-  /*
-    we want the z-index of the sidebar higher so that
-    the charts are not showing over the sidebar 
-    on small screens
-  */
   z-index: 12 !important;
 }
 
 .sidebar-brand {
   color: rgb(146, 146, 141);
 }
-/* Sidebar css End */
+

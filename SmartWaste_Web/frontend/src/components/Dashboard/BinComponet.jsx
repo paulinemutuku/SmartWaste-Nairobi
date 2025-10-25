@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
-import "./Reports.css"; // Optional: use this if you want custom styles
+import "./Reports.css"; 
 
 const BinComponent = () => {
   const [reports, setReports] = useState([]);
 
   useEffect(() => {
-    // ⛔ Temporarily replacing fetch with dummy data for visual testing
     const dummyReports = [
       {
         _id: "1",

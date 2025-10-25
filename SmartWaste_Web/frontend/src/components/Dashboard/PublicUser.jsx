@@ -7,7 +7,6 @@ function PublicUser() {
   const [UserData, setUserData] = useState([]);
 
   useEffect(() => {
-    // Fetch data from MongoDB here
     const fetchData = async () => {
       try {
         const response = await axios.get(
@@ -24,10 +23,8 @@ function PublicUser() {
 
   const handleDelete = async (id) => {
     try {
-      // Send a request to delete the users with the specified ID
       await axios.delete(`http://localhost:1337/api/user-details/${id}`);
 
-      // Update the state to remove the deleted users
       setUserData((prevData) => prevData.filter((users) => users._id !== id));
     } catch (error) {
       console.error("Error deleting users:", error);

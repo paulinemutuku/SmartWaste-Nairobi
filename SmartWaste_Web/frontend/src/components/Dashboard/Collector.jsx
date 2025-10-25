@@ -28,10 +28,8 @@ function Collector() {
 
   const handleDelete = async (id) => {
     try {
-      // Send a request to delete the collector with the specified ID
       await axios.delete(`http://localhost:1337/api/collector-details/${id}`);
 
-      // Update the state to remove the deleted collector
       setCollectorData((prevData) =>
         prevData.filter((collector) => collector._id !== id)
       );
@@ -44,12 +42,10 @@ function Collector() {
     try {
       const newStatus = currentStatus === true ? false : true;
 
-      // Send a request to update the collector status
       await axios.put(`http://localhost:1337/api/collector-details/${id}`, {
         activeAccount: newStatus,
       });
 
-      // Update the state to reflect the updated status
       setCollectorData((prevData) =>
         prevData.map((collector) =>
           collector._id === id
