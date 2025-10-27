@@ -128,6 +128,12 @@ npm run dev
 4. **Web Dashboard** - Netlify hosting
 5. **Backend API** - DigitalOcean
 
+## 🎥 Video Demonstration
+
+A video demonstration showcasing application functionalities:
+
+**Video Link:** [https://youtu.be/PxQEAPL5zhw](https://youtu.be/PxQEAPL5zhw)
+
 ## 👥 Developer
 
 [**Pauline Mutuku**](https://github.com/paulinemutuku)
