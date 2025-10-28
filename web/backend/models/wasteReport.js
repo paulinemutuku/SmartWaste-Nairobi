@@ -4,7 +4,7 @@ const reportSchema = new mongoose.Schema(
   {
     type: { type: String, enum: ["bin", "dump"], required: true },
     description: { type: String, required: true },
-    photo: { type: String }, 
+    photo: { type: String }, // URL to uploaded image
     latitude: { type: Number, required: true },
     longitude: { type: Number, required: true },
     status: { type: String, enum: ["Pending", "Collected"], default: "Pending" }

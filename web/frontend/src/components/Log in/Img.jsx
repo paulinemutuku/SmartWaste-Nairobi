@@ -4,7 +4,7 @@ import Image from "../pics/img.png";
 const Img = () => {
   return (
     <div style={styles.image}>
-      {/* logo image */}
+      {/* logo image  */}
       <img
         src={Image}
         alt="Img"

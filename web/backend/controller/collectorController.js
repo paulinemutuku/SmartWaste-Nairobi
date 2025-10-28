@@ -3,7 +3,9 @@ const mongoose = require("mongoose");
 
 const getCollector = async (req, res) => {
   try {
+    // Fetch all collectors from the MongoDB collection
     const collectors = await Collector.find();
+    // Count the total number of collectors
     const totalCollectors = await Collector.countDocuments();
     res.json({ collectors, totalCollectors });
   } catch (error) {

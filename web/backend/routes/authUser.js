@@ -3,6 +3,7 @@ const { loginUser, singupUser } = require("../controller/authUserController");
 
 const router = express.Router();
 
+// Support both /register and /signup
 router.post("/register", singupUser);
 router.post("/signup", singupUser);
 

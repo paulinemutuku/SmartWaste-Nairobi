@@ -12,7 +12,6 @@ const adminSchema = new mongoose.Schema(
 );
 
 adminSchema.statics.signup = async function (name, email, password) {
-  // validation
   if (!email || !password || !name) {
     throw Error("All field should be filled");
   }

@@ -3,6 +3,7 @@ const bins = require("../models/bin");
 const getBins = async (req, res) => {
   try {
     const bin = await bins.find();
+    // Count the total number of bins
     const totalBins = await bins.countDocuments();
     res.json({ bin, totalBins });
   } catch (error) {
