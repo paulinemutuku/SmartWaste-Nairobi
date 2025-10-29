@@ -1,7 +1,27 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { authService } from './services/api';
 
 export default function App() {
+  useEffect(() => {
+    const updateActivityOnStart = async () => {
+      try {
+        const userData = await AsyncStorage.getItem('user');
+        if (userData) {
+          const user = JSON.parse(userData);
+          if (user.user && user.user._id) {
+            await authService.updateUserActivity(user.user._id);
+          }
+        }
+      } catch (error) {
+        console.log('Activity update on start failed');
+      }
+    };
+
+    updateActivityOnStart();
+  }, []);
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>SmartWaste Nairobi</Text>

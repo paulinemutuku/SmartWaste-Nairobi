@@ -6,11 +6,13 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Bin from "./pages/Bin";
 import Collectors from "./pages/Collectors";
-import Users from "./pages/Users";
+import UsersPage from "./pages/UsersPage";
 import Feedback from "./pages/Feedback";
 import Map from "./pages/Map";
 import Schedule from "./pages/Schedule";
+import ReportClustersPage from "./pages/ReportClustersPage";
 import "./App.css";
+import ReportsAssessment from "./pages/ReportsAssessment";
 
 const App = () => {
   const { user } = useAuthContext();
@@ -20,12 +22,14 @@ const App = () => {
       <BrowserRouter>
         <Routes>
           <Route path="/bins" element={<Bin />} />
+          <Route path="/report-clusters" element={<ReportClustersPage />} />
           <Route path="/collectors" element={<Collectors />} />
-          <Route path="/public-users" element={<Users />} />
+          <Route path="/public-users" element={<UsersPage />} />
           <Route path="/mapview" element={<Map />} />
           <Route path="/feedback" element={<Feedback />} />
           <Route path="/schedule" element={<Schedule />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/reports-assessment" element={<ReportsAssessment />} />
           <Route
             path="/"
             element={!user ? <Login /> : <Navigate to="/dashboard" />}

@@ -37,9 +37,9 @@ const Sidebar = ({ openSidebarToggle, OpenSidebar }) => {
             <BsGrid1X2Fill className="icon" /> Dashboard
           </li>
         </a>
-        <a href="/bins" style={style.link}>
+        <a href="/report-clusters" style={style.link}>
           <li className="sidebar-list-item">
-            <BsFillArchiveFill className="icon" /> Bins
+             <BsFillArchiveFill className="icon" /> Report Clusters
           </li>
         </a>
         <a href="/collectors" style={style.link}>

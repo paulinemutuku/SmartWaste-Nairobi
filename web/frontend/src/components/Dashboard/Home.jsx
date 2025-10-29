@@ -18,67 +18,73 @@ function Home() {
     criticalReports: 0,
     recentReports: []
   });
-
-  const mockDashboardData = {
-    totalReports: 47,
-    pendingReports: 12,
-    completedReports: 28,
-    criticalReports: 7,
-    recentReports: [
-      {
-        id: "RPT-047",
-        type: "illegal_dump",
-        description: "Dumping in Mathare River",
-        urgency: "critical",
-        status: "pending",
-        location: "Mathare",
-        submittedAt: new Date(Date.now() - 30 * 60000).toISOString() // 30 mins ago
-      },
-      {
-        id: "RPT-046", 
-        type: "full_bin",
-        description: "Market bin overflowing",
-        urgency: "high",
-        status: "verified", 
-        location: "Gikomba Market",
-        submittedAt: new Date(Date.now() - 2 * 3600000).toISOString() // 2 hours ago
-      },
-      {
-        id: "RPT-045",
-        type: "illegal_dump",
-        description: "Construction waste on road",
-        urgency: "medium",
-        status: "completed",
-        location: "Kilimani",
-        submittedAt: new Date(Date.now() - 5 * 3600000).toISOString() // 5 hours ago
-      }
-    ]
-  };
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://localhost:1337/api/user-details")
-      .then((response) => response.json())
-      .then((data) => {
-        console.log("Users data:", data);
-      })
-      .catch((error) => console.error("Error:", error));
-
-    fetch("http://localhost:1337/api/bins")
-      .then((response) => response.json())
-      .then((data) => {
-        console.log("Bins data:", data);
-      })
-      .catch((error) => console.error("Error:", error));
-
-    fetch("http://localhost:1337/api/collector-details")
-      .then((response) => response.json())
-      .then((data) => {
-        console.log("Collectors data:", data);
-      })
-      .catch((error) => console.error("Error:", error));
-
-    setDashboardData(mockDashboardData);
+    loadMobileReports();
   }, []);
+
+  const loadMobileReports = async () => {
+    try {
+      setLoading(true);
+      console.log("🔄 Fetching reports from:", "http://192.168.2.103:3000/api/reports/all");
+      
+      const response = await fetch("http://192.168.2.103:3000/api/reports/all");
+      console.log("📡 Response status:", response.status);
+      
+      const result = await response.json();
+      console.log("📦 Response data:", result);
+      
+      if (response.ok && result.success) {
+        const reports = result.reports;
+        console.log("✅ Reports found:", reports.length);
+        
+        const transformedReports = reports.map(report => ({
+          id: report._id,
+          type: "citizen_report",
+          description: report.description,
+          urgency: getUrgencyFromDescription(report.description),
+          status: report.status === 'submitted' ? 'pending' : 
+                  report.status === 'in-progress' ? 'assigned' : 'completed',
+          location: report.location?.address || 'Nairobi',
+          submittedAt: report.createdAt,
+          images: report.photos || []
+        }));
+
+        const totalReports = reports.length;
+        const pendingReports = reports.filter(r => r.status === 'submitted').length;
+        const completedReports = reports.filter(r => r.status === 'completed').length;
+        const criticalReports = reports.filter(r => 
+          getUrgencyFromDescription(r.description) === 'critical'
+        ).length;
+
+        setDashboardData({
+          totalReports,
+          pendingReports,
+          completedReports,
+          criticalReports,
+          recentReports: transformedReports.slice(0, 10)
+        });
+      } else {
+        console.log("❌ API response not successful:", result);
+      }
+    } catch (error) {
+      console.error("❌ Error loading mobile reports:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getUrgencyFromDescription = (description) => {
+    const lowerDesc = description.toLowerCase();
+    if (lowerDesc.includes('overflow') || lowerDesc.includes('block') || lowerDesc.includes('emergency')) {
+      return 'critical';
+    } else if (lowerDesc.includes('full') || lowerDesc.includes('urgent')) {
+      return 'high';
+    } else {
+      return 'medium';
+    }
+  };
 
   const getUrgencyBadge = (urgency) => {
     const urgencyConfig = {
@@ -99,9 +105,9 @@ function Home() {
   const getStatusBadge = (status) => {
     const statusConfig = {
       pending: "bg-warning",
-      verified: "bg-primary", 
+      assigned: "bg-primary", 
       completed: "bg-success",
-      assigned: "bg-info"
+      verified: "bg-info"
     };
     return <span className={`badge ${statusConfig[status]}`}>{status}</span>;
   };
@@ -122,11 +128,23 @@ function Home() {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="container-fluid">
+        <div className="text-center py-5">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+          <p className="mt-3">Loading real-time reports from citizens...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container-fluid">
-      <h3 style={style.header}>SmartWaste Nairobi - Dashboard</h3>
+      <h3 style={style.header}>SmartWaste Nairobi - Live Dashboard</h3>
       
-      {/* Statistics Cards */}
       <div className="row justify-content-center mb-4">
         <div className="col-md-3 col-sm-6 mb-3">
           <div className="card text-white bg-primary">
@@ -169,14 +187,13 @@ function Home() {
         </div>
       </div>
 
-      {/* Recent Reports Section */}
       <div className="row">
         <div className="col-md-12">
           <div className="card">
             <div className="card-header bg-dark text-white">
               <h5 className="mb-0">
                 <FontAwesomeIcon icon={faClock} className="me-2" />
-                Recent Citizen Reports
+                Live Citizen Reports
               </h5>
             </div>
             <div className="card-body">
@@ -185,7 +202,6 @@ function Home() {
                   <thead>
                     <tr>
                       <th>Report ID</th>
-                      <th>Type</th>
                       <th>Description</th>
                       <th>Location</th>
                       <th>Urgency</th>
@@ -197,12 +213,7 @@ function Home() {
                     {dashboardData.recentReports.map((report) => (
                       <tr key={report.id} style={style.tableRow}>
                         <td>
-                          <strong>{report.id}</strong>
-                        </td>
-                        <td>
-                          <span className="text-capitalize">
-                            {report.type.replace('_', ' ')}
-                          </span>
+                          <strong>RPT-{report.id.slice(-4)}</strong>
                         </td>
                         <td>{report.description}</td>
                         <td>
@@ -221,7 +232,7 @@ function Home() {
               {dashboardData.recentReports.length === 0 && (
                 <div className="text-center text-muted py-4">
                   <FontAwesomeIcon icon={faTrash} size="3x" className="mb-3" />
-                  <p>No recent reports available</p>
+                  <p>No citizen reports yet</p>
                 </div>
               )}
             </div>
@@ -229,7 +240,6 @@ function Home() {
         </div>
       </div>
 
-      {/* Quick Stats Footer */}
       <div className="row mt-4">
         <div className="col-md-12">
           <div className="card bg-light">
@@ -244,12 +254,12 @@ function Home() {
                   </h4>
                 </div>
                 <div className="col-md-4">
-                  <h6 className="text-muted">Avg. Response Time</h6>
-                  <h4 className="text-info">~4.2 hours</h4>
+                  <h6 className="text-muted">Active Reports</h6>
+                  <h4 className="text-info">{dashboardData.pendingReports}</h4>
                 </div>
                 <div className="col-md-4">
-                  <h6 className="text-muted">Coverage Areas</h6>
-                  <h4 className="text-primary">8/15 Wards</h4>
+                  <h6 className="text-muted">Data Source</h6>
+                  <h4 className="text-primary">Mobile App</h4>
                 </div>
               </div>
             </div>

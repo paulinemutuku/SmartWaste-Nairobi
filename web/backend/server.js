@@ -33,6 +33,8 @@ app.use("/api", feedbackRoute);
 app.use("/api", binRoutes);
 app.use("/api/user", authUserRoute);
 app.use("/api", scheduleRoute);
+app.use('/api/mobile', require('./routes/mobileReports'));
+app.use('/api/collectors', require('./routes/collectors'));
 
 mongoose.connect(DB_URL, {
   useNewUrlParser: true,

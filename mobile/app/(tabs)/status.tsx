@@ -1,8 +1,7 @@
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useState, useEffect } from 'react';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
+import { useState, useEffect, useCallback } from 'react';
 
-// Define the Report type
 type Report = {
   id: string;
   address?: string;
@@ -24,6 +23,12 @@ export default function StatusScreen() {
     loadReports();
   }, []);
 
+  useFocusEffect(
+    useCallback(() => {
+      loadReports();
+    }, [])
+  );
+
   useEffect(() => {
     if (params.newReport) {
       const newReport: Report = JSON.parse(params.newReport as string);
@@ -31,8 +36,29 @@ export default function StatusScreen() {
     }
   }, [params.newReport]);
 
-  const loadReports = () => {
-    const sampleReports: Report[] = [
+const loadReports = async () => {
+  try {
+    const { reportService } = require('../../services/api');
+    const result = await reportService.getAllReports();
+    
+    if (result.success) {
+      const transformedReports = result.reports.map((report: any) => ({
+        id: report._id,
+        address: report.location?.address,
+        location: report.location?.address,
+        status: report.status === 'submitted' ? 'Submitted' : 
+                report.status === 'in-progress' ? 'In Progress' : 'Completed',
+        timestamp: report.createdAt,
+        description: report.description,
+        priority: 'Medium',
+        images: report.photos || []
+      }));
+      
+      setReports(transformedReports);
+    }
+  } catch (error) {
+    console.error('Failed to load reports:', error);
+    const sampleReports = [
       { 
         id: '1', 
         location: 'Dandora Market - Near Main Entrance', 
@@ -43,7 +69,8 @@ export default function StatusScreen() {
       }
     ];
     setReports(sampleReports);
-  };
+  }
+};
 
   const getStatusColor = (status: string) => {
     switch(status) {
@@ -168,7 +195,7 @@ export default function StatusScreen() {
 
       <TouchableOpacity 
         style={styles.backButton}
-        onPress={() => router.back()}
+        onPress={() => router.push('/(tabs)')}
       >
         <Text style={styles.backButtonText}>← Back to Home</Text>
       </TouchableOpacity>

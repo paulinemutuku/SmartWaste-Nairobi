@@ -123,26 +123,33 @@ const submitReport = async () => {
 
   setIsSubmitting(true);
   
-  const reportData = {
-    id: Date.now().toString(),
-    description,
-    images,
-    address,
-    timestamp: new Date().toISOString(),
-    status: 'submitted'
-  };
+  try {
+    let locationData = await Location.getCurrentPositionAsync({
+      accuracy: Location.Accuracy.High,
+    });
 
-  setTimeout(() => {
+    const { latitude, longitude } = locationData.coords;
+
+    const reportData = {
+      description: description.trim(),
+      location: {
+        latitude,
+        longitude,
+        address: address
+      },
+      photos: images,
+    };
+
+    const { reportService } = require('../../services/api');
+    const result = await reportService.submitReport(reportData);
+
     Alert.alert(
-      'Success!', 
-      'Your waste report has been submitted.',
+      'Success! 🎉', 
+      'Your waste report has been submitted to our system.',
       [
         { 
           text: 'View Status', 
-          onPress: () => router.push({
-            pathname: '/status',
-            params: { newReport: JSON.stringify(reportData) }
-          }) 
+          onPress: () => router.replace('/(tabs)/status')
         },
         {
           text: 'Report Another',
@@ -154,8 +161,13 @@ const submitReport = async () => {
         }
       ]
     );
+
+  } catch (error) {
+    Alert.alert('Submission Failed', 'Could not submit report. Please try again.');
+    console.error('Submission error:', error);
+  } finally {
     setIsSubmitting(false);
-  }, 1500);
+  }
 };
 
   return (
