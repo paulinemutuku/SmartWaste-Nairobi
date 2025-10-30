@@ -20,8 +20,8 @@ function ScheduleComponent() {
       setLoading(true);
       
       const [reportsRes, collectorsRes] = await Promise.all([
-        fetch("http://192.168.2.103:3000/api/reports/all"),
-        fetch("http://192.168.2.103:3000/api/collectors")
+        fetch("https://smart-waste-nairobi-chi.vercel.app/api/reports/all"),
+        fetch("https://smart-waste-nairobi-chi.vercel.app/api/collectors")
       ]);
 
       const reportsData = await reportsRes.json();
@@ -75,7 +75,7 @@ function ScheduleComponent() {
 
   const loadSchedules = async () => {
     try {
-      const response = await fetch("http://192.168.2.103:3000/api/schedules");
+      const response = await fetch("https://smart-waste-nairobi-chi.vercel.app/api/schedules");
       const result = await response.json();
       if (result.success) {
         setSchedules(result.schedules);
@@ -105,7 +105,7 @@ function ScheduleComponent() {
         status: 'scheduled'
       };
 
-      const response = await fetch("http://192.168.2.103:3000/api/schedules", {
+      const response = await fetch("https://smart-waste-nairobi-chi.vercel.app/api/schedules", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -130,7 +130,7 @@ function ScheduleComponent() {
 
   const completeSchedule = async (scheduleId) => {
     try {
-      const response = await fetch(`http://192.168.2.103:3000/api/schedules/${scheduleId}/complete`, {
+      const response = await fetch(`https://smart-waste-nairobi-chi.vercel.app/api/schedules/${scheduleId}/complete`, {
         method: "PUT"
       });
 

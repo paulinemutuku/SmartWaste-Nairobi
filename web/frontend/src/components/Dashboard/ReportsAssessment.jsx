@@ -12,7 +12,7 @@ const ReportsAssessment = () => {
   const loadReports = async () => {
     try {
       setLoading(true);
-      const response = await fetch("http://192.168.2.103:3000/api/reports/all");
+      const response = await fetch("https://smart-waste-nairobi-chi.vercel.app/api/reports/all");
       const result = await response.json();
       
       if (response.ok && result.success) {
@@ -27,7 +27,7 @@ const ReportsAssessment = () => {
 
   const updateReportUrgency = async (reportId, urgency) => {
     try {
-      const response = await fetch(`http://192.168.2.103:3000/api/reports/${reportId}/urgency`, {
+      const response = await fetch(`https://smart-waste-nairobi-chi.vercel.app/api/reports/${reportId}/urgency`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -102,7 +102,7 @@ const ReportsAssessment = () => {
                               <div className="d-flex gap-2 flex-wrap">
                                 {report.photos.map((photo, index) => {
                                   console.log("Original photo:", photo);
-                                  const photoUrl = `http://192.168.2.103:3000${photo}`;
+                                  const photoUrl = `https://smart-waste-nairobi-chi.vercel.app${photo}`;
                                   
                                   return (
                                     <img 

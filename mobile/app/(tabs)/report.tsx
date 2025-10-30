@@ -156,7 +156,7 @@ const submitReport = async () => {
         name: filename || 'photo.jpg',
       } as any);
 
-      const uploadResponse = await fetch('http://192.168.2.103:3000/api/reports/upload-photos', {
+      const uploadResponse = await fetch('https://smart-waste-nairobi-chi.vercel.app/api/reports/upload-photos', {
         method: 'POST',
         body: formData,
         headers: {

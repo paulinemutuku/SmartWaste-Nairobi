@@ -30,7 +30,7 @@ function Collectors() {
   const loadCollectors = async () => {
     try {
       setLoading(true);
-      const response = await fetch("http://192.168.2.103:3000/api/collectors");
+      const response = await fetch("https://smart-waste-nairobi-chi.vercel.app/api/collectors");
       const result = await response.json();
       
       if (response.ok && result.success) {
@@ -46,7 +46,7 @@ function Collectors() {
   const handleAddCollector = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch("http://192.168.2.103:3000/api/collectors", {
+      const response = await fetch("https://smart-waste-nairobi-chi.vercel.app/api/collectors", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -70,7 +70,7 @@ function Collectors() {
 
   const handleUpdateStatus = async (id, currentStatus) => {
     try {
-      const response = await fetch(`http://192.168.2.103:3000/api/collectors/${id}/status`, {
+      const response = await fetch(`https://smart-waste-nairobi-chi.vercel.app/api/collectors/${id}/status`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -93,7 +93,7 @@ function Collectors() {
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this collector?")) {
       try {
-        const response = await fetch(`http://192.168.2.103:3000/api/collectors/${id}`, {
+        const response = await fetch(`https://smart-waste-nairobi-chi.vercel.app/api/collectors/${id}`, {
           method: "DELETE",
         });
 

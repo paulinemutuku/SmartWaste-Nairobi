@@ -28,7 +28,7 @@ function Users() {
   const loadUsers = async () => {
     try {
       setLoading(true);
-      const response = await fetch("http://192.168.2.103:3000/api/users");
+      const response = await fetch("https://smart-waste-nairobi-chi.vercel.app/api/users");
       const result = await response.json();
       
       if (response.ok && result.success) {
@@ -43,7 +43,7 @@ function Users() {
 
   const loadUserStats = async () => {
     try {
-      const response = await fetch("http://192.168.2.103:3000/api/users/stats");
+      const response = await fetch("https://smart-waste-nairobi-chi.vercel.app/api/users/stats");
       const result = await response.json();
       
       if (response.ok && result.success) {

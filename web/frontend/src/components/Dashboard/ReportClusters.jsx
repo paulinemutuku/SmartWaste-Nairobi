@@ -31,7 +31,7 @@ function ReportClusters() {
       setLoading(true);
       
       // First, get all reports from backend
-      const response = await fetch("http://192.168.2.103:3000/api/reports/all");
+      const response = await fetch("https://smart-waste-nairobi-chi.vercel.app/api/reports/all");
       const result = await response.json();
       
       if (response.ok && result.success) {

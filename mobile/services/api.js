@@ -1,7 +1,7 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_BASE_URL = 'http://192.168.2.103:3000/api';
+const API_BASE_URL = 'https://smart-waste-nairobi-chi.vercel.app/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,

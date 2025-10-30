@@ -27,9 +27,9 @@ function Home() {
   const loadMobileReports = async () => {
     try {
       setLoading(true);
-      console.log("🔄 Fetching reports from:", "http://192.168.2.103:3000/api/reports/all");
+      console.log("🔄 Fetching reports from:", "https://smart-waste-nairobi-chi.vercel.app/api/reports/all");
       
-      const response = await fetch("http://192.168.2.103:3000/api/reports/all");
+      const response = await fetch("https://smart-waste-nairobi-chi.vercel.app/api/reports/all");
       console.log("📡 Response status:", response.status);
       
       const result = await response.json();
