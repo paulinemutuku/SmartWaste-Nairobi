@@ -27,6 +27,24 @@ app.get('/', (req, res) => {
   });
 });
 
+app.get('/api/test-db', async (req, res) => {
+  try {
+    const Report = require('./models/Report');
+    const count = await Report.countDocuments();
+    res.json({ 
+      success: true, 
+      message: 'Database connected!',
+      reportCount: count 
+    });
+  } catch (error) {
+    res.json({ 
+      success: false, 
+      message: 'Database connection failed',
+      error: error.message 
+    });
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 SmartWaste server running on port ${PORT}`);
