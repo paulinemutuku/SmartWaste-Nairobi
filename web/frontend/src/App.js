@@ -7,12 +7,12 @@ import Dashboard from "./pages/Dashboard";
 import Bin from "./pages/Bin";
 import Collectors from "./pages/Collectors";
 import UsersPage from "./pages/UsersPage";
-import Feedback from "./pages/Feedback";
 import Map from "./pages/Map";
 import Schedule from "./pages/Schedule";
 import ReportClustersPage from "./pages/ReportClustersPage";
 import "./App.css";
 import ReportsAssessment from "./pages/ReportsAssessment";
+import FeedbackComponent from './components/Dashboard/FeedbackComponent';
 
 const App = () => {
   const { user } = useAuthContext();
@@ -26,7 +26,7 @@ const App = () => {
           <Route path="/collectors" element={<Collectors />} />
           <Route path="/public-users" element={<UsersPage />} />
           <Route path="/mapview" element={<Map />} />
-          <Route path="/feedback" element={<Feedback />} />
+          <Route path="/feedback" element={<FeedbackComponent />} />
           <Route path="/schedule" element={<Schedule />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/reports-assessment" element={<ReportsAssessment />} />

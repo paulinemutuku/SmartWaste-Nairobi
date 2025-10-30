@@ -130,6 +130,46 @@ const submitReport = async () => {
 
     const { latitude, longitude } = locationData.coords;
 
+    // Get current user ID using our helper
+    const { getUserId } = require('../../utils/userHelper');
+    const submittedBy = await getUserId();
+
+    if (!submittedBy) {
+      Alert.alert('Login Required', 'Please log in to submit a report');
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Upload images and get their server paths
+    const uploadedPhotos = [];
+    for (const imageUri of images) {
+      const formData = new FormData();
+      
+      // Extract filename from URI
+      const filename = imageUri.split('/').pop();
+      const match = /\.(\w+)$/.exec(filename || '');
+      const type = match ? `image/${match[1]}` : 'image/jpeg';
+      
+      formData.append('photos', {
+        uri: imageUri,
+        type: type,
+        name: filename || 'photo.jpg',
+      } as any);
+
+      const uploadResponse = await fetch('http://192.168.2.103:3000/api/reports/upload-photos', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      const uploadResult = await uploadResponse.json();
+      if (uploadResult.success && uploadResult.photos) {
+        uploadedPhotos.push(...uploadResult.photos);
+      }
+    }
+
     const reportData = {
       description: description.trim(),
       location: {
@@ -137,7 +177,8 @@ const submitReport = async () => {
         longitude,
         address: address
       },
-      photos: images,
+      photos: uploadedPhotos,
+      submittedBy: submittedBy
     };
 
     const { reportService } = require('../../services/api');

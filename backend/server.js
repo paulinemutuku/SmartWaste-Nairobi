@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');  // ADD THIS LINE
 const app = express();
 const PORT = 3000;
+const feedbackRoutes = require('./routes/feedback');
 
 app.use(cors());
 
@@ -11,8 +12,10 @@ app.use('/api/reports', require('./routes/reports'));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/collectors', require('./routes/collectors'));
 app.use('/api/users', require('./routes/users'));
-app.use('/uploads', express.static('uploads'));
 app.use('/api/schedules', require('./routes/schedules'));
+app.use('/api/feedback', feedbackRoutes);
+app.use('/uploads', express.static('uploads'));
+
 
 const MONGODB_URI = 'mongodb://localhost:27017/smartwaste';
 mongoose.connect(MONGODB_URI)

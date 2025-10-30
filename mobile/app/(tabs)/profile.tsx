@@ -14,14 +14,16 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/LanguageContext';
+
 
 const { width, height } = Dimensions.get('window');
 
 export default function ProfileScreen() {
   const router = useRouter();
   const { user, login, logout, isAuthenticated } = useAuth();
+  const { language, changeLanguage, t } = useLanguage();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [language, setLanguage] = useState('English');
   const [showLanguageModal, setShowLanguageModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const fadeAnim = useState(new Animated.Value(0))[0];
@@ -40,12 +42,12 @@ export default function ProfileScreen() {
 
   const handleLogout = () => {
     Alert.alert(
-      'Sign Out',
+      t('signOut'),
       'Are you sure you want to sign out of your account?',
       [
         { text: 'Cancel', style: 'cancel' },
         { 
-          text: 'Sign Out', 
+          text: t('signOut'), 
           style: 'destructive',
           onPress: () => {
             logout();
@@ -56,10 +58,29 @@ export default function ProfileScreen() {
     );
   };
 
-  const handleLanguageSelect = (selectedLanguage: string) => {
-    setLanguage(selectedLanguage);
+  const handleLanguageSelect = async (selectedLanguage: string) => {
+    await changeLanguage(selectedLanguage);
     setShowLanguageModal(false);
-    Alert.alert('Language Updated', `App language changed to ${selectedLanguage}`);
+    Alert.alert(
+      t('languageUpdated'),
+      selectedLanguage === 'Swahili' 
+        ? 'Lugha ya programu imebadilishwa kuwa Kiswahili' 
+        : `App language changed to ${selectedLanguage}`
+    );
+  };
+
+  const handleSupportAction = (action: string) => {
+    switch(action) {
+      case 'help':
+        Alert.alert(t('helpFaq'), 'Visit our website for detailed help articles and frequently asked questions.');
+        break;
+      case 'rate':
+        Alert.alert(t('rateApp'), 'Thank you for considering rating our app! Your feedback helps us improve.');
+        break;
+      case 'share':
+        Alert.alert(t('shareApp'), 'Help spread the word about SmartWaste Nairobi! Tell your friends and community.');
+        break;
+    }
   };
 
   const PrivacyPolicyModal = () => (
@@ -72,7 +93,7 @@ export default function ProfileScreen() {
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Privacy Policy</Text>
+            <Text style={styles.modalTitle}>{t('privacyPolicyTitle')}</Text>
             <TouchableOpacity 
               style={styles.closeButton}
               onPress={() => setShowPrivacyModal(false)}
@@ -82,12 +103,12 @@ export default function ProfileScreen() {
           </View>
           
           <ScrollView style={styles.modalBody}>
-            <Text style={styles.policySectionTitle}>Your Privacy Matters</Text>
+            <Text style={styles.policySectionTitle}>{t('yourPrivacyMatters')}</Text>
             <Text style={styles.policyText}>
               At SmartWaste Nairobi, we are committed to protecting your privacy and ensuring the security of your personal information.
             </Text>
             
-            <Text style={styles.policySectionTitle}>Information We Collect</Text>
+            <Text style={styles.policySectionTitle}>{t('informationWeCollect')}</Text>
             <Text style={styles.policyText}>
               • Personal identification information (Name, email address){'\n'}
               • Location data for waste reporting{'\n'}
@@ -95,7 +116,7 @@ export default function ProfileScreen() {
               • App usage statistics
             </Text>
             
-            <Text style={styles.policySectionTitle}>How We Use Your Information</Text>
+            <Text style={styles.policySectionTitle}>{t('howWeUseInfo')}</Text>
             <Text style={styles.policyText}>
               • To provide and improve our waste management services{'\n'}
               • To communicate important updates about your reports{'\n'}
@@ -103,13 +124,13 @@ export default function ProfileScreen() {
               • To ensure the security of our platform
             </Text>
             
-            <Text style={styles.policySectionTitle}>Data Security</Text>
+            <Text style={styles.policySectionTitle}>{t('dataSecurity')}</Text>
             <Text style={styles.policyText}>
               We implement appropriate security measures to protect your personal information against unauthorized access, alteration, or disclosure.
             </Text>
             
             <Text style={styles.policyFooter}>
-              Last updated: December 2024{'\n'}
+              {t('lastUpdated')}{'\n'}
               SmartWaste Nairobi - Building a Cleaner City Together
             </Text>
           </ScrollView>
@@ -134,7 +155,7 @@ export default function ProfileScreen() {
     >
       <View style={styles.modalOverlay}>
         <View style={styles.languageModalContent}>
-          <Text style={styles.languageModalTitle}>Choose Language</Text>
+          <Text style={styles.languageModalTitle}>{t('chooseLanguage')}</Text>
           
           <TouchableOpacity 
             style={[
@@ -143,7 +164,7 @@ export default function ProfileScreen() {
             ]}
             onPress={() => handleLanguageSelect('English')}
           >
-            <Text style={styles.languageText}>🇺🇸 English</Text>
+            <Text style={styles.languageText}>🇺🇸 {t('english')}</Text>
             {language === 'English' && (
               <Ionicons name="checkmark-circle" size={24} color="#2E8B57" />
             )}
@@ -156,7 +177,7 @@ export default function ProfileScreen() {
             ]}
             onPress={() => handleLanguageSelect('Swahili')}
           >
-            <Text style={styles.languageText}>🇰🇪 Kiswahili</Text>
+            <Text style={styles.languageText}>🇰🇪 {t('swahili')}</Text>
             {language === 'Swahili' && (
               <Ionicons name="checkmark-circle" size={24} color="#2E8B57" />
             )}
@@ -166,7 +187,7 @@ export default function ProfileScreen() {
             style={styles.modalButton}
             onPress={() => setShowLanguageModal(false)}
           >
-            <Text style={styles.modalButtonText}>Confirm Selection</Text>
+            <Text style={styles.modalButtonText}>{t('confirmSelection')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -188,17 +209,21 @@ export default function ProfileScreen() {
             
             {user ? (
               <View style={styles.userInfo}>
-                <Text style={styles.userName}>{user.name}</Text>
-                <Text style={styles.userEmail}>{user.email}</Text>
+                <Text style={styles.userName}>
+                  {user.name || user.user?.name || user.user?.username || t('userName')}
+                </Text>
+                <Text style={styles.userEmail}>
+                  {user.email || user.user?.email || t('userEmail')}
+                </Text>
                 <View style={styles.userBadge}>
                   <Ionicons name="ribbon" size={16} color="#FFFFFF" />
-                  <Text style={styles.badgeText}>Nairobi Clean Champion</Text>
+                  <Text style={styles.badgeText}>{t('nairobiChampion')}</Text>
                 </View>
               </View>
             ) : (
               <View style={styles.userInfo}>
-                <Text style={styles.welcomeTitle}>Welcome to SmartWaste</Text>
-                <Text style={styles.welcomeSubtitle}>Sign in to personalize your experience</Text>
+                <Text style={styles.welcomeTitle}>{t('welcomeTitle')}</Text>
+                <Text style={styles.welcomeSubtitle}>{t('welcomeSubtitle')}</Text>
               </View>
             )}
           </View>
@@ -211,7 +236,7 @@ export default function ProfileScreen() {
                 onPress={handleLogout}
               >
                 <Ionicons name="log-out-outline" size={22} color="#EF4444" />
-                <Text style={styles.logoutButtonText}>Sign Out</Text>
+                <Text style={styles.logoutButtonText}>{t('signOut')}</Text>
               </TouchableOpacity>
             ) : (
               <TouchableOpacity 
@@ -219,45 +244,24 @@ export default function ProfileScreen() {
                 onPress={handleLogin}
               >
                 <Ionicons name="person-circle-outline" size={22} color="#FFFFFF" />
-                <Text style={styles.loginButtonText}>Sign In to Your Account</Text>
+                <Text style={styles.loginButtonText}>{t('signIn')}</Text>
                 <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
               </TouchableOpacity>
             )}
           </View>
 
-          {/* Stats Section for Logged-in Users */}
-          {user && (
-            <View style={styles.statsSection}>
-              <Text style={styles.sectionTitle}>Your Impact</Text>
-              <View style={styles.statsGrid}>
-                <View style={styles.statCard}>
-                  <Text style={styles.statNumber}>12</Text>
-                  <Text style={styles.statLabel}>Reports Submitted</Text>
-                </View>
-                <View style={styles.statCard}>
-                  <Text style={styles.statNumber}>8</Text>
-                  <Text style={styles.statLabel}>Issues Resolved</Text>
-                </View>
-                <View style={styles.statCard}>
-                  <Text style={styles.statNumber}>4</Text>
-                  <Text style={styles.statLabel}>Active Reports</Text>
-                </View>
-              </View>
-            </View>
-          )}
-
           {/* Settings Section */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Preferences & Settings</Text>
+            <Text style={styles.sectionTitle}>{t('settingsTitle')}</Text>
             
             {/* Notifications Setting */}
             <View style={styles.settingItem}>
               <View style={styles.settingLeft}>
                 <Ionicons name="notifications-outline" size={22} color="#2E8B57" />
                 <View style={styles.settingTextContainer}>
-                  <Text style={styles.settingTitle}>Push Notifications</Text>
+                  <Text style={styles.settingTitle}>{t('pushNotifications')}</Text>
                   <Text style={styles.settingDescription}>
-                    Receive updates about your reports and city cleanliness
+                    {t('notificationsDesc')}
                   </Text>
                 </View>
               </View>
@@ -277,9 +281,9 @@ export default function ProfileScreen() {
               <View style={styles.settingLeft}>
                 <Ionicons name="language-outline" size={22} color="#7C3AED" />
                 <View style={styles.settingTextContainer}>
-                  <Text style={styles.settingTitle}>App Language</Text>
+                  <Text style={styles.settingTitle}>{t('appLanguage')}</Text>
                   <Text style={styles.settingDescription}>
-                    Currently: {language}
+                    {t('languageDesc')}
                   </Text>
                 </View>
               </View>
@@ -294,9 +298,9 @@ export default function ProfileScreen() {
               <View style={styles.settingLeft}>
                 <Ionicons name="shield-checkmark-outline" size={22} color="#3B82F6" />
                 <View style={styles.settingTextContainer}>
-                  <Text style={styles.settingTitle}>Privacy Policy</Text>
+                  <Text style={styles.settingTitle}>{t('privacyPolicy')}</Text>
                   <Text style={styles.settingDescription}>
-                    Learn how we protect and use your data
+                    {t('privacyDesc')}
                   </Text>
                 </View>
               </View>
@@ -306,31 +310,50 @@ export default function ProfileScreen() {
 
           {/* Support Section */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Support & Information</Text>
+            <Text style={styles.sectionTitle}>{t('supportTitle')}</Text>
             
-            <TouchableOpacity style={styles.supportItem}>
+            {/* Feedback Option */}
+            <TouchableOpacity 
+  style={styles.supportItem}
+  onPress={() => router.push('/feedback')}
+>
+  <Ionicons name="chatbubble-ellipses-outline" size={22} color="#2E8B57" />
+  <Text style={styles.supportText}>{t('sendFeedback')}</Text>
+  <Ionicons name="chevron-forward" size={20} color="#94A3B8" />
+</TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.supportItem}
+              onPress={() => handleSupportAction('help')}
+            >
               <Ionicons name="help-circle-outline" size={22} color="#F59E0B" />
-              <Text style={styles.supportText}>Help & FAQ</Text>
+              <Text style={styles.supportText}>{t('helpFaq')}</Text>
               <Ionicons name="chevron-forward" size={20} color="#94A3B8" />
             </TouchableOpacity>
             
-            <TouchableOpacity style={styles.supportItem}>
+            <TouchableOpacity 
+              style={styles.supportItem}
+              onPress={() => handleSupportAction('rate')}
+            >
               <Ionicons name="star-outline" size={22} color="#8B5CF6" />
-              <Text style={styles.supportText}>Rate Our App</Text>
+              <Text style={styles.supportText}>{t('rateApp')}</Text>
               <Ionicons name="chevron-forward" size={20} color="#94A3B8" />
             </TouchableOpacity>
             
-            <TouchableOpacity style={styles.supportItem}>
+            <TouchableOpacity 
+              style={styles.supportItem}
+              onPress={() => handleSupportAction('share')}
+            >
               <Ionicons name="share-social-outline" size={22} color="#EC4899" />
-              <Text style={styles.supportText}>Share SmartWaste</Text>
+              <Text style={styles.supportText}>{t('shareApp')}</Text>
               <Ionicons name="chevron-forward" size={20} color="#94A3B8" />
             </TouchableOpacity>
           </View>
 
           {/* App Version */}
           <View style={styles.versionContainer}>
-            <Text style={styles.versionText}>SmartWaste Nairobi v1.0</Text>
-            <Text style={styles.versionSubtext}>Building a cleaner city together</Text>
+            <Text style={styles.versionText}>{t('appVersion')}</Text>
+            <Text style={styles.versionSubtext}>{t('buildingCity')}</Text>
           </View>
         </ScrollView>
       </Animated.View>
@@ -354,7 +377,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 40,
     paddingHorizontal: 30,
-    backgroundColor: 'linear-gradient(135deg, #2E8B57 0%, #3B82F6 100%)',
+    backgroundColor: '#2E8B57',
   },
   avatarContainer: {
     position: 'relative',
@@ -395,8 +418,9 @@ const styles = StyleSheet.create({
   },
   userEmail: {
     fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.9)',
+    color: '#FFFFFF',
     marginBottom: 12,
+    opacity: 0.9,
   },
   userBadge: {
     flexDirection: 'row',
@@ -405,7 +429,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 6,
     borderRadius: 20,
-    backdropFilter: 'blur(10px)',
   },
   badgeText: {
     color: '#FFFFFF',
@@ -416,13 +439,14 @@ const styles = StyleSheet.create({
   welcomeTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#1E293B',
+    color: '#FFFFFF',
     marginBottom: 8,
   },
   welcomeSubtitle: {
     fontSize: 16,
-    color: '#475569',
+    color: '#FFFFFF',
     textAlign: 'center',
+    opacity: 0.9,
   },
   section: {
     backgroundColor: '#FFFFFF',
@@ -478,39 +502,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     marginLeft: 8,
-  },
-  statsSection: {
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 20,
-    marginTop: 20,
-    borderRadius: 20,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.1,
-    shadowRadius: 15,
-    elevation: 5,
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  statCard: {
-    alignItems: 'center',
-    flex: 1,
-    padding: 12,
-  },
-  statNumber: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#2E8B57',
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#64748B',
-    textAlign: 'center',
-    fontWeight: '600',
   },
   settingItem: {
     flexDirection: 'row',

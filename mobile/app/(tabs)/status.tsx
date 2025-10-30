@@ -39,9 +39,24 @@ export default function StatusScreen() {
 const loadReports = async () => {
   try {
     const { reportService } = require('../../services/api');
-    const result = await reportService.getAllReports();
     
+    // Get current user ID using our helper
+    const { getUserId } = require('../../utils/userHelper');
+    const userId = await getUserId();
+
+    if (!userId) {
+      console.log('No user ID found');
+      setReports([]);
+      return;
+    }
+
+    // Get reports for the specific user only
+    console.log('Fetching reports for user ID:', userId);
+    const result = await reportService.getUserReports(userId);
+    console.log('API Response:', result);
+
     if (result.success) {
+      console.log('Reports found:', result.reports.length);
       const transformedReports = result.reports.map((report: any) => ({
         id: report._id,
         address: report.location?.address,
@@ -55,20 +70,13 @@ const loadReports = async () => {
       }));
       
       setReports(transformedReports);
+    } else {
+      console.log('No reports found or API error');
+      setReports([]);
     }
   } catch (error) {
-    console.error('Failed to load reports:', error);
-    const sampleReports = [
-      { 
-        id: '1', 
-        location: 'Dandora Market - Near Main Entrance', 
-        status: 'Submitted', 
-        date: '2 hours ago',
-        description: 'Overflowing garbage bins blocking pedestrian walkway',
-        priority: 'High'
-      }
-    ];
-    setReports(sampleReports);
+    console.error('Failed to load user reports:', error);
+    setReports([]);
   }
 };
 

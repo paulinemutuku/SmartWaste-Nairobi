@@ -43,6 +43,15 @@ export const reportService = {
     } catch (error) {
       throw new Error(error.response?.data?.message || 'Failed to fetch reports');
     }
+  },
+
+  getUserReports: async (userId) => {
+    try {
+      const response = await api.get(`/reports/user/${userId}`);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch user reports');
+    }
   }
 };
 
@@ -71,6 +80,26 @@ export const authService = {
       return response.data;
     } catch (error) {
       console.log('Activity update failed');
+    }
+  }
+};
+
+export const feedbackService = {
+  submitFeedback: async (feedbackData) => {
+    try {
+      const response = await api.post('/feedback/submit', feedbackData);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Failed to submit feedback');
+    }
+  },
+
+  getUserFeedback: async (userId) => {
+    try {
+      const response = await api.get(`/feedback/user/${userId}`);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch user feedback');
     }
   }
 };

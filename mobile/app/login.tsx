@@ -47,9 +47,9 @@ const handleLogin = async () => {
     
     if (result.success) {
       const userData = {
-        ...result.user,
-        token: result.token 
-      };
+  user: result.user,
+  token: result.token 
+};
       
       await login(userData);
       

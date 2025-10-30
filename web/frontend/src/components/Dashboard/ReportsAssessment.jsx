@@ -102,28 +102,25 @@ const ReportsAssessment = () => {
                               <div className="d-flex gap-2 flex-wrap">
                                 {report.photos.map((photo, index) => {
                                   console.log("Original photo:", photo);
-                                  const photoUrl = `http://192.168.2.103:3000/uploads/placeholder.jpg`;
+                                  const photoUrl = `http://192.168.2.103:3000${photo}`;
                                   
                                   return (
-                                    <div 
+                                    <img 
                                       key={index}
-                                      className="img-thumbnail d-flex align-items-center justify-content-center"
+                                      src={photoUrl}
+                                      alt={`Report photo ${index + 1}`}
+                                      className="img-thumbnail"
                                       style={{ 
                                         width: '80px', 
                                         height: '80px', 
-                                        backgroundColor: '#f8f9fa',
+                                        objectFit: 'cover',
                                         cursor: 'pointer'
                                       }}
                                       onClick={() => setSelectedReport({...report, selectedPhoto: photoUrl})}
-                                    >
-                                      <span className="text-muted">📷</span>
-                                    </div>
+                                    />
                                   );
                                 })}
                               </div>
-                              <small className="text-muted">
-                                Photo upload feature coming soon
-                              </small>
                             </div>
                           ) : (
                             <p className="text-muted small">No photos available</p>
@@ -185,9 +182,17 @@ const ReportsAssessment = () => {
                 <p><strong>Description:</strong> {selectedReport.description}</p>
                 <p><strong>Location:</strong> {selectedReport.location?.address || 'Nairobi'}</p>
                 <p><strong>Submitted:</strong> {formatDate(selectedReport.createdAt)}</p>
-                <div className="alert alert-info">
-                  Photo display will be available in the next update
-                </div>
+                {selectedReport.selectedPhoto && (
+                  <div>
+                    <h6>Photo Evidence:</h6>
+                    <img 
+                      src={selectedReport.selectedPhoto}
+                      alt="Report evidence"
+                      className="img-fluid rounded"
+                      style={{ maxHeight: '400px', objectFit: 'contain' }}
+                    />
+                  </div>
+                )}
               </div>
               <div className="modal-footer">
                 <button 
