@@ -72,7 +72,7 @@ npm install
 # Start development server
 npm start
 
-# Application will open at http://localhost:3000
+# Application will open at https://smart-waste-nairobi-chi.vercel.app
 ```
 
 ### Backend API Setup

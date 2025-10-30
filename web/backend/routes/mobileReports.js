@@ -3,7 +3,7 @@ const router = express.Router();
 
 router.get('/reports', async (req, res) => {
   try {
-    const response = await fetch('http://localhost:3000/api/reports/all');
+    const response = await fetch('https://smart-waste-nairobi-chi.vercel.app/api/reports/all');
     const result = await response.json();
     
     res.json({

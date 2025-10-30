@@ -13,7 +13,7 @@ const FeedbackComponent = () => {
 
   const fetchFeedback = async () => {
     try {
-      const response = await axios.get('http://localhost:3000/api/feedback/all');
+      const response = await axios.get('https://smart-waste-nairobi-chi.vercel.app/api/feedback/all');
       if (response.data.success) {
         setFeedback(response.data.feedback);
       }
