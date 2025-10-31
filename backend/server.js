@@ -14,7 +14,7 @@ app.use('/api/schedules', require('./routes/schedules'));
 app.use('/api/feedback', feedbackRoutes);
 app.use('/uploads', express.static('uploads'));
 
-const MONGODB_URI = 'mongodb+srv://smartwaste:SmartWaste123@cluster0.bqz6d8a.mongodb.net/smartwaste?retryWrites=true&w=majority&appName=Cluster0';
+const MONGODB_URI = 'mongodb+srv://smartwaste:SmartWaste123@cluster0.bqz6d8a.mongodb.net/smartwaste?retryWrites=true&w=majority&appName=Cluster0&socketTimeoutMS=30000';
 mongoose.connect(MONGODB_URI)
   .then(() => console.log('💾 Connected to MongoDB'))
   .catch(err => console.log('❌ MongoDB connection error:', err));
