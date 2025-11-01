@@ -133,7 +133,7 @@ const submitReport = async () => {
 
     const { latitude, longitude } = locationData.coords;
 
-    const { getUserId, getUserData } = require('../../utils/userHelper');
+    const { getUserId } = require('../../utils/userHelper');
     const submittedBy = await getUserId();
 
     if (!submittedBy) {
@@ -154,17 +154,21 @@ const submitReport = async () => {
     formData.append('wasteType', 'general');
     formData.append('userId', submittedBy);
 
-    images.forEach((imageUri, index) => {
+    // Use only the first image and field name 'photo' (singular)
+    if (images.length > 0) {
+      const imageUri = images[0];
       const filename = imageUri.split('/').pop();
       const match = /\.(\w+)$/.exec(filename || '');
       const type = match ? `image/${match[1]}` : 'image/jpeg';
       
-      formData.append('photos', {
+      formData.append('photo', {
         uri: imageUri,
         type: type,
-        name: filename || `photo_${index}.jpg`,
+        name: filename || 'photo.jpg',
       } as any);
-    });
+    }
+
+    console.log('Submitting form data...');
 
     const response = await fetch('https://smart-waste-nairobi-chi.vercel.app/api/reports/submit', {
       method: 'POST',
