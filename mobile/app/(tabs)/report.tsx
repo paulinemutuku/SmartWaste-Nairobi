@@ -146,37 +146,24 @@ const submitReport = async () => {
     const userData = userDataString ? JSON.parse(userDataString) : null;
     const token = userData?.token;
 
-    const formData = new FormData();
-    formData.append('description', description.trim());
-    formData.append('location', address);
-    formData.append('latitude', latitude.toString());
-    formData.append('longitude', longitude.toString());
-    formData.append('wasteType', 'general');
-    formData.append('userId', submittedBy);
+    const reportData = {
+      description: description.trim(),
+      location: address,
+      latitude: latitude.toString(),
+      longitude: longitude.toString(),
+      wasteType: 'general',
+      userId: submittedBy
+    };
 
-    // Use only the first image and field name 'photo' (singular)
-    if (images.length > 0) {
-      const imageUri = images[0];
-      const filename = imageUri.split('/').pop();
-      const match = /\.(\w+)$/.exec(filename || '');
-      const type = match ? `image/${match[1]}` : 'image/jpeg';
-      
-      formData.append('photo', {
-        uri: imageUri,
-        type: type,
-        name: filename || 'photo.jpg',
-      } as any);
-    }
-
-    console.log('Submitting form data...');
+    console.log('Submitting report data:', reportData);
 
     const response = await fetch('https://smart-waste-nairobi-chi.vercel.app/api/reports/submit', {
       method: 'POST',
       headers: {
-        'Content-Type': 'multipart/form-data',
+        'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: formData,
+      body: JSON.stringify(reportData),
     });
 
     const responseText = await response.text();

@@ -2,24 +2,10 @@ const express = require('express');
 const Report = require('../models/Report');
 const router = express.Router();
 const mongoose = require('mongoose');
-const multer = require('multer');
-const path = require('path');
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/')
-  },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + '-' + Math.round(Math.random() * 1E9) + path.extname(file.originalname))
-  }
-});
-
-const upload = multer({ storage: storage });
-
-router.post('/submit', upload.single('photo'), async (req, res) => {
+router.post('/submit', async (req, res) => {
   try {
     console.log('REQUEST BODY:', req.body);
-    console.log('REQUEST FILE:', req.file);
     
     const { description, location, latitude, longitude, wasteType, userId } = req.body;
     
@@ -30,15 +16,13 @@ router.post('/submit', upload.single('photo'), async (req, res) => {
       });
     }
 
-    const photoPath = req.file ? `/uploads/${req.file.filename}` : null;
-
     const newReport = new Report({
       description,
       location: location || 'Nairobi, Kenya',
       latitude: latitude || -1.2921,
       longitude: longitude || 36.8219,
       wasteType: wasteType || 'general',
-      photo: photoPath,
+      photo: null, // No photo for now
       submittedBy: new mongoose.Types.ObjectId(userId),
       status: 'pending',
       priority: 'medium'
@@ -62,14 +46,12 @@ router.post('/submit', upload.single('photo'), async (req, res) => {
   }
 });
 
-router.post('/upload-photos', upload.array('photos', 5), async (req, res) => {
+router.post('/upload-photos', async (req, res) => {
   try {
-    const photoPaths = req.files ? req.files.map(file => `/uploads/${file.filename}`) : [];
-    
     res.json({
       success: true,
-      message: 'Photos uploaded successfully',
-      photos: photoPaths
+      message: 'Photo upload endpoint - not implemented yet',
+      photos: []
     });
   } catch (error) {
     console.log('PHOTO UPLOAD ERROR:', error.message);
