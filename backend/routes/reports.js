@@ -24,7 +24,7 @@ router.post('/submit', async (req, res) => {
       wasteType: wasteType || 'general',
       photo: null, // No photo for now
       submittedBy: new mongoose.Types.ObjectId(userId),
-      status: 'pending',
+      status: 'submitted',
       priority: 'medium'
     });
     

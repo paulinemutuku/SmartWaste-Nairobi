@@ -6,15 +6,34 @@ const reportSchema = new mongoose.Schema({
     required: true
   },
   location: {
-    latitude: Number,
-    longitude: Number,
-    address: String
+    type: String,
+    required: true
   },
-  photos: [String],
+  latitude: {
+    type: Number,
+    required: true
+  },
+  longitude: {
+    type: Number,
+    required: true
+  },
+  wasteType: {
+    type: String,
+    default: 'general'
+  },
+  photo: {
+    type: String,
+    default: null
+  },
   status: {
     type: String,
     default: 'submitted',
     enum: ['submitted', 'in-progress', 'completed']
+  },
+  priority: {
+    type: String,
+    default: 'medium',
+    enum: ['low', 'medium', 'high', 'critical']
   },
   submittedBy: {
     type: mongoose.Schema.Types.ObjectId,
