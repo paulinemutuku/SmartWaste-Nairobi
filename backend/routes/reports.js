@@ -16,6 +16,52 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
+router.post('/submit', upload.single('photo'), async (req, res) => {
+  try {
+    console.log('REQUEST BODY:', req.body);
+    console.log('REQUEST FILE:', req.file);
+    
+    const { description, location, latitude, longitude, wasteType, userId } = req.body;
+    
+    if (!description || !userId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Description and user ID are required'
+      });
+    }
+
+    const photoPath = req.file ? `/uploads/${req.file.filename}` : null;
+
+    const newReport = new Report({
+      description,
+      location: location || 'Nairobi, Kenya',
+      latitude: latitude || -1.2921,
+      longitude: longitude || 36.8219,
+      wasteType: wasteType || 'general',
+      photo: photoPath,
+      submittedBy: new mongoose.Types.ObjectId(userId),
+      status: 'pending',
+      priority: 'medium'
+    });
+    
+    const savedReport = await newReport.save();
+    
+    res.json({
+      success: true,
+      message: 'Report submitted successfully!',
+      report: savedReport
+    });
+    
+  } catch (error) {
+    console.log('SUBMISSION ERROR:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Error submitting report',
+      error: error.message
+    });
+  }
+});
+
 router.post('/upload-photos', upload.array('photos', 5), async (req, res) => {
   try {
     const photoPaths = req.files ? req.files.map(file => `/uploads/${file.filename}`) : [];
@@ -30,42 +76,6 @@ router.post('/upload-photos', upload.array('photos', 5), async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error uploading photos',
-      error: error.message
-    });
-  }
-});
-
-router.post('/submit', async (req, res) => {
-  try {
-    const { description, location, photos, submittedBy } = req.body;
-    
-    console.log('PHOTOS RECEIVED:', photos);
-
-    if (!submittedBy) {
-      return res.status(400).json({
-        success: false,
-        message: 'User ID is required to submit a report'
-      });
-    }
-
-    const newReport = new Report({
-      description,
-      location,
-      photos,
-      submittedBy: new mongoose.Types.ObjectId(submittedBy)
-    });
-    
-    const savedReport = await newReport.save();
-    res.json({
-      success: true,
-      message: 'Report submitted successfully!',
-      report: savedReport
-    });
-  } catch (error) {
-    console.log('SUBMISSION ERROR:', error.message);
-    res.status(500).json({
-      success: false,
-      message: 'Error submitting report',
       error: error.message
     });
   }

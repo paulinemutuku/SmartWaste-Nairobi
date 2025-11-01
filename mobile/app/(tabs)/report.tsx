@@ -13,6 +13,7 @@ import {
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function ReportScreen() {
   const router = useRouter();
@@ -124,14 +125,15 @@ const submitReport = async () => {
   setIsSubmitting(true);
   
   try {
+    console.log('Starting report submission...');
+    
     let locationData = await Location.getCurrentPositionAsync({
       accuracy: Location.Accuracy.High,
     });
 
     const { latitude, longitude } = locationData.coords;
 
-    // Get current user ID using our helper
-    const { getUserId } = require('../../utils/userHelper');
+    const { getUserId, getUserData } = require('../../utils/userHelper');
     const submittedBy = await getUserId();
 
     if (!submittedBy) {
@@ -140,12 +142,19 @@ const submitReport = async () => {
       return;
     }
 
-    // Upload images and get their server paths
-    const uploadedPhotos = [];
-    for (const imageUri of images) {
-      const formData = new FormData();
-      
-      // Extract filename from URI
+    const userDataString = await AsyncStorage.getItem('userData');
+    const userData = userDataString ? JSON.parse(userDataString) : null;
+    const token = userData?.token;
+
+    const formData = new FormData();
+    formData.append('description', description.trim());
+    formData.append('location', address);
+    formData.append('latitude', latitude.toString());
+    formData.append('longitude', longitude.toString());
+    formData.append('wasteType', 'general');
+    formData.append('userId', submittedBy);
+
+    images.forEach((imageUri, index) => {
       const filename = imageUri.split('/').pop();
       const match = /\.(\w+)$/.exec(filename || '');
       const type = match ? `image/${match[1]}` : 'image/jpeg';
@@ -153,36 +162,29 @@ const submitReport = async () => {
       formData.append('photos', {
         uri: imageUri,
         type: type,
-        name: filename || 'photo.jpg',
+        name: filename || `photo_${index}.jpg`,
       } as any);
+    });
 
-      const uploadResponse = await fetch('https://smart-waste-nairobi-chi.vercel.app/api/reports/upload-photos', {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+    const response = await fetch('https://smart-waste-nairobi-chi.vercel.app/api/reports/submit', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: formData,
+    });
 
-      const uploadResult = await uploadResponse.json();
-      if (uploadResult.success && uploadResult.photos) {
-        uploadedPhotos.push(...uploadResult.photos);
-      }
+    const responseText = await response.text();
+    console.log('Response status:', response.status);
+    console.log('Response text:', responseText);
+
+    if (!response.ok) {
+      throw new Error(`Server error: ${response.status}`);
     }
 
-    const reportData = {
-      description: description.trim(),
-      location: {
-        latitude,
-        longitude,
-        address: address
-      },
-      photos: uploadedPhotos,
-      submittedBy: submittedBy
-    };
-
-    const { reportService } = require('../../services/api');
-    const result = await reportService.submitReport(reportData);
+    const result = JSON.parse(responseText);
+    console.log('Submission successful:', result);
 
     Alert.alert(
       'Success! 🎉', 
@@ -204,8 +206,8 @@ const submitReport = async () => {
     );
 
   } catch (error) {
+    console.log('Submission error:', error);
     Alert.alert('Submission Failed', 'Could not submit report. Please try again.');
-    console.error('Submission error:', error);
   } finally {
     setIsSubmitting(false);
   }
