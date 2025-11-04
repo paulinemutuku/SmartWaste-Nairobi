@@ -79,7 +79,7 @@ const ReportsAssessment = () => {
             <div className="card-body">
               <div className="row">
                 {reports.map((report) => {
-                  console.log("Report photos for", report._id, ":", report.photos);
+                  console.log("Report data for", report._id, ":", report);
                   return (
                     <div key={report._id} className="col-md-6 col-lg-4 mb-4">
                       <div className="card h-100">
@@ -90,40 +90,36 @@ const ReportsAssessment = () => {
                         <div className="card-body">
                           <p className="card-text">{report.description}</p>
                           <p className="text-muted small">
-                            📍 {report.location?.address || 'Nairobi'}
+                            📍 {report.location || 'Nairobi'}
                           </p>
                           <p className="text-muted small">
                             📅 {formatDate(report.createdAt)}
                           </p>
                           
-                          {report.photos && report.photos.length > 0 ? (
+                          {report.photo ? (
                             <div className="mb-3">
-                              <h6>Photos:</h6>
+                              <h6>Photo:</h6>
                               <div className="d-flex gap-2 flex-wrap">
-                                {report.photos.map((photo, index) => {
-                                  console.log("Original photo:", photo);
-                                  const photoUrl = `https://smart-waste-nairobi-chi.vercel.app${photo}`;
-                                  
-                                  return (
-                                    <img 
-                                      key={index}
-                                      src={photoUrl}
-                                      alt={`Report photo ${index + 1}`}
-                                      className="img-thumbnail"
-                                      style={{ 
-                                        width: '80px', 
-                                        height: '80px', 
-                                        objectFit: 'cover',
-                                        cursor: 'pointer'
-                                      }}
-                                      onClick={() => setSelectedReport({...report, selectedPhoto: photoUrl})}
-                                    />
-                                  );
-                                })}
+                                {console.log("Report photo:", report.photo)}
+                                <img 
+                                  src={report.photo.startsWith('http') ? report.photo : `https://smart-waste-nairobi-chi.vercel.app${report.photo}`}
+                                  alt="Report photo"
+                                  className="img-thumbnail"
+                                  style={{ 
+                                    width: '80px', 
+                                    height: '80px', 
+                                    objectFit: 'cover',
+                                    cursor: 'pointer'
+                                  }}
+                                  onClick={() => setSelectedReport({
+                                    ...report, 
+                                    selectedPhoto: report.photo.startsWith('http') ? report.photo : `https://smart-waste-nairobi-chi.vercel.app${report.photo}`
+                                  })}
+                                />
                               </div>
                             </div>
                           ) : (
-                            <p className="text-muted small">No photos available</p>
+                            <p className="text-muted small">No photo available</p>
                           )}
 
                           <div className="btn-group w-100">
@@ -180,7 +176,7 @@ const ReportsAssessment = () => {
               </div>
               <div className="modal-body">
                 <p><strong>Description:</strong> {selectedReport.description}</p>
-                <p><strong>Location:</strong> {selectedReport.location?.address || 'Nairobi'}</p>
+                <p><strong>Location:</strong> {selectedReport.location || 'Nairobi'}</p>
                 <p><strong>Submitted:</strong> {formatDate(selectedReport.createdAt)}</p>
                 {selectedReport.selectedPhoto && (
                   <div>
