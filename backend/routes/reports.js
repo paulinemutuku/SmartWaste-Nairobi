@@ -2,11 +2,24 @@ const express = require('express');
 const Report = require('../models/Report');
 const router = express.Router();
 const mongoose = require('mongoose');
+const multer = require('multer');
+const path = require('path');
 
-router.post('/submit', async (req, res) => {
+// File upload configuration
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/')
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + '-' + Math.round(Math.random() * 1E9) + path.extname(file.originalname))
+  }
+});
+
+const upload = multer({ storage: storage });
+
+// Submit report with photo
+router.post('/submit', upload.single('photo'), async (req, res) => {
   try {
-    console.log('REQUEST BODY:', req.body);
-    
     const { description, location, latitude, longitude, wasteType, userId } = req.body;
     
     if (!description || !userId) {
@@ -16,13 +29,15 @@ router.post('/submit', async (req, res) => {
       });
     }
 
+    const photoPath = req.file ? `/uploads/${req.file.filename}` : null;
+
     const newReport = new Report({
       description,
-      location: location || 'Nairobi, Kenya',
-      latitude: latitude || -1.2921,
-      longitude: longitude || 36.8219,
+      location,
+      latitude: parseFloat(latitude),
+      longitude: parseFloat(longitude),
       wasteType: wasteType || 'general',
-      photo: null, // No photo for now
+      photo: photoPath,
       submittedBy: new mongoose.Types.ObjectId(userId),
       status: 'submitted',
       priority: 'medium'
@@ -37,7 +52,7 @@ router.post('/submit', async (req, res) => {
     });
     
   } catch (error) {
-    console.log('SUBMISSION ERROR:', error.message);
+    console.log('SUBMISSION ERROR:', error);
     res.status(500).json({
       success: false,
       message: 'Error submitting report',
@@ -46,23 +61,7 @@ router.post('/submit', async (req, res) => {
   }
 });
 
-router.post('/upload-photos', async (req, res) => {
-  try {
-    res.json({
-      success: true,
-      message: 'Photo upload endpoint - not implemented yet',
-      photos: []
-    });
-  } catch (error) {
-    console.log('PHOTO UPLOAD ERROR:', error.message);
-    res.status(500).json({
-      success: false,
-      message: 'Error uploading photos',
-      error: error.message
-    });
-  }
-});
-
+// Get all reports
 router.get('/all', async (req, res) => {
   try {
     const reports = await Report.find().sort({ createdAt: -1 });
@@ -80,6 +79,7 @@ router.get('/all', async (req, res) => {
   }
 });
 
+// Get user reports
 router.get('/user/:userId', async (req, res) => {
   try {
     const { userId } = req.params;

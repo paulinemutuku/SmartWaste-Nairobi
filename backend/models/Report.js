@@ -22,8 +22,7 @@ const reportSchema = new mongoose.Schema({
     default: 'general'
   },
   photo: {
-    type: String,
-    default: null
+    type: String
   },
   status: {
     type: String,

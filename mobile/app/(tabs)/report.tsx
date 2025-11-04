@@ -112,11 +112,6 @@ const submitReport = async () => {
     return;
   }
 
-  if (images.length === 0) {
-    Alert.alert('Photo Required', 'Please add at least one photo of the waste issue');
-    return;
-  }
-
   if (address.includes('Error') || address.includes('denied')) {
     Alert.alert('Location Error', 'Please enable location services and refresh');
     return;
@@ -125,8 +120,6 @@ const submitReport = async () => {
   setIsSubmitting(true);
   
   try {
-    console.log('Starting report submission...');
-    
     let locationData = await Location.getCurrentPositionAsync({
       accuracy: Location.Accuracy.High,
     });
@@ -149,13 +142,11 @@ const submitReport = async () => {
     const reportData = {
       description: description.trim(),
       location: address,
-      latitude: latitude.toString(),
-      longitude: longitude.toString(),
+      latitude: latitude,
+      longitude: longitude,
       wasteType: 'general',
       userId: submittedBy
     };
-
-    console.log('Submitting report data:', reportData);
 
     const response = await fetch('https://smart-waste-nairobi-chi.vercel.app/api/reports/submit', {
       method: 'POST',
@@ -166,16 +157,11 @@ const submitReport = async () => {
       body: JSON.stringify(reportData),
     });
 
-    const responseText = await response.text();
-    console.log('Response status:', response.status);
-    console.log('Response text:', responseText);
+    const result = await response.json();
 
     if (!response.ok) {
-      throw new Error(`Server error: ${response.status}`);
+      throw new Error(result.message || 'Server error');
     }
-
-    const result = JSON.parse(responseText);
-    console.log('Submission successful:', result);
 
     Alert.alert(
       'Success! 🎉', 
@@ -196,11 +182,9 @@ const submitReport = async () => {
       ]
     );
 
-  } catch (error) {
-    console.log('Submission error:', error);
+    } catch (error) {
+    console.log('Full error object:', error);
     Alert.alert('Submission Failed', 'Could not submit report. Please try again.');
-  } finally {
-    setIsSubmitting(false);
   }
 };
 
