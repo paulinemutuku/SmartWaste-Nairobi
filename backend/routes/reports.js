@@ -23,7 +23,7 @@ router.post('/submit', async (req, res) => {
       latitude: parseFloat(latitude),
       longitude: parseFloat(longitude),
       wasteType: wasteType || 'general',
-      photo: 'https://via.placeholder.com/300x200/2d5a3c/ffffff?text=Waste+Photo',
+      photo: 'https://placehold.co/300x200/2d5a3c/ffffff/png?text=Waste+Photo',
       submittedBy: new mongoose.Types.ObjectId(userId),
       status: 'submitted',
       priority: 'medium'

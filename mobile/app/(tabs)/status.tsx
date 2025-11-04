@@ -61,6 +61,7 @@ const loadReports = async () => {
       // FIXED DATA TRANSFORMATION
       const transformedReports = result.reports.map((report: any) => {
         console.log('Raw report data:', report);
+        console.log('Report photo data:', report.photo, 'Type:', typeof report.photo);
         
         return {
           id: report._id,
@@ -167,22 +168,22 @@ const loadReports = async () => {
             
             <Text style={styles.description}>{item.description}</Text>
             
-            {item.images && item.images.length > 0 && (
+            {item.images && item.images.length > 0 && item.images[0] ? (
   <View style={styles.imagesContainer}>
     <Text style={styles.imagesLabel}>📸 Photo</Text>
-    <FlatList
-      horizontal
-      data={item.images}
-      keyExtractor={(img, index) => index.toString()}
-      renderItem={({ item: imageUri }) => (
-        <Image 
-          source={{ uri: imageUri }} 
-          style={styles.thumbnail}
-          onError={(error) => console.log('Image load error:', error.nativeEvent.error)}
-        />
-      )}
-      showsHorizontalScrollIndicator={false}
+    <Image 
+      source={{ uri: item.images[0] }} 
+      style={styles.thumbnail}
+      onError={(error) => {
+        console.log('Image load error, showing fallback');
+        // You could set a state to show fallback UI here
+      }}
     />
+    <Text style={styles.imageDebugText}>Photo Attached</Text>
+  </View>
+) : (
+  <View style={styles.imagesContainer}>
+    <Text style={styles.noPhotoText}>📷 No photo available</Text>
   </View>
 )}
             
@@ -337,6 +338,12 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginRight: 8,
   },
+  imageDebugText: {
+    fontSize: 10,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 4,
+  },
   cardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -401,6 +408,11 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  noPhotoText: {
+  fontSize: 12,
+  color: '#999',
+  fontStyle: 'italic',
+},
   backButtonText: {
     color: 'white',
     fontSize: 16,
