@@ -112,6 +112,11 @@ const submitReport = async () => {
     return;
   }
 
+  if (images.length === 0) {
+    Alert.alert('Photo Required', 'Please add at least one photo of the waste issue');
+    return;
+  }
+
   if (address.includes('Error') || address.includes('denied')) {
     Alert.alert('Location Error', 'Please enable location services and refresh');
     return;
@@ -139,52 +144,58 @@ const submitReport = async () => {
     const userData = userDataString ? JSON.parse(userDataString) : null;
     const token = userData?.token;
 
-    const reportData = {
-      description: description.trim(),
-      location: address,
-      latitude: latitude,
-      longitude: longitude,
-      wasteType: 'general',
-      userId: submittedBy
-    };
+    const formData = new FormData();
+    formData.append('description', description.trim());
+    formData.append('location', address);
+    formData.append('latitude', latitude.toString());
+    formData.append('longitude', longitude.toString());
+    formData.append('wasteType', 'general');
+    formData.append('userId', submittedBy);
+
+    // Add the first photo
+    if (images.length > 0) {
+      const imageUri = images[0];
+      const filename = imageUri.split('/').pop();
+      const match = /\.(\w+)$/.exec(filename || '');
+      const type = match ? `image/${match[1]}` : 'image/jpeg';
+      
+      formData.append('photo', {
+        uri: imageUri,
+        type: type,
+        name: filename || 'photo.jpg',
+      } as any);
+    }
 
     const response = await fetch('https://smart-waste-nairobi-chi.vercel.app/api/reports/submit', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'multipart/form-data',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify(reportData),
+      body: formData,
     });
 
     const result = await response.json();
 
     if (!response.ok) {
-      throw new Error(result.message || 'Server error');
+      throw new Error(result.message);
     }
 
     Alert.alert(
-      'Success! 🎉', 
-      'Your waste report has been submitted to our system.',
+      'Success!', 
+      'Report submitted successfully!',
       [
         { 
           text: 'View Status', 
           onPress: () => router.replace('/(tabs)/status')
-        },
-        {
-          text: 'Report Another',
-          onPress: () => {
-            setDescription('');
-            setImages([]);
-            setIsSubmitting(false);
-          }
         }
       ]
     );
 
-    } catch (error) {
-    console.log('Full error object:', error);
-    Alert.alert('Submission Failed', 'Could not submit report. Please try again.');
+  } catch (error: any) {
+    Alert.alert('Error', error.message);
+  } finally {
+    setIsSubmitting(false);
   }
 };
 
