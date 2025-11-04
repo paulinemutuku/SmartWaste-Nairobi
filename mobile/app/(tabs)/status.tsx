@@ -53,22 +53,29 @@ const loadReports = async () => {
     // Get reports for the specific user only
     console.log('Fetching reports for user ID:', userId);
     const result = await reportService.getUserReports(userId);
-    console.log('API Response:', result);
+    console.log('API Response:', JSON.stringify(result, null, 2));
 
     if (result.success) {
       console.log('Reports found:', result.reports.length);
-      const transformedReports = result.reports.map((report: any) => ({
-        id: report._id,
-        address: report.location?.address,
-        location: report.location?.address,
-        status: report.status === 'submitted' ? 'Submitted' : 
-                report.status === 'in-progress' ? 'In Progress' : 'Completed',
-        timestamp: report.createdAt,
-        description: report.description,
-        priority: 'Medium',
-        images: report.photos || []
-      }));
       
+      // FIXED DATA TRANSFORMATION
+      const transformedReports = result.reports.map((report: any) => {
+        console.log('Raw report data:', report);
+        
+        return {
+          id: report._id,
+          address: report.location, // CHANGED: Use report.location directly
+          location: report.location, // CHANGED: Use report.location directly
+          status: report.status === 'submitted' ? 'Submitted' : 
+                  report.status === 'in-progress' ? 'In Progress' : 'Completed',
+          timestamp: report.createdAt,
+          description: report.description,
+          priority: report.priority || 'Medium',
+          images: report.photo ? [report.photo] : [] // CHANGED: Use report.photo (single photo)
+        };
+      });
+      
+      console.log('Transformed reports:', transformedReports);
       setReports(transformedReports);
     } else {
       console.log('No reports found or API error');
@@ -161,19 +168,23 @@ const loadReports = async () => {
             <Text style={styles.description}>{item.description}</Text>
             
             {item.images && item.images.length > 0 && (
-              <View style={styles.imagesContainer}>
-                <Text style={styles.imagesLabel}>📸 {item.images.length} photo(s)</Text>
-                <FlatList
-                  horizontal
-                  data={item.images}
-                  keyExtractor={(img, index) => index.toString()}
-                  renderItem={({ item: imageUri }) => (
-                    <Image source={{ uri: imageUri }} style={styles.thumbnail} />
-                  )}
-                  showsHorizontalScrollIndicator={false}
-                />
-              </View>
-            )}
+  <View style={styles.imagesContainer}>
+    <Text style={styles.imagesLabel}>📸 Photo</Text>
+    <FlatList
+      horizontal
+      data={item.images}
+      keyExtractor={(img, index) => index.toString()}
+      renderItem={({ item: imageUri }) => (
+        <Image 
+          source={{ uri: imageUri }} 
+          style={styles.thumbnail}
+          onError={(error) => console.log('Image load error:', error.nativeEvent.error)}
+        />
+      )}
+      showsHorizontalScrollIndicator={false}
+    />
+  </View>
+)}
             
             <View style={styles.cardFooter}>
               <View style={styles.statusContainer}>
