@@ -112,6 +112,12 @@ const submitReport = async () => {
     return;
   }
 
+  // ADD BACK THE PHOTO REQUIREMENT
+  if (images.length === 0) {
+    Alert.alert('Photo Required', 'Please add at least one photo of the waste issue');
+    return;
+  }
+
   if (address.includes('Error') || address.includes('denied')) {
     Alert.alert('Location Error', 'Please enable location services and refresh');
     return;
@@ -141,7 +147,8 @@ const submitReport = async () => {
       latitude: latitude,
       longitude: longitude,
       wasteType: 'general',
-      userId: submittedBy
+      userId: submittedBy,
+      photo: 'https://placehold.co/300x200/2d5a3c/ffffff/png?text=Waste+Photo' // ADD PHOTO
     };
 
     console.log('Submitting report:', reportData);

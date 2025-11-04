@@ -58,21 +58,20 @@ const loadReports = async () => {
     if (result.success) {
       console.log('Reports found:', result.reports.length);
       
-      // FIXED DATA TRANSFORMATION
+      // MATCH Home.jsx STRUCTURE
       const transformedReports = result.reports.map((report: any) => {
         console.log('Raw report data:', report);
-        console.log('Report photo data:', report.photo, 'Type:', typeof report.photo);
         
         return {
           id: report._id,
-          address: report.location, // CHANGED: Use report.location directly
-          location: report.location, // CHANGED: Use report.location directly
+          address: report.location, // Direct string like Home.jsx
+          location: report.location, // Direct string like Home.jsx
           status: report.status === 'submitted' ? 'Submitted' : 
                   report.status === 'in-progress' ? 'In Progress' : 'Completed',
           timestamp: report.createdAt,
           description: report.description,
           priority: report.priority || 'Medium',
-          images: report.photo ? [report.photo] : [] // CHANGED: Use report.photo (single photo)
+          images: report.photo ? [report.photo] : [] // Single photo like backend
         };
       });
       
@@ -159,7 +158,7 @@ const loadReports = async () => {
             <View style={styles.cardHeader}>
               <View style={styles.locationContainer}>
                 <Text style={styles.locationIcon}>📍</Text>
-                <Text style={styles.location}>{item.address || item.location}</Text>
+                <Text style={styles.location}>{item.address || item.location || 'Nairobi'}</Text>
               </View>
               <View style={[styles.priorityBadge, { backgroundColor: getPriorityColor(item.priority) }]}>
                 <Text style={styles.priorityText}>{item.priority}</Text>
@@ -169,23 +168,22 @@ const loadReports = async () => {
             <Text style={styles.description}>{item.description}</Text>
             
             {item.images && item.images.length > 0 && item.images[0] ? (
-  <View style={styles.imagesContainer}>
-    <Text style={styles.imagesLabel}>📸 Photo</Text>
-    <Image 
-      source={{ uri: item.images[0] }} 
-      style={styles.thumbnail}
-      onError={(error) => {
-        console.log('Image load error, showing fallback');
-        // You could set a state to show fallback UI here
-      }}
-    />
-    <Text style={styles.imageDebugText}>Photo Attached</Text>
-  </View>
-) : (
-  <View style={styles.imagesContainer}>
-    <Text style={styles.noPhotoText}>📷 No photo available</Text>
-  </View>
-)}
+              <View style={styles.imagesContainer}>
+                <Text style={styles.imagesLabel}>📸 Photo</Text>
+                <Image 
+                  source={{ uri: item.images[0] }} 
+                  style={styles.thumbnail}
+                  onError={() => {
+  console.log('Image failed to load');
+}}
+                  onLoad={() => console.log('Image loaded successfully')}
+                />
+              </View>
+            ) : (
+              <View style={styles.imagesContainer}>
+                <Text style={styles.noPhotoText}>📷 No photo available</Text>
+              </View>
+            )}
             
             <View style={styles.cardFooter}>
               <View style={styles.statusContainer}>
@@ -333,16 +331,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   thumbnail: {
-    width: 60,
-    height: 60,
+    width: 80,
+    height: 80,
     borderRadius: 8,
-    marginRight: 8,
   },
-  imageDebugText: {
-    fontSize: 10,
-    color: '#666',
-    textAlign: 'center',
-    marginTop: 4,
+  noPhotoText: {
+    fontSize: 12,
+    color: '#999',
+    fontStyle: 'italic',
   },
   cardFooter: {
     flexDirection: 'row',
@@ -408,11 +404,6 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  noPhotoText: {
-  fontSize: 12,
-  color: '#999',
-  fontStyle: 'italic',
-},
   backButtonText: {
     color: 'white',
     fontSize: 16,

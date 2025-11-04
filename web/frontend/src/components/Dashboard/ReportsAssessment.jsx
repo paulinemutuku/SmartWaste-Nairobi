@@ -78,75 +78,68 @@ const ReportsAssessment = () => {
             </div>
             <div className="card-body">
               <div className="row">
-                {reports.map((report) => {
-                  console.log("Report data for", report._id, ":", report);
-                  return (
-                    <div key={report._id} className="col-md-6 col-lg-4 mb-4">
-                      <div className="card h-100">
-                        <div className="card-header">
-                          <strong>RPT-{report._id.slice(-4)}</strong>
-                          <span className="badge bg-warning float-end">Needs Review</span>
-                        </div>
-                        <div className="card-body">
-                          <p className="card-text">{report.description}</p>
-                          <p className="text-muted small">
-                            📍 {report.location || 'Nairobi'}
-                          </p>
-                          <p className="text-muted small">
-                            📅 {formatDate(report.createdAt)}
-                          </p>
-                          
-                          {report.photo ? (
-                            <div className="mb-3">
-                              <h6>Photo:</h6>
-                              <div className="d-flex gap-2 flex-wrap">
-                                {console.log("Report photo:", report.photo)}
-                                <img 
-                                  src={report.photo.startsWith('http') ? report.photo : `https://smart-waste-nairobi-chi.vercel.app${report.photo}`}
-                                  alt="Report photo"
-                                  className="img-thumbnail"
-                                  style={{ 
-                                    width: '80px', 
-                                    height: '80px', 
-                                    objectFit: 'cover',
-                                    cursor: 'pointer'
-                                  }}
-                                  onClick={() => setSelectedReport({
-                                    ...report, 
-                                    selectedPhoto: report.photo.startsWith('http') ? report.photo : `https://smart-waste-nairobi-chi.vercel.app${report.photo}`
-                                  })}
-                                />
-                              </div>
+                {reports.map((report) => (
+                  <div key={report._id} className="col-md-6 col-lg-4 mb-4">
+                    <div className="card h-100">
+                      <div className="card-header">
+                        <strong>RPT-{report._id.slice(-4)}</strong>
+                        <span className="badge bg-warning float-end">Needs Review</span>
+                      </div>
+                      <div className="card-body">
+                        <p className="card-text">{report.description}</p>
+                        <p className="text-muted small">
+                          📍 {report.location || 'Nairobi'}
+                        </p>
+                        <p className="text-muted small">
+                          📅 {formatDate(report.createdAt)}
+                        </p>
+                        
+                        {report.photo ? (
+                          <div className="mb-3">
+                            <h6>Photo:</h6>
+                            <div className="d-flex gap-2 flex-wrap">
+                              <img 
+                                src={report.photo}
+                                alt="Report photo"
+                                className="img-thumbnail"
+                                style={{ 
+                                  width: '80px', 
+                                  height: '80px', 
+                                  objectFit: 'cover',
+                                  cursor: 'pointer'
+                                }}
+                                onClick={() => setSelectedReport({...report, selectedPhoto: report.photo})}
+                              />
                             </div>
-                          ) : (
-                            <p className="text-muted small">No photo available</p>
-                          )}
-
-                          <div className="btn-group w-100">
-                            <button 
-                              className="btn btn-outline-success btn-sm"
-                              onClick={() => updateReportUrgency(report._id, 'low')}
-                            >
-                              Low
-                            </button>
-                            <button 
-                              className="btn btn-outline-warning btn-sm"
-                              onClick={() => updateReportUrgency(report._id, 'medium')}
-                            >
-                              Medium
-                            </button>
-                            <button 
-                              className="btn btn-outline-danger btn-sm"
-                              onClick={() => updateReportUrgency(report._id, 'high')}
-                            >
-                              High
-                            </button>
                           </div>
+                        ) : (
+                          <p className="text-muted small">No photo available</p>
+                        )}
+
+                        <div className="btn-group w-100">
+                          <button 
+                            className="btn btn-outline-success btn-sm"
+                            onClick={() => updateReportUrgency(report._id, 'low')}
+                          >
+                            Low
+                          </button>
+                          <button 
+                            className="btn btn-outline-warning btn-sm"
+                            onClick={() => updateReportUrgency(report._id, 'medium')}
+                          >
+                            Medium
+                          </button>
+                          <button 
+                            className="btn btn-outline-danger btn-sm"
+                            onClick={() => updateReportUrgency(report._id, 'high')}
+                          >
+                            High
+                          </button>
                         </div>
                       </div>
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
               </div>
 
               {reports.length === 0 && (
