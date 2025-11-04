@@ -31,8 +31,7 @@ const reportSchema = new mongoose.Schema({
   },
   priority: {
     type: String,
-    default: 'medium',
-    enum: ['low', 'medium', 'high', 'critical']
+    default: 'medium'
   },
   submittedBy: {
     type: mongoose.Schema.Types.ObjectId,

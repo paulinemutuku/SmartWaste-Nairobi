@@ -112,11 +112,6 @@ const submitReport = async () => {
     return;
   }
 
-  if (images.length === 0) {
-    Alert.alert('Photo Required', 'Please add at least one photo of the waste issue');
-    return;
-  }
-
   if (address.includes('Error') || address.includes('denied')) {
     Alert.alert('Location Error', 'Please enable location services and refresh');
     return;
@@ -140,39 +135,23 @@ const submitReport = async () => {
       return;
     }
 
-    const userDataString = await AsyncStorage.getItem('userData');
-    const userData = userDataString ? JSON.parse(userDataString) : null;
-    const token = userData?.token;
+    const reportData = {
+      description: description.trim(),
+      location: address,
+      latitude: latitude,
+      longitude: longitude,
+      wasteType: 'general',
+      userId: submittedBy
+    };
 
-    const formData = new FormData();
-    formData.append('description', description.trim());
-    formData.append('location', address);
-    formData.append('latitude', latitude.toString());
-    formData.append('longitude', longitude.toString());
-    formData.append('wasteType', 'general');
-    formData.append('userId', submittedBy);
-
-    // Add the first photo
-    if (images.length > 0) {
-      const imageUri = images[0];
-      const filename = imageUri.split('/').pop();
-      const match = /\.(\w+)$/.exec(filename || '');
-      const type = match ? `image/${match[1]}` : 'image/jpeg';
-      
-      formData.append('photo', {
-        uri: imageUri,
-        type: type,
-        name: filename || 'photo.jpg',
-      } as any);
-    }
+    console.log('Submitting report:', reportData);
 
     const response = await fetch('https://smart-waste-nairobi-chi.vercel.app/api/reports/submit', {
       method: 'POST',
       headers: {
-        'Content-Type': 'multipart/form-data',
-        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
-      body: formData,
+      body: JSON.stringify(reportData),
     });
 
     const result = await response.json();
@@ -192,8 +171,9 @@ const submitReport = async () => {
       ]
     );
 
-  } catch (error: any) {
-    Alert.alert('Error', error.message);
+  } catch (error) {
+    console.log('Submission error:', error);
+    Alert.alert('Error', 'Failed to submit report');
   } finally {
     setIsSubmitting(false);
   }

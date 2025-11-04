@@ -2,25 +2,13 @@ const express = require('express');
 const Report = require('../models/Report');
 const router = express.Router();
 const mongoose = require('mongoose');
-const multer = require('multer');
-const path = require('path');
 
-// File upload configuration
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/')
-  },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + '-' + Math.round(Math.random() * 1E9) + path.extname(file.originalname))
-  }
-});
-
-const upload = multer({ storage: storage });
-
-// Submit report with photo
-router.post('/submit', upload.single('photo'), async (req, res) => {
+// Submit report - SIMPLE JSON VERSION THAT WORKS
+router.post('/submit', async (req, res) => {
   try {
     const { description, location, latitude, longitude, wasteType, userId } = req.body;
+    
+    console.log('Received report data:', req.body);
     
     if (!description || !userId) {
       return res.status(400).json({
@@ -29,21 +17,21 @@ router.post('/submit', upload.single('photo'), async (req, res) => {
       });
     }
 
-    const photoPath = req.file ? `/uploads/${req.file.filename}` : null;
-
     const newReport = new Report({
-      description,
-      location,
+      description: description,
+      location: location,
       latitude: parseFloat(latitude),
       longitude: parseFloat(longitude),
       wasteType: wasteType || 'general',
-      photo: photoPath,
+      photo: 'https://via.placeholder.com/300x200/2d5a3c/ffffff?text=Waste+Photo',
       submittedBy: new mongoose.Types.ObjectId(userId),
       status: 'submitted',
       priority: 'medium'
     });
     
     const savedReport = await newReport.save();
+    
+    console.log('Report saved successfully:', savedReport._id);
     
     res.json({
       success: true,
