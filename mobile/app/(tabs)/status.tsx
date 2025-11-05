@@ -38,8 +38,8 @@ export default function StatusScreen() {
 const loadReports = async () => {
   try {
     const { reportService } = require('../../services/api');
+    const { getStoredPhotos } = require('../../utils/userHelper'); 
     
-    // Get current user ID using our helper
     const { getUserId } = require('../../utils/userHelper');
     const userId = await getUserId();
 
@@ -49,34 +49,22 @@ const loadReports = async () => {
       return;
     }
 
-    // Get reports from backend
-    console.log('Fetching reports for user ID:', userId);
+    // ACTUALLY USE getStoredPhotos - call the function!
+    const localPhotos = await getStoredPhotos();
+    console.log('📸 Local photos found:', Object.keys(localPhotos).length);
+
     const result = await reportService.getUserReports(userId);
-    console.log('API Response:', JSON.stringify(result, null, 2));
 
     if (result.success) {
-      console.log('Reports found:', result.reports.length);
-      
-      // Create a map of existing local reports by ID for quick lookup
-      const localReportsMap = new Map();
-      reports.forEach(report => {
-        localReportsMap.set(report.id, report);
-      });
-      
-      // Transform backend reports but PRESERVE LOCAL PHOTOS
       const transformedReports = result.reports.map((report: any) => {
-        console.log('Raw report data:', report);
+        // Check if we have a local photo for this report
+        const localPhotoUri = localPhotos[report._id];
+        const hasLocalPhoto = !!localPhotoUri;
         
-        // Check if we have a local version of this report with photos
-        const existingLocalReport = localReportsMap.get(report._id);
-        const hasLocalPhotos = existingLocalReport?.images && existingLocalReport.images.length > 0;
-        
-        console.log('Has local photos for report', report._id, ':', hasLocalPhotos);
-        
-        // FIX: Use actual priority from database
+        console.log('Report', report._id, 'has local photo:', hasLocalPhoto);
+
         const priority = report.priority || 'pending';
         
-        // FIX: Use LOCAL PHOTOS if available, otherwise use backend photo
         let photoUrl = report.photo;
         if (photoUrl && photoUrl.startsWith('/uploads/')) {
           photoUrl = `https://smart-waste-nairobi-chi.vercel.app${photoUrl}`;
@@ -91,13 +79,10 @@ const loadReports = async () => {
           timestamp: report.createdAt,
           description: report.description,
           priority: priority,
-          images: hasLocalPhotos ? existingLocalReport!.images : (photoUrl ? [photoUrl] : []) // ← KEY FIX: Use local photos if available
+          // USE LOCAL PHOTO if available, otherwise use backend placeholder
+          images: hasLocalPhoto ? [localPhotoUri] : (photoUrl ? [photoUrl] : [])
         };
       });
-      
-      // FIX: Remove the problematic console.log or fix it
-      console.log('Transformed reports count:', transformedReports.length);
-      console.log('Reports with photos:', transformedReports.filter((report: any) => report.images.length > 0).length);
       
       setReports(transformedReports);
     } else {

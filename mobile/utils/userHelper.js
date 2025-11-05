@@ -25,6 +25,7 @@ export const getUserId = async () => {
     return null;
   }
 };
+
 export const getUserEmail = async () => {
   try {
     const userData = await AsyncStorage.getItem('user');
@@ -38,4 +39,36 @@ export const getUserEmail = async () => {
     console.error('Error getting user email:', error);
     return null;
   }
+};
+
+// PHOTO STORAGE FUNCTIONS
+const PHOTO_STORAGE_KEY = 'smartwaste_local_photos';
+
+export const saveReportPhoto = async (reportId, imageUri) => {
+  try {
+    const existingPhotos = await getStoredPhotos();
+    const updatedPhotos = {
+      ...existingPhotos,
+      [reportId]: imageUri
+    };
+    await AsyncStorage.setItem(PHOTO_STORAGE_KEY, JSON.stringify(updatedPhotos));
+    console.log('✅ Photo saved locally for report:', reportId);
+  } catch (error) {
+    console.log('❌ Error saving photo locally:', error);
+  }
+};
+
+export const getStoredPhotos = async () => {
+  try {
+    const stored = await AsyncStorage.getItem(PHOTO_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : {};
+  } catch (error) {
+    console.log('❌ Error getting stored photos:', error);
+    return {};
+  }
+};
+
+export const getPhotoForReport = async (reportId) => {
+  const photos = await getStoredPhotos();
+  return photos[reportId] || null;
 };

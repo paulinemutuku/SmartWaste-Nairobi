@@ -126,7 +126,7 @@ const submitReport = async () => {
 
     const { latitude, longitude } = locationData.coords;
 
-    const { getUserId } = require('../../utils/userHelper');
+    const { getUserId, saveReportPhoto } = require('../../utils/userHelper'); // Added saveReportPhoto
     const submittedBy = await getUserId();
 
     if (!submittedBy) {
@@ -164,6 +164,12 @@ const submitReport = async () => {
     }
 
     console.log('✅ Backend submission successful!');
+
+    // NEW: Save photo locally for persistence
+    if (images.length > 0) {
+      await saveReportPhoto(result.report._id, images[0]);
+      console.log('💾 Photo saved locally for report:', result.report._id);
+    }
 
     // STEP 2: Create local report with ACTUAL PHOTOS for immediate display
     const localReport = {
