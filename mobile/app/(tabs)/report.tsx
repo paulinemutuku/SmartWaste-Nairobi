@@ -126,7 +126,7 @@ const submitReport = async () => {
 
     const { latitude, longitude } = locationData.coords;
 
-    const { getUserId, saveReportPhoto } = require('../../utils/userHelper'); // Added saveReportPhoto
+    const { getUserId, saveReportPhoto } = require('../../utils/userHelper');
     const submittedBy = await getUserId();
 
     if (!submittedBy) {
@@ -135,7 +135,7 @@ const submitReport = async () => {
       return;
     }
 
-    // STEP 1: Submit to backend (keep what's working)
+    // FIX: Use ACTUAL image URI instead of placeholder
     const reportData = {
       description: description.trim(),
       location: address,
@@ -143,11 +143,11 @@ const submitReport = async () => {
       longitude: longitude,
       wasteType: 'general',
       userId: submittedBy,
-      photo: 'https://placehold.co/300x200/2d5a3c/ffffff/png?text=Waste+Photo', // Backend placeholder
+      photo: images[0], // ← CHANGED: Use actual image URI
       priority: 'pending'
     };
 
-    console.log('📤 Submitting to backend...');
+    console.log('📤 Submitting to backend with ACTUAL photo...');
 
     const response = await fetch('https://smart-waste-nairobi-chi.vercel.app/api/reports/submit', {
       method: 'POST',
@@ -165,25 +165,23 @@ const submitReport = async () => {
 
     console.log('✅ Backend submission successful!');
 
-    // NEW: Save photo locally for persistence
+    // Save photo locally for mobile app
     if (images.length > 0) {
       await saveReportPhoto(result.report._id, images[0]);
       console.log('💾 Photo saved locally for report:', result.report._id);
     }
 
-    // STEP 2: Create local report with ACTUAL PHOTOS for immediate display
     const localReport = {
-      id: result.report._id, // Use the same ID from backend
+      id: result.report._id,
       description: description.trim(),
-      images: images, // ACTUAL LOCAL PHOTOS
+      images: images,
       address: address,
       location: address,
       timestamp: new Date().toISOString(),
       status: 'Submitted',
-      priority: 'pending' // Use actual priority from our request
+      priority: 'pending'
     };
 
-    // STEP 3: Navigate to status with LOCAL PHOTOS
     Alert.alert(
       '✅ Report Submitted Successfully!', 
       'Your waste report with photos has been received!',
@@ -192,7 +190,7 @@ const submitReport = async () => {
           text: 'View My Reports',
           onPress: () => router.push({
             pathname: '/(tabs)/status',
-            params: { newReport: JSON.stringify(localReport) } // Pass local data with actual photos
+            params: { newReport: JSON.stringify(localReport) }
           })
         },
         {
