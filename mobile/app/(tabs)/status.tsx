@@ -71,17 +71,19 @@ const loadReports = async () => {
         }
         
         return {
-          id: report._id,
-          address: report.location,
-          location: report.location,
-          status: report.status === 'submitted' ? 'Submitted' : 
-                  report.status === 'in-progress' ? 'In Progress' : 'Completed',
-          timestamp: report.createdAt,
-          description: report.description,
-          priority: priority,
-          // USE LOCAL PHOTO if available, otherwise use backend placeholder
-          images: hasLocalPhoto ? [localPhotoUri] : (photoUrl ? [photoUrl] : [])
-        };
+  id: report._id,
+  address: report.location,
+  location: report.location,
+  status: report.status === 'submitted' ? 'Submitted' : 
+          report.status === 'in-progress' ? 'In Progress' : 'Completed',
+  timestamp: report.createdAt,
+  description: report.description,
+  priority: priority,
+  // Handle multiple photos from backend OR single photo OR local photo
+  images: hasLocalPhoto ? [localPhotoUri] : 
+          (report.photos && report.photos.length > 0 ? report.photos : 
+          (photoUrl ? [photoUrl] : []))
+};
       });
       
       setReports(transformedReports);

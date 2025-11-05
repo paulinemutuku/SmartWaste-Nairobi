@@ -5,20 +5,18 @@ const mongoose = require('mongoose');
 
 router.post('/submit', async (req, res) => {
   try {
-    console.log('📨 Full request body:', req.body);
     console.log('📨 Received request with content-type:', req.headers['content-type']);
     
-    let description, location, latitude, longitude, wasteType, userId, photo;
+    let description, location, latitude, longitude, wasteType, userId, photo, photos;
 
     if (req.headers['content-type'] && req.headers['content-type'].includes('application/json')) {
-      ({ description, location, latitude, longitude, wasteType, userId, photo } = req.body);
+      ({ description, location, latitude, longitude, wasteType, userId, photo, photos, priority } = req.body);
       console.log('📝 Processing as JSON data');
+      console.log('📸 Photos received:', photos);
     } else {
       ({ description, location, latitude, longitude, wasteType, userId } = req.body);
       console.log('📝 Processing as FormData');
     }
-    
-    console.log('📊 Extracted data:', { description, location, latitude, longitude, wasteType, userId, photo });
     
     if (!description || !userId) {
       return res.status(400).json({
@@ -27,8 +25,9 @@ router.post('/submit', async (req, res) => {
       });
     }
 
-    // Use provided photo URL or default placeholder
-    const photoUrl = photo || 'https://placehold.co/300x200/2d5a3c/ffffff/png?text=Waste+Photo';
+    // Handle single photo (backward compatibility) and multiple photos
+    const photoUrls = photos && photos.length > 0 ? photos : (photo ? [photo] : []);
+    const primaryPhoto = photoUrls.length > 0 ? photoUrls[0] : 'https://placehold.co/300x200/2d5a3c/ffffff/png?text=Waste+Photo';
 
     const newReport = new Report({
       description: description,
@@ -36,15 +35,16 @@ router.post('/submit', async (req, res) => {
       latitude: parseFloat(latitude),
       longitude: parseFloat(longitude),
       wasteType: wasteType || 'general',
-      photo: photoUrl,
+      photo: primaryPhoto, // Main photo for single photo field
+      photos: photoUrls,   // NEW: Array of all photos
       submittedBy: new mongoose.Types.ObjectId(userId),
       status: 'submitted',
-      priority: 'pending'  // ALWAYS SET TO PENDING
+      priority: 'pending'
     });
     
     const savedReport = await newReport.save();
     
-    console.log('✅ Report saved successfully! Priority:', savedReport.priority);
+    console.log('✅ Report saved successfully with', photoUrls.length, 'photos!');
     
     res.json({
       success: true,
@@ -52,14 +52,12 @@ router.post('/submit', async (req, res) => {
       report: savedReport
     });
     
-    } catch (error) {
-    console.log('❌ SUBMISSION ERROR DETAILS:', error);
-    console.log('❌ Error message:', error.message);
-    console.log('❌ Error stack:', error.stack);
+  } catch (error) {
+    console.log('❌ SUBMISSION ERROR:', error);
     
     res.status(500).json({
       success: false,
-      message: 'Error submitting report: ' + error.message,
+      message: 'Error submitting report',
       error: error.message
     });
   }
