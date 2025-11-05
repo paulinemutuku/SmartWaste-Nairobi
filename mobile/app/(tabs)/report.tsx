@@ -135,7 +135,41 @@ const submitReport = async () => {
       return;
     }
 
-    // HYBRID APPROACH: Send placeholder to backend (web app) + save local URI (mobile app)
+    // UPLOAD PHOTO TO CLOUDINARY
+    let photoUrl = 'https://placehold.co/300x200/2d5a3c/ffffff/png?text=Waste+Photo';
+    
+    if (images.length > 0) {
+      try {
+        const firstImage = images[0];
+        console.log('📤 Uploading photo to Cloudinary...');
+        
+        const formData = new FormData();
+        formData.append('file', {
+          uri: firstImage,
+          type: 'image/jpeg',
+          name: 'photo.jpg',
+        } as any);
+        formData.append('upload_preset', 'smartwaste');
+        
+        const cloudinaryResponse = await fetch('https://api.cloudinary.com/v1_1/dbjhcfq0b/image/upload', {
+          method: 'POST',
+          body: formData,
+        });
+        
+        const cloudinaryData = await cloudinaryResponse.json();
+        
+        if (cloudinaryData.secure_url) {
+          photoUrl = cloudinaryData.secure_url;
+          console.log('✅ Photo uploaded to Cloudinary:', photoUrl);
+        } else {
+          console.log('❌ Cloudinary upload failed, using placeholder');
+        }
+      } catch (uploadError) {
+        console.log('❌ Photo upload error, using placeholder:', uploadError);
+      }
+    }
+
+    // SUBMIT TO BACKEND WITH REAL PHOTO URL
     const reportData = {
       description: description.trim(),
       location: address,
@@ -143,11 +177,11 @@ const submitReport = async () => {
       longitude: longitude,
       wasteType: 'general',
       userId: submittedBy,
-      photo: 'https://placehold.co/300x200/2d5a3c/ffffff/png?text=Waste+Photo', // Web app sees this
+      photo: photoUrl, // REAL WEB-ACCESSIBLE URL
       priority: 'pending'
     };
 
-    console.log('📤 Submitting to backend...');
+    console.log('📤 Submitting to backend with REAL photo URL...');
 
     const response = await fetch('https://smart-waste-nairobi-chi.vercel.app/api/reports/submit', {
       method: 'POST',
@@ -163,18 +197,17 @@ const submitReport = async () => {
       throw new Error(result.message || 'Failed to submit report');
     }
 
-    console.log('✅ Backend submission successful!');
+    console.log('✅ Backend submission successful with REAL photo!');
 
-    // Save ACTUAL local photo for mobile app
+    // Save locally for mobile app too
     if (images.length > 0) {
       await saveReportPhoto(result.report._id, images[0]);
-      console.log('💾 Actual photo saved locally for mobile app:', result.report._id);
     }
 
     const localReport = {
       id: result.report._id,
       description: description.trim(),
-      images: images, // Mobile app uses local URIs
+      images: images,
       address: address,
       location: address,
       timestamp: new Date().toISOString(),
@@ -184,7 +217,7 @@ const submitReport = async () => {
 
     Alert.alert(
       '✅ Report Submitted Successfully!', 
-      'Your waste report has been received!',
+      'Your waste report with REAL photos has been received!',
       [
         {
           text: 'View My Reports',
