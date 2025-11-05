@@ -3,24 +3,22 @@ const Report = require('../models/Report');
 const router = express.Router();
 const mongoose = require('mongoose');
 
-// Submit report - HANDLES BOTH JSON AND FORMDATA
 router.post('/submit', async (req, res) => {
   try {
+    console.log('📨 Full request body:', req.body);
     console.log('📨 Received request with content-type:', req.headers['content-type']);
     
     let description, location, latitude, longitude, wasteType, userId, photo;
 
-    // Check if request is JSON or FormData
     if (req.headers['content-type'] && req.headers['content-type'].includes('application/json')) {
-      // Handle JSON data
-      ({ description, location, latitude, longitude, wasteType, userId, photo, priority } = req.body);
+      ({ description, location, latitude, longitude, wasteType, userId, photo } = req.body);
       console.log('📝 Processing as JSON data');
     } else {
-      // Handle FormData (for future use)
       ({ description, location, latitude, longitude, wasteType, userId } = req.body);
       console.log('📝 Processing as FormData');
-      // For FormData, we'd handle file upload here
     }
+    
+    console.log('📊 Extracted data:', { description, location, latitude, longitude, wasteType, userId, photo });
     
     if (!description || !userId) {
       return res.status(400).json({
@@ -54,12 +52,14 @@ router.post('/submit', async (req, res) => {
       report: savedReport
     });
     
-  } catch (error) {
-    console.log('❌ SUBMISSION ERROR:', error);
+    } catch (error) {
+    console.log('❌ SUBMISSION ERROR DETAILS:', error);
+    console.log('❌ Error message:', error.message);
+    console.log('❌ Error stack:', error.stack);
     
     res.status(500).json({
       success: false,
-      message: 'Error submitting report',
+      message: 'Error submitting report: ' + error.message,
       error: error.message
     });
   }
