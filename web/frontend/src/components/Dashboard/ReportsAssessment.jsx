@@ -103,7 +103,7 @@ const updateReportPriority = async (reportId, priority) => {
                           📅 {formatDate(report.createdAt)}
                         </p>
                         
-                        {report.photo && report.photo !== 'https://placehold.co/300x200/2d5a3c/ffffff/png?text=Waste+Photo' ? (
+                        {report.photo ? (
   <div className="mb-3">
     <h6>Photo:</h6>
     <div className="d-flex gap-2 flex-wrap">
