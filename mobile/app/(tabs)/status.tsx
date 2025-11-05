@@ -23,18 +23,17 @@ export default function StatusScreen() {
     loadReports();
   }, []);
 
-  useFocusEffect(
-    useCallback(() => {
-      loadReports();
-    }, [])
-  );
-
   useEffect(() => {
-    if (params.newReport) {
+  if (params.newReport) {
+    try {
       const newReport: Report = JSON.parse(params.newReport as string);
+      console.log('📸 New report with images:', newReport.images);
       setReports(prev => [newReport, ...prev]);
+    } catch (error) {
+      console.log('❌ Error parsing new report:', error);
     }
-  }, [params.newReport]);
+  }
+}, [params.newReport]);
 
 const loadReports = async () => {
   try {
@@ -50,7 +49,7 @@ const loadReports = async () => {
       return;
     }
 
-    // Get reports for the specific user only
+    // Get reports from backend
     console.log('Fetching reports for user ID:', userId);
     const result = await reportService.getUserReports(userId);
     console.log('API Response:', JSON.stringify(result, null, 2));
@@ -58,24 +57,48 @@ const loadReports = async () => {
     if (result.success) {
       console.log('Reports found:', result.reports.length);
       
-      // MATCH Home.jsx STRUCTURE
+      // Create a map of existing local reports by ID for quick lookup
+      const localReportsMap = new Map();
+      reports.forEach(report => {
+        localReportsMap.set(report.id, report);
+      });
+      
+      // Transform backend reports but PRESERVE LOCAL PHOTOS
       const transformedReports = result.reports.map((report: any) => {
         console.log('Raw report data:', report);
         
+        // Check if we have a local version of this report with photos
+        const existingLocalReport = localReportsMap.get(report._id);
+        const hasLocalPhotos = existingLocalReport?.images && existingLocalReport.images.length > 0;
+        
+        console.log('Has local photos for report', report._id, ':', hasLocalPhotos);
+        
+        // FIX: Use actual priority from database
+        const priority = report.priority || 'pending';
+        
+        // FIX: Use LOCAL PHOTOS if available, otherwise use backend photo
+        let photoUrl = report.photo;
+        if (photoUrl && photoUrl.startsWith('/uploads/')) {
+          photoUrl = `https://smart-waste-nairobi-chi.vercel.app${photoUrl}`;
+        }
+        
         return {
           id: report._id,
-          address: report.location, // Direct string like Home.jsx
-          location: report.location, // Direct string like Home.jsx
+          address: report.location,
+          location: report.location,
           status: report.status === 'submitted' ? 'Submitted' : 
                   report.status === 'in-progress' ? 'In Progress' : 'Completed',
           timestamp: report.createdAt,
           description: report.description,
-          priority: report.priority || 'Medium',
-          images: report.photo ? [report.photo] : [] // Single photo like backend
+          priority: priority,
+          images: hasLocalPhotos ? existingLocalReport!.images : (photoUrl ? [photoUrl] : []) // ← KEY FIX: Use local photos if available
         };
       });
       
-      console.log('Transformed reports:', transformedReports);
+      // FIX: Remove the problematic console.log or fix it
+      console.log('Transformed reports count:', transformedReports.length);
+      console.log('Reports with photos:', transformedReports.filter((report: any) => report.images.length > 0).length);
+      
       setReports(transformedReports);
     } else {
       console.log('No reports found or API error');
@@ -97,10 +120,12 @@ const loadReports = async () => {
   };
 
   const getPriorityColor = (priority: string) => {
-    switch(priority) {
-      case 'High': return '#FF4444';
-      case 'Medium': return '#FFA500';
-      case 'Low': return '#2E8B57';
+    switch(priority.toLowerCase()) { // ← FIXED: Make case-insensitive
+      case 'high': 
+      case 'critical': return '#FF4444';
+      case 'medium': return '#FFA500';
+      case 'low': return '#2E8B57';
+      case 'pending': return '#666'; // ← ADDED: Color for pending
       default: return '#666';
     }
   };
@@ -151,7 +176,7 @@ const loadReports = async () => {
 
       <FlatList
         data={reports}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => `${item.id}-${item.timestamp}`}
         showsVerticalScrollIndicator={false}
         renderItem={({ item }) => (
           <View style={styles.reportCard}>
@@ -161,7 +186,9 @@ const loadReports = async () => {
                 <Text style={styles.location}>{item.address || item.location || 'Nairobi'}</Text>
               </View>
               <View style={[styles.priorityBadge, { backgroundColor: getPriorityColor(item.priority) }]}>
-                <Text style={styles.priorityText}>{item.priority}</Text>
+                <Text style={styles.priorityText}>
+                  {item.priority.charAt(0).toUpperCase() + item.priority.slice(1)} {/* Capitalize first letter */}
+                </Text>
               </View>
             </View>
             
@@ -174,9 +201,13 @@ const loadReports = async () => {
                   source={{ uri: item.images[0] }} 
                   style={styles.thumbnail}
                   onError={() => {
-  console.log('Image failed to load');
-}}
-                  onLoad={() => console.log('Image loaded successfully')}
+                    console.log('❌ IMAGE LOAD ERROR for report:', item.id);
+                    console.log('📷 Failed URL:', item.images?.[0] || 'No URL');
+                  }}
+                  onLoad={() => {
+                    console.log('✅ IMAGE LOADED for report:', item.id);
+                    console.log('📷 Success URL:', item.images?.[0] || 'No URL');
+                  }}
                 />
               </View>
             ) : (
@@ -321,8 +352,12 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginBottom: 15,
   },
+  // FIXED: Remove red border and debug text
   imagesContainer: {
     marginBottom: 15,
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#f9f9f9',
   },
   imagesLabel: {
     fontSize: 12,
@@ -334,7 +369,11 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 8,
+    backgroundColor: '#f0f0f0',
+    borderWidth: 1,
+    borderColor: '#ddd',
   },
+  // REMOVED: debugText style
   noPhotoText: {
     fontSize: 12,
     color: '#999',

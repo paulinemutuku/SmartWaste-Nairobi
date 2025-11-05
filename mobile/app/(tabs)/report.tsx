@@ -65,61 +65,55 @@ export default function ReportScreen() {
     getCurrentLocation();
   }, []);
 
-const pickImage = async () => {
-  const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-  if (status !== 'granted') {
-    Alert.alert('Permission required', 'Sorry, we need camera roll permissions to select photos.');
-    return;
-  }
+  const pickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission required', 'Sorry, we need camera roll permissions to select photos.');
+      return;
+    }
 
-  let result = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: ImagePicker.MediaTypeOptions.Images,
-    allowsEditing: true,
-    aspect: [4, 3],
-    quality: 0.8,
-  });
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
 
-  if (!result.canceled && result.assets && result.assets[0]) {
-    setImages(prev => [...prev, result.assets[0].uri]);
-  }
-};
+    if (!result.canceled && result.assets && result.assets[0]) {
+      setImages(prev => [...prev, result.assets[0].uri]);
+    }
+  };
 
-const takePhoto = async () => {
-  const { status } = await ImagePicker.requestCameraPermissionsAsync();
-  if (status !== 'granted') {
-    Alert.alert('Permission required', 'Sorry, we need camera permissions to take photos.');
-    return;
-  }
+  const takePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission required', 'Sorry, we need camera permissions to take photos.');
+      return;
+    }
 
-  let result = await ImagePicker.launchCameraAsync({
-    allowsEditing: true,
-    aspect: [4, 3],
-    quality: 0.8,
-  });
+    let result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
 
-  if (!result.canceled && result.assets && result.assets[0]) {
-    setImages(prev => [...prev, result.assets[0].uri]);
-  }
-};
+    if (!result.canceled && result.assets && result.assets[0]) {
+      setImages(prev => [...prev, result.assets[0].uri]);
+    }
+  };
 
   const removeImage = (index: number) => {
-  setImages(prev => prev.filter((_, i) => i !== index));
-};
+    setImages(prev => prev.filter((_, i) => i !== index));
+  };
 
 const submitReport = async () => {
   if (!description.trim()) {
-    Alert.alert('Error', 'Please describe the waste issue');
+    Alert.alert('Missing Information', 'Please describe the waste issue so collectors know what to expect.');
     return;
   }
 
-  // ADD BACK THE PHOTO REQUIREMENT
   if (images.length === 0) {
-    Alert.alert('Photo Required', 'Please add at least one photo of the waste issue');
-    return;
-  }
-
-  if (address.includes('Error') || address.includes('denied')) {
-    Alert.alert('Location Error', 'Please enable location services and refresh');
+    Alert.alert('Photo Required', 'Please add at least one photo to help waste collectors identify the location and issue.');
     return;
   }
 
@@ -141,6 +135,7 @@ const submitReport = async () => {
       return;
     }
 
+    // STEP 1: Submit to backend (keep what's working)
     const reportData = {
       description: description.trim(),
       location: address,
@@ -148,10 +143,11 @@ const submitReport = async () => {
       longitude: longitude,
       wasteType: 'general',
       userId: submittedBy,
-      photo: 'https://placehold.co/300x200/2d5a3c/ffffff/png?text=Waste+Photo' // ADD PHOTO
+      photo: 'https://placehold.co/300x200/2d5a3c/ffffff/png?text=Waste+Photo', // Backend placeholder
+      priority: 'pending'
     };
 
-    console.log('Submitting report:', reportData);
+    console.log('📤 Submitting to backend...');
 
     const response = await fetch('https://smart-waste-nairobi-chi.vercel.app/api/reports/submit', {
       method: 'POST',
@@ -164,23 +160,49 @@ const submitReport = async () => {
     const result = await response.json();
 
     if (!response.ok) {
-      throw new Error(result.message);
+      throw new Error(result.message || 'Failed to submit report');
     }
 
+    console.log('✅ Backend submission successful!');
+
+    // STEP 2: Create local report with ACTUAL PHOTOS for immediate display
+    const localReport = {
+      id: result.report._id, // Use the same ID from backend
+      description: description.trim(),
+      images: images, // ACTUAL LOCAL PHOTOS
+      address: address,
+      location: address,
+      timestamp: new Date().toISOString(),
+      status: 'Submitted',
+      priority: 'pending' // Use actual priority from our request
+    };
+
+    // STEP 3: Navigate to status with LOCAL PHOTOS
     Alert.alert(
-      'Success!', 
-      'Report submitted successfully!',
+      '✅ Report Submitted Successfully!', 
+      'Your waste report with photos has been received!',
       [
-        { 
-          text: 'View Status', 
-          onPress: () => router.replace('/(tabs)/status')
+        {
+          text: 'View My Reports',
+          onPress: () => router.push({
+            pathname: '/(tabs)/status',
+            params: { newReport: JSON.stringify(localReport) } // Pass local data with actual photos
+          })
+        },
+        {
+          text: 'Submit Another',
+          onPress: () => {
+            setDescription('');
+            setImages([]);
+            getCurrentLocation();
+          }
         }
       ]
     );
-
-  } catch (error) {
-    console.log('Submission error:', error);
-    Alert.alert('Error', 'Failed to submit report');
+    
+  } catch (error: any) {
+    console.log('❌ Submission error:', error);
+    Alert.alert('❌ Submission Failed', error.message || 'Please try again later.');
   } finally {
     setIsSubmitting(false);
   }
@@ -226,13 +248,21 @@ const submitReport = async () => {
       />
 
       <Text style={styles.label}>Add Photos *</Text>
-      <Text style={styles.photoSubtitle}>At least one photo required</Text>
+      <Text style={styles.photoSubtitle}>At least one photo required to help collectors identify the issue</Text>
       
       <View style={styles.photoButtons}>
-        <TouchableOpacity style={styles.photoButton} onPress={takePhoto}>
+        <TouchableOpacity 
+          style={[styles.photoButton, isSubmitting && styles.buttonDisabled]} 
+          onPress={takePhoto}
+          disabled={isSubmitting}
+        >
           <Text style={styles.photoButtonText}>📸 Take Photo</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.photoButton} onPress={pickImage}>
+        <TouchableOpacity 
+          style={[styles.photoButton, isSubmitting && styles.buttonDisabled]} 
+          onPress={pickImage}
+          disabled={isSubmitting}
+        >
           <Text style={styles.photoButtonText}>🖼️ Choose from Gallery</Text>
         </TouchableOpacity>
       </View>
@@ -248,6 +278,7 @@ const submitReport = async () => {
                   <TouchableOpacity 
                     style={styles.removeImageButton} 
                     onPress={() => removeImage(index)}
+                    disabled={isSubmitting}
                   >
                     <Text style={styles.removeImageText}>❌</Text>
                   </TouchableOpacity>
@@ -259,20 +290,27 @@ const submitReport = async () => {
       )}
 
       <TouchableOpacity 
-        style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
+        style={[
+          styles.submitButton, 
+          (isSubmitting || isGettingLocation || images.length === 0) && styles.submitButtonDisabled
+        ]}
         onPress={submitReport}
         disabled={isSubmitting || isGettingLocation || images.length === 0}
       >
         {isSubmitting ? (
-          <ActivityIndicator color="white" />
+          <View style={styles.submittingContainer}>
+            <ActivityIndicator color="white" size="small" />
+            <Text style={styles.submittingText}>Submitting Report...</Text>
+          </View>
         ) : (
           <Text style={styles.submitButtonText}>📤 Submit Report</Text>
         )}
       </TouchableOpacity>
 
       <TouchableOpacity 
-        style={styles.backButton}
+        style={[styles.backButton, isSubmitting && styles.buttonDisabled]}
         onPress={() => router.back()}
+        disabled={isSubmitting}
       >
         <Text style={styles.backButtonText}>← Back to Home</Text>
       </TouchableOpacity>
@@ -432,6 +470,16 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
+  submittingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  submittingText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
   backButton: {
     padding: 15,
     alignItems: 'center',
@@ -440,5 +488,8 @@ const styles = StyleSheet.create({
     color: '#2d5a3c',
     fontSize: 16,
     fontWeight: '600',
+  },
+  buttonDisabled: {
+    opacity: 0.5,
   },
 });

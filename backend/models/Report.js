@@ -31,7 +31,8 @@ const reportSchema = new mongoose.Schema({
   },
   priority: {
     type: String,
-    default: 'medium'
+    default: 'pending',  // ← CHANGED FROM 'medium' TO 'pending'
+    enum: ['pending', 'low', 'medium', 'high', 'critical']  // ← ADDED ENUM FOR CLARITY
   },
   submittedBy: {
     type: mongoose.Schema.Types.ObjectId,
