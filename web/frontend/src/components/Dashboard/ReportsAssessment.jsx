@@ -25,35 +25,56 @@ const ReportsAssessment = () => {
     }
   };
 
-const updateReportPriority = async (reportId, priority) => {
-  try {
-    const response = await fetch(`https://smart-waste-nairobi-chi.vercel.app/api/reports/${reportId}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ priority }) 
-    });
+  const updateReportPriority = async (reportId, priority) => {
+    try {
+      const response = await fetch(`https://smart-waste-nairobi-chi.vercel.app/api/reports/${reportId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ priority }) 
+      });
 
-    const result = await response.json();
-    
-    if (response.ok && result.success) {
-      // Update local state
-      setReports(reports.map(report => 
-        report._id === reportId ? { ...report, priority } : report
-      ));
-      setSelectedReport(null);
-      console.log(`✅ Priority updated to: ${priority}`);
+      const result = await response.json();
       
-      // Reload to see changes everywhere
-      loadReports();
-    } else {
-      console.error("❌ Failed to update priority:", result.message);
+      if (response.ok && result.success) {
+        setReports(reports.map(report => 
+          report._id === reportId ? { ...report, priority } : report
+        ));
+        setSelectedReport(null);
+        console.log(`✅ Priority updated to: ${priority}`);
+        loadReports();
+      } else {
+        console.error("❌ Failed to update priority:", result.message);
+      }
+    } catch (error) {
+      console.error("Error updating priority:", error);
     }
-  } catch (error) {
-    console.error("Error updating priority:", error);
-  }
-};
+  };
+
+  const getPriorityBadge = (priority, currentPriority) => {
+    const isSelected = priority === currentPriority;
+    const baseClass = "btn btn-sm ";
+    
+    switch(priority) {
+      case 'low': 
+        return baseClass + (isSelected ? "btn-success" : "btn-outline-success");
+      case 'medium': 
+        return baseClass + (isSelected ? "btn-warning" : "btn-outline-warning");
+      case 'high': 
+        return baseClass + (isSelected ? "btn-danger" : "btn-outline-danger");
+      default: 
+        return baseClass + "btn-outline-secondary";
+    }
+  };
+
+  const getReviewStatus = (priority) => {
+    return priority === 'pending' ? 'Needs Review' : 'Reviewed';
+  };
+
+  const getReviewBadgeColor = (priority) => {
+    return priority === 'pending' ? 'bg-warning' : 'bg-success';
+  };
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-KE', {
@@ -92,7 +113,9 @@ const updateReportPriority = async (reportId, priority) => {
                     <div className="card h-100">
                       <div className="card-header">
                         <strong>RPT-{report._id.slice(-4)}</strong>
-                        <span className="badge bg-warning float-end">Needs Review</span>
+                        <span className={`badge ${getReviewBadgeColor(report.priority)} float-end`}>
+                          {getReviewStatus(report.priority)}
+                        </span>
                       </div>
                       <div className="card-body">
                         <p className="card-text">{report.description}</p>
@@ -104,42 +127,45 @@ const updateReportPriority = async (reportId, priority) => {
                         </p>
                         
                         {report.photo ? (
-  <div className="mb-3">
-    <h6>Photo:</h6>
-    <div className="d-flex gap-2 flex-wrap">
-      <img 
-        src={report.photo}
-        alt="Report photo"
-        className="img-thumbnail"
-        style={{ 
-          width: '80px', 
-          height: '80px', 
-          objectFit: 'cover',
-          cursor: 'pointer'
-        }}
-        onClick={() => setSelectedReport({...report, selectedPhoto: report.photo})}
-      />
-    </div>
-  </div>
-) : (
-  <p className="text-muted small">No photo available</p>
-)}
+                          <div className="mb-3">
+                            <h6>Photo Evidence:</h6>
+                            <img 
+                              src={report.photo}
+                              alt="Report evidence"
+                              className="img-thumbnail"
+                              style={{ 
+                                width: '100px', 
+                                height: '100px', 
+                                objectFit: 'cover',
+                                cursor: 'pointer'
+                              }}
+                              onError={(e) => {
+                                console.log('❌ Image failed to load:', report.photo);
+                                e.target.src = 'https://placehold.co/100x100/2d5a3c/ffffff/png?text=No+Photo';
+                              }}
+                              onLoad={() => console.log('✅ Image loaded:', report.photo)}
+                              onClick={() => setSelectedReport({...report, selectedPhoto: report.photo})}
+                            />
+                          </div>
+                        ) : (
+                          <p className="text-muted small">No photo available</p>
+                        )}
 
                         <div className="btn-group w-100">
                           <button 
-                            className="btn btn-outline-success btn-sm"
+                            className={getPriorityBadge('low', report.priority)}
                             onClick={() => updateReportPriority(report._id, 'low')}
                           >
                             Low
                           </button>
                           <button 
-                            className="btn btn-outline-warning btn-sm"
+                            className={getPriorityBadge('medium', report.priority)}
                             onClick={() => updateReportPriority(report._id, 'medium')}
                           >
                             Medium
                           </button>
                           <button 
-                            className="btn btn-outline-danger btn-sm"
+                            className={getPriorityBadge('high', report.priority)}
                             onClick={() => updateReportPriority(report._id, 'high')}
                           >
                             High
@@ -179,6 +205,11 @@ const updateReportPriority = async (reportId, priority) => {
               <div className="modal-body">
                 <p><strong>Description:</strong> {selectedReport.description}</p>
                 <p><strong>Location:</strong> {selectedReport.location || 'Nairobi'}</p>
+                <p><strong>Current Priority:</strong> 
+                  <span className={`badge ${getReviewBadgeColor(selectedReport.priority)} ms-2`}>
+                    {selectedReport.priority}
+                  </span>
+                </p>
                 <p><strong>Submitted:</strong> {formatDate(selectedReport.createdAt)}</p>
                 {selectedReport.selectedPhoto && (
                   <div>
@@ -202,19 +233,19 @@ const updateReportPriority = async (reportId, priority) => {
                 </button>
                 <div className="btn-group">
                   <button 
-                    className="btn btn-success"
+                    className={getPriorityBadge('low', selectedReport.priority)}
                     onClick={() => updateReportPriority(selectedReport._id, 'low')}
                   >
                     Set Low Priority
                   </button>
                   <button 
-                    className="btn btn-warning"
+                    className={getPriorityBadge('medium', selectedReport.priority)}
                     onClick={() => updateReportPriority(selectedReport._id, 'medium')}
                   >
                     Set Medium
                   </button>
                   <button 
-                    className="btn btn-danger"
+                    className={getPriorityBadge('high', selectedReport.priority)}
                     onClick={() => updateReportPriority(selectedReport._id, 'high')}
                   >
                     Set High Priority

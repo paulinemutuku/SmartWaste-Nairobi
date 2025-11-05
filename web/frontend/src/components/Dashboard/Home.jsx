@@ -40,16 +40,16 @@ function Home() {
         console.log("✅ Reports found:", reports.length);
         
         const transformedReports = reports.map(report => ({
-          id: report._id,
-          type: "citizen_report",
-          description: report.description,
-          urgency: getUrgencyFromDescription(report.description),
-          status: report.status === 'submitted' ? 'pending' : 
-                  report.status === 'in-progress' ? 'assigned' : 'completed',
-          location: report.location || 'Nairobi', 
-          submittedAt: report.createdAt,
-          images: report.photo ? [report.photo] : [] 
-        }));
+  id: report._id,
+  type: "citizen_report",
+  description: report.description,
+  urgency: report.priority || 'pending', // Use actual priority from database
+  status: report.status === 'submitted' ? 'pending' : 
+          report.status === 'in-progress' ? 'assigned' : 'completed',
+  location: report.location || 'Nairobi',
+  submittedAt: report.createdAt,
+  images: report.photo ? [report.photo] : []
+}));
 
         const totalReports = reports.length;
         const pendingReports = reports.filter(r => r.status === 'submitted').length;
