@@ -32,7 +32,7 @@ const updateReportPriority = async (reportId, priority) => {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ priority }) // Use 'priority' field
+      body: JSON.stringify({ priority }) 
     });
 
     const result = await response.json();
@@ -103,27 +103,27 @@ const updateReportPriority = async (reportId, priority) => {
                           📅 {formatDate(report.createdAt)}
                         </p>
                         
-                        {report.photo ? (
-                          <div className="mb-3">
-                            <h6>Photo:</h6>
-                            <div className="d-flex gap-2 flex-wrap">
-                              <img 
-                                src={report.photo}
-                                alt="Report photo"
-                                className="img-thumbnail"
-                                style={{ 
-                                  width: '80px', 
-                                  height: '80px', 
-                                  objectFit: 'cover',
-                                  cursor: 'pointer'
-                                }}
-                                onClick={() => setSelectedReport({...report, selectedPhoto: report.photo})}
-                              />
-                            </div>
-                          </div>
-                        ) : (
-                          <p className="text-muted small">No photo available</p>
-                        )}
+                        {report.photo && report.photo !== 'https://placehold.co/300x200/2d5a3c/ffffff/png?text=Waste+Photo' ? (
+  <div className="mb-3">
+    <h6>Photo:</h6>
+    <div className="d-flex gap-2 flex-wrap">
+      <img 
+        src={report.photo}
+        alt="Report photo"
+        className="img-thumbnail"
+        style={{ 
+          width: '80px', 
+          height: '80px', 
+          objectFit: 'cover',
+          cursor: 'pointer'
+        }}
+        onClick={() => setSelectedReport({...report, selectedPhoto: report.photo})}
+      />
+    </div>
+  </div>
+) : (
+  <p className="text-muted small">No photo available</p>
+)}
 
                         <div className="btn-group w-100">
                           <button 
