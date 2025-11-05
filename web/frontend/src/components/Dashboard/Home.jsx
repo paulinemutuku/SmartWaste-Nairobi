@@ -46,9 +46,9 @@ function Home() {
           urgency: getUrgencyFromDescription(report.description),
           status: report.status === 'submitted' ? 'pending' : 
                   report.status === 'in-progress' ? 'assigned' : 'completed',
-          location: report.location?.address || 'Nairobi',
+          location: report.location || 'Nairobi', 
           submittedAt: report.createdAt,
-          images: report.photos || []
+          images: report.photo ? [report.photo] : [] 
         }));
 
         const totalReports = reports.length;

@@ -25,26 +25,35 @@ const ReportsAssessment = () => {
     }
   };
 
-  const updateReportUrgency = async (reportId, urgency) => {
-    try {
-      const response = await fetch(`https://smart-waste-nairobi-chi.vercel.app/api/reports/${reportId}/urgency`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ urgency })
-      });
+const updateReportPriority = async (reportId, priority) => {
+  try {
+    const response = await fetch(`https://smart-waste-nairobi-chi.vercel.app/api/reports/${reportId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ priority }) // Use 'priority' field
+    });
 
-      if (response.ok) {
-        setReports(reports.map(report => 
-          report._id === reportId ? { ...report, urgency } : report
-        ));
-        setSelectedReport(null);
-      }
-    } catch (error) {
-      console.error("Error updating urgency:", error);
+    const result = await response.json();
+    
+    if (response.ok && result.success) {
+      // Update local state
+      setReports(reports.map(report => 
+        report._id === reportId ? { ...report, priority } : report
+      ));
+      setSelectedReport(null);
+      console.log(`✅ Priority updated to: ${priority}`);
+      
+      // Reload to see changes everywhere
+      loadReports();
+    } else {
+      console.error("❌ Failed to update priority:", result.message);
     }
-  };
+  } catch (error) {
+    console.error("Error updating priority:", error);
+  }
+};
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-KE', {
@@ -74,7 +83,7 @@ const ReportsAssessment = () => {
           <div className="card">
             <div className="card-header bg-success text-white">
               <h4 className="mb-0">📋 Reports Assessment</h4>
-              <small>Review photos and set urgency levels</small>
+              <small>Review photos and set priority levels</small>
             </div>
             <div className="card-body">
               <div className="row">
@@ -119,19 +128,19 @@ const ReportsAssessment = () => {
                         <div className="btn-group w-100">
                           <button 
                             className="btn btn-outline-success btn-sm"
-                            onClick={() => updateReportUrgency(report._id, 'low')}
+                            onClick={() => updateReportPriority(report._id, 'low')}
                           >
                             Low
                           </button>
                           <button 
                             className="btn btn-outline-warning btn-sm"
-                            onClick={() => updateReportUrgency(report._id, 'medium')}
+                            onClick={() => updateReportPriority(report._id, 'medium')}
                           >
                             Medium
                           </button>
                           <button 
                             className="btn btn-outline-danger btn-sm"
-                            onClick={() => updateReportUrgency(report._id, 'high')}
+                            onClick={() => updateReportPriority(report._id, 'high')}
                           >
                             High
                           </button>
@@ -194,19 +203,19 @@ const ReportsAssessment = () => {
                 <div className="btn-group">
                   <button 
                     className="btn btn-success"
-                    onClick={() => updateReportUrgency(selectedReport._id, 'low')}
+                    onClick={() => updateReportPriority(selectedReport._id, 'low')}
                   >
                     Set Low Priority
                   </button>
                   <button 
                     className="btn btn-warning"
-                    onClick={() => updateReportUrgency(selectedReport._id, 'medium')}
+                    onClick={() => updateReportPriority(selectedReport._id, 'medium')}
                   >
                     Set Medium
                   </button>
                   <button 
                     className="btn btn-danger"
-                    onClick={() => updateReportUrgency(selectedReport._id, 'high')}
+                    onClick={() => updateReportPriority(selectedReport._id, 'high')}
                   >
                     Set High Priority
                   </button>

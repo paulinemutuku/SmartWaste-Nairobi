@@ -113,4 +113,66 @@ router.get('/user/:userId', async (req, res) => {
   }
 });
 
+// Update report priority - FOR REPORT ASSESSMENT
+router.put('/:reportId', async (req, res) => {
+  try {
+    const { reportId } = req.params;
+    const { priority, status } = req.body;
+
+    console.log('🔄 Updating report:', reportId);
+    console.log('📊 Update data:', { priority, status });
+
+    if (!mongoose.Types.ObjectId.isValid(reportId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid report ID'
+      });
+    }
+
+    // Build update object with only provided fields
+    const updateData = {};
+    if (priority) updateData.priority = priority;
+    if (status) updateData.status = status;
+
+    // If no valid fields to update
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No valid fields to update'
+      });
+    }
+
+    const updatedReport = await Report.findByIdAndUpdate(
+      reportId,
+      updateData,
+      { new: true } // Return updated document
+    );
+
+    if (!updatedReport) {
+      return res.status(404).json({
+        success: false,
+        message: 'Report not found'
+      });
+    }
+
+    console.log('✅ Report updated successfully:', updatedReport._id);
+    console.log('📊 New priority:', updatedReport.priority);
+    
+    res.json({
+      success: true,
+      message: 'Report updated successfully',
+      report: updatedReport
+    });
+    
+  } catch (error) {
+    console.log('❌ UPDATE ERROR:', error);
+    
+    res.status(500).json({
+      success: false,
+      message: 'Error updating report',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;
