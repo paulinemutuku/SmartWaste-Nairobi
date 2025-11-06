@@ -2,6 +2,82 @@ const express = require('express');
 const Report = require('../models/Report');
 const router = express.Router();
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+
+// Simple user model for authentication
+const UserSchema = new mongoose.Schema({
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  name: { type: String, required: true },
+  role: { type: String, default: 'admin' }
+});
+
+const User = mongoose.model('User', UserSchema);
+
+// Login endpoint - matches frontend expectation
+router.post('/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        error: 'Email and password are required'
+      });
+    }
+
+    // Demo admin account - you can add real user database later
+    if (email === 'admin@smartwaste.com' && password === 'admin123') {
+      const user = {
+        _id: '1',
+        email: 'admin@smartwaste.com',
+        name: 'SmartWaste Admin',
+        role: 'admin',
+        token: 'demo-token-' + Date.now()
+      };
+
+      res.json(user);
+    } else {
+      res.status(401).json({
+        error: 'Invalid email or password'
+      });
+    }
+  } catch (error) {
+    res.status(500).json({
+      error: 'Login error: ' + error.message
+    });
+  }
+});
+
+// Signup endpoint - matches frontend expectation
+router.post('/user/signup', async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        error: 'Name, email, and password are required'
+      });
+    }
+
+    // Simple demo - you can add real user creation later
+    const user = {
+      _id: '2',
+      email: email,
+      name: name,
+      role: 'user',
+      token: 'demo-token-' + Date.now()
+    };
+
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({
+      error: 'Signup error: ' + error.message
+    });
+  }
+});
+
+// YOUR EXISTING REPORT ROUTES - KEPT EXACTLY AS THEY WERE
 
 router.post('/submit', async (req, res) => {
   try {
