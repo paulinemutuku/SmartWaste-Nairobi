@@ -44,6 +44,26 @@ export const getUserEmail = async () => {
 // PHOTO STORAGE FUNCTIONS
 const PHOTO_STORAGE_KEY = 'smartwaste_local_photos';
 
+// NEW: Save multiple photos for a report
+export const saveReportPhotos = async (reportId, imageUris) => {
+  try {
+    const existingPhotos = await getStoredPhotos();
+    const updatedPhotos = { ...existingPhotos };
+    
+    // Save each photo with index (reportId_0, reportId_1, etc.)
+    imageUris.forEach((imageUri, index) => {
+      const photoKey = `${reportId}_${index}`;
+      updatedPhotos[photoKey] = imageUri;
+    });
+    
+    await AsyncStorage.setItem(PHOTO_STORAGE_KEY, JSON.stringify(updatedPhotos));
+    console.log(`✅ ${imageUris.length} photos saved locally for report:`, reportId);
+  } catch (error) {
+    console.log('❌ Error saving photos locally:', error);
+  }
+};
+
+// KEEP: Existing single photo function for backward compatibility
 export const saveReportPhoto = async (reportId, imageUri) => {
   try {
     const existingPhotos = await getStoredPhotos();
@@ -68,6 +88,28 @@ export const getStoredPhotos = async () => {
   }
 };
 
+// NEW: Get all photos for a report
+export const getPhotosForReport = async (reportId) => {
+  const photos = await getStoredPhotos();
+  const reportPhotos = [];
+  
+  // Get all photos for this report (they're stored as reportId_0, reportId_1, etc.)
+  Object.keys(photos).forEach(key => {
+    if (key.startsWith(reportId + '_')) {
+      reportPhotos.push(photos[key]);
+    }
+  });
+  
+  // Also check for single photo (backward compatibility)
+  if (reportPhotos.length === 0 && photos[reportId]) {
+    reportPhotos.push(photos[reportId]);
+  }
+  
+  console.log(`📸 Found ${reportPhotos.length} local photos for report ${reportId}`);
+  return reportPhotos;
+};
+
+// KEEP: Existing single photo function for backward compatibility
 export const getPhotoForReport = async (reportId) => {
   const photos = await getStoredPhotos();
   return photos[reportId] || null;

@@ -208,25 +208,29 @@ const submitReport = async () => {
 
     console.log(`✅ Backend submission successful with ${uploadedPhotoUrls.length} photos!`);
 
-    // Save all photos locally for mobile app
-    if (images.length > 0) {
-      for (let i = 0; i < images.length; i++) {
-        await saveReportPhoto(`${result.report._id}_${i}`, images[i]);
-      }
-    }
+// Save ALL photos locally for mobile app
+// Save ALL photos locally for mobile app - USE EXISTING FUNCTION
+if (images.length > 0) {
+  const { saveReportPhoto } = require('../../utils/userHelper'); // Use existing function
+  
+  // Save each photo with indexed keys
+  for (let i = 0; i < images.length; i++) {
+    await saveReportPhoto(`${result.report._id}_${i}`, images[i]);
+  }
+  console.log(`💾 ${images.length} photos saved locally for mobile app`);
+}
 
-    const localReport = {
-      id: result.report._id,
-      description: description.trim(),
-      images: images, // All local photos for mobile
-      photoUrls: uploadedPhotoUrls, // All Cloudinary URLs
-      address: address,
-      location: address,
-      timestamp: new Date().toISOString(),
-      status: 'Submitted',
-      priority: 'pending'
-    };
-
+const localReport = {
+  id: result.report._id,
+  description: description.trim(),
+  images: images, // ALL local photos for mobile
+  photoUrls: uploadedPhotoUrls, // ALL Cloudinary URLs
+  address: address,
+  location: address,
+  timestamp: new Date().toISOString(),
+  status: 'Submitted',
+  priority: 'pending'
+};
     Alert.alert(
       '✅ Report Submitted Successfully!', 
       `Your waste report with ${uploadedPhotoUrls.length} photos has been received!`,

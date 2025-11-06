@@ -1,10 +1,16 @@
 import { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
-import { View, Text, StyleSheet, Animated, Image } from 'react-native';
+import { View, Text, StyleSheet, Animated, Image, LogBox } from 'react-native';
 import { AuthProvider } from '../contexts/AuthContext';
 import { LanguageProvider } from '../contexts/LanguageContext';
 
 export default function RootLayout() {
+  useEffect(() => {
+    LogBox.ignoreLogs([
+      'Style property \'width\' is not supported by native animated module'
+    ]);
+  }, []);
+
   const [showSplash, setShowSplash] = useState(true);
   const fadeAnim = new Animated.Value(0);
   const scaleAnim = new Animated.Value(0.3);

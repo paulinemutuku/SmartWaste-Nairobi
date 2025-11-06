@@ -38,7 +38,7 @@ export default function StatusScreen() {
 const loadReports = async () => {
   try {
     const { reportService } = require('../../services/api');
-    const { getStoredPhotos } = require('../../utils/userHelper'); 
+    const { getStoredPhotos } = require('../../utils/userHelper'); // Use existing function
     
     const { getUserId } = require('../../utils/userHelper');
     const userId = await getUserId();
@@ -49,48 +49,58 @@ const loadReports = async () => {
       return;
     }
 
-    // ACTUALLY USE getStoredPhotos - call the function!
-    const localPhotos = await getStoredPhotos();
-    console.log('📸 Local photos found:', Object.keys(localPhotos).length);
+    // Get all stored photos first
+    const allStoredPhotos = await getStoredPhotos();
+    console.log('📸 All stored photos keys:', Object.keys(allStoredPhotos));
 
     const result = await reportService.getUserReports(userId);
 
     if (result.success) {
-      const transformedReports = result.reports.map((report: any) => {
-        // Check if we have a local photo for this report
-        const localPhotoUri = localPhotos[report._id];
-        const hasLocalPhoto = !!localPhotoUri;
-        
-        console.log('Report', report._id, 'has local photo:', hasLocalPhoto);
+  // Get all stored photos first
+  const allStoredPhotos = await getStoredPhotos();
+  console.log('📸 All stored photos keys:', Object.keys(allStoredPhotos));
 
-        const priority = report.priority || 'pending';
-        
-        let photoUrl = report.photo;
-        if (photoUrl && photoUrl.startsWith('/uploads/')) {
-          photoUrl = `https://smart-waste-nairobi-chi.vercel.app${photoUrl}`;
-        }
-        
-        return {
-  id: report._id,
-  address: report.location,
-  location: report.location,
-  status: report.status === 'submitted' ? 'Submitted' : 
-          report.status === 'in-progress' ? 'In Progress' : 'Completed',
-  timestamp: report.createdAt,
-  description: report.description,
-  priority: priority,
-  // Handle multiple photos from backend OR single photo OR local photo
-  images: hasLocalPhoto ? [localPhotoUri] : 
-          (report.photos && report.photos.length > 0 ? report.photos : 
-          (photoUrl ? [photoUrl] : []))
-};
-      });
-      
-      setReports(transformedReports);
-    } else {
-      console.log('No reports found or API error');
-      setReports([]);
+  const transformedReports = result.reports.map((report: any) => {
+    // Get ALL local photos for this report
+    const localPhotos = [];
+    Object.keys(allStoredPhotos).forEach(key => {
+      if (key.startsWith(report._id + '_')) {
+        localPhotos.push(allStoredPhotos[key]);
+      }
+    });
+    
+    // Also check for single photo (backward compatibility)
+    if (localPhotos.length === 0 && allStoredPhotos[report._id]) {
+      localPhotos.push(allStoredPhotos[report._id]);
     }
+    
+    console.log(`Report ${report._id} has ${localPhotos.length} local photos`);
+
+    const priority = report.priority || 'pending';
+    
+    let photoUrl = report.photo;
+    if (photoUrl && photoUrl.startsWith('/uploads/')) {
+      photoUrl = `https://smart-waste-nairobi-chi.vercel.app${photoUrl}`;
+    }
+    
+    return {
+      id: report._id,
+      address: report.location,
+      location: report.location,
+      status: report.status === 'submitted' ? 'Submitted' : 
+              report.status === 'in-progress' ? 'In Progress' : 'Completed',
+      timestamp: report.createdAt,
+      description: report.description,
+      priority: priority,
+      // Use ALL local photos OR backend photos OR single photo
+      images: localPhotos.length > 0 ? localPhotos : 
+              (report.photos && report.photos.length > 0 ? report.photos : 
+              (photoUrl ? [photoUrl] : []))
+    };
+  });
+  
+  setReports(transformedReports);
+}
   } catch (error) {
     console.error('Failed to load user reports:', error);
     setReports([]);
