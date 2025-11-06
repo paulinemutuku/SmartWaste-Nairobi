@@ -93,7 +93,7 @@ const FeedbackComponent = () => {
     message: { color: '#555', lineHeight: '1.5', marginBottom: '15px' },
     actions: { display: 'flex', justifyContent: 'flex-end' },
     btnView: { background: '#2E8B57', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '14px' },
-    modalOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 },
+    modalOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 100 },
     modalContent: { background: 'white', borderRadius: '12px', width: '90%', maxWidth: '600px', maxHeight: '80vh', overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,0.3)' },
     modalHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px', borderBottom: '1px solid #e9ecef', background: '#f8f9fa' },
     modalTitle: { margin: 0, color: '#2E8B57' },
