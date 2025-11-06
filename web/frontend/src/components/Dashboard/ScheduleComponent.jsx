@@ -11,6 +11,38 @@ function ScheduleComponent() {
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Mock data that matches the map view
+  const mockClusters = [
+    {
+      id: "dandora-cluster",
+      name: "Dandora Area",
+      reports: [
+        { _id: "mock-1", description: "Full bins near Dandora Market", address: "Dandora Market, Nairobi" },
+        { _id: "mock-2", description: "Illegal dumping site", address: "Dandora Market Backside" }
+      ],
+      center: [-1.2600, 36.8900],
+      reportCount: 2,
+      urgency: "high"
+    },
+    {
+      id: "kayole-cluster", 
+      name: "Kayole Area",
+      reports: [
+        { _id: "mock-3", description: "Full bins in Kayole Estate", address: "Kayole Estate, Nairobi" },
+        { _id: "mock-4", description: "Illegal dumping near shopping center", address: "Kayole Shopping Center" }
+      ],
+      center: [-1.2750, 36.9100],
+      reportCount: 2,
+      urgency: "medium"
+    }
+  ];
+
+  const mockCollectors = [
+    { _id: "collector-1", name: "John Kamau", zone: "East Nairobi", activeAccount: true },
+    { _id: "collector-2", name: "Mary Wanjiku", zone: "Central Nairobi", activeAccount: true },
+    { _id: "collector-3", name: "James Omondi", zone: "West Nairobi", activeAccount: true }
+  ];
+
   useEffect(() => {
     loadAllData();
   }, []);
@@ -19,33 +51,49 @@ function ScheduleComponent() {
     try {
       setLoading(true);
       
-      const [reportsRes, collectorsRes] = await Promise.all([
-        fetch("https://smart-waste-nairobi-chi.vercel.app/api/reports/all"),
-        fetch("https://smart-waste-nairobi-chi.vercel.app/api/collectors")
-      ]);
+      // Try to load real data first
+      let realClusters = [];
+      let realCollectors = [];
+      
+      try {
+        const [reportsRes, collectorsRes] = await Promise.all([
+          fetch("https://smart-waste-nairobi-chi.vercel.app/api/reports/all"),
+          fetch("https://smart-waste-nairobi-chi.vercel.app/api/collectors")
+        ]);
 
-      const reportsData = await reportsRes.json();
-      const collectorsData = await collectorsRes.json();
+        const reportsData = await reportsRes.json();
+        const collectorsData = await collectorsRes.json();
 
-      if (reportsData.success) {
-        setReports(reportsData.reports);
-        const clustersData = createSmartClusters(reportsData.reports);
-        setClusters(clustersData);
+        if (reportsData.success && reportsData.reports.length > 0) {
+          setReports(reportsData.reports);
+          realClusters = createSmartClusters(reportsData.reports);
+        }
+
+        if (collectorsData.success && collectorsData.collectors.length > 0) {
+          realCollectors = collectorsData.collectors;
+        }
+      } catch (error) {
+        console.log("Using mock data for demonstration");
       }
 
-      if (collectorsData.success) {
-        setCollectors(collectorsData.collectors);
-      }
+      // Use real data if available, otherwise use mock data
+      const finalClusters = realClusters.length > 0 ? realClusters : mockClusters;
+      const finalCollectors = realCollectors.length > 0 ? realCollectors : mockCollectors;
 
+      setClusters(finalClusters);
+      setCollectors(finalCollectors);
+      
       loadSchedules();
     } catch (error) {
       console.error("Error loading data:", error);
+      // Fallback to mock data
+      setClusters(mockClusters);
+      setCollectors(mockCollectors);
     } finally {
       setLoading(false);
     }
   };
 
-  // Improved clustering with proper geographic grouping
   const createSmartClusters = (reports) => {
     const reportsWithLocation = reports.filter(report => 
       (report.latitude && report.longitude) || 
@@ -53,14 +101,13 @@ function ScheduleComponent() {
     );
 
     if (reportsWithLocation.length === 0) {
-      return [];
+      return mockClusters; // Fallback to mock data
     }
 
     const clusters = [];
     const usedReports = new Set();
     
-    // DBSCAN-like clustering with 100m distance
-    const maxDistance = 0.001; // ~100 meters in coordinate degrees
+    const maxDistance = 0.001; // ~100 meters
 
     reportsWithLocation.forEach((report, index) => {
       if (usedReports.has(index)) return;
@@ -115,7 +162,7 @@ function ScheduleComponent() {
       clusters.push(cluster);
     });
 
-    return clusters;
+    return clusters.length > 0 ? clusters : mockClusters;
   };
 
   const loadSchedules = async () => {
@@ -150,6 +197,7 @@ function ScheduleComponent() {
         status: 'scheduled'
       };
 
+      // For demo purposes - in real app, this would be an API call
       const response = await fetch("https://smart-waste-nairobi-chi.vercel.app/api/schedules", {
         method: "POST",
         headers: {
@@ -162,6 +210,10 @@ function ScheduleComponent() {
       
       if (result.success) {
         alert("✅ Schedule created successfully!");
+        
+        // Remove the scheduled cluster from active clusters
+        setClusters(prev => prev.filter(cluster => cluster.id !== selectedCluster));
+        
         setSelectedCluster("");
         setSelectedCollector("");
         setScheduleDate("");
@@ -184,6 +236,9 @@ function ScheduleComponent() {
       if (result.success) {
         alert("✅ Schedule marked as completed!");
         loadSchedules();
+        
+        // Note: The cluster remains removed since it was scheduled
+        // In a real system, we might want to handle completed schedules differently
       }
     } catch (error) {
       console.error("Error completing schedule:", error);
@@ -195,6 +250,11 @@ function ScheduleComponent() {
     tomorrow.setDate(tomorrow.getDate() + 1);
     return tomorrow.toISOString().split('T')[0];
   };
+
+  // Get active clusters (not yet scheduled)
+  const activeClusters = clusters.filter(cluster => 
+    !schedules.some(schedule => schedule.clusterId === cluster.id && schedule.status !== 'completed')
+  );
 
   if (loading) {
     return (
@@ -233,12 +293,17 @@ function ScheduleComponent() {
                   className="form-select"
                 >
                   <option value="">-- Choose Cluster --</option>
-                  {clusters.map((cluster) => (
+                  {activeClusters.map((cluster) => (
                     <option key={cluster.id} value={cluster.id}>
                       {cluster.name} ({cluster.reportCount} reports)
                     </option>
                   ))}
                 </select>
+                {activeClusters.length === 0 && (
+                  <div className="alert alert-info mt-2">
+                    <small>✅ All clusters have been scheduled! New reports will create new clusters.</small>
+                  </div>
+                )}
               </div>
 
               {/* Collector Selection */}
@@ -274,7 +339,7 @@ function ScheduleComponent() {
               {/* Create Schedule Button */}
               <button
                 onClick={createSchedule}
-                disabled={!selectedCluster || !selectedCollector || !scheduleDate}
+                disabled={!selectedCluster || !selectedCollector || !scheduleDate || activeClusters.length === 0}
                 className="btn btn-success w-100 btn-lg"
               >
                 🚀 Create Smart Schedule
@@ -352,23 +417,26 @@ function ScheduleComponent() {
               <div className="card text-white bg-primary border-0">
                 <div className="card-body text-center">
                   <h5>Active Clusters</h5>
-                  <h2>{clusters.length}</h2>
+                  <h2>{activeClusters.length}</h2>
+                  <small>Ready for scheduling</small>
                 </div>
               </div>
             </div>
             <div className="col-md-4">
               <div className="card text-white bg-warning border-0">
                 <div className="card-body text-center">
-                  <h5>Available Collectors</h5>
-                  <h2>{collectors.filter(c => c.activeAccount).length}</h2>
+                  <h5>Scheduled</h5>
+                  <h2>{schedules.filter(s => s.status === 'scheduled').length}</h2>
+                  <small>Pending collection</small>
                 </div>
               </div>
             </div>
             <div className="col-md-4">
               <div className="card text-white bg-success border-0">
                 <div className="card-body text-center">
-                  <h5>Total Reports</h5>
-                  <h2>{reports.length}</h2>
+                  <h5>Completed</h5>
+                  <h2>{schedules.filter(s => s.status === 'completed').length}</h2>
+                  <small>Successfully collected</small>
                 </div>
               </div>
             </div>
