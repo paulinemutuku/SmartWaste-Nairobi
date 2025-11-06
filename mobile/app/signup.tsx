@@ -15,6 +15,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const { width, height } = Dimensions.get('window');
 
@@ -33,25 +34,26 @@ export default function SignupScreen() {
   });
   const router = useRouter();
   const { login } = useAuth();
+  const { t } = useLanguage();
 
   const handleSignup = async () => {
     if (!name || !email || !password || !confirmPassword) {
-      Alert.alert('Complete Your Profile', 'Please fill in all fields to create your account and join our community.');
+      Alert.alert(t('completeProfile'), t('fillAllFields'));
       return;
     }
 
     if (!email.includes('@')) {
-      Alert.alert('Valid Email Required', 'Please enter a complete email address with @ symbol to continue.');
+      Alert.alert(t('validEmailRequired'), t('completeEmail'));
       return;
     }
 
     if (password.length < 6) {
-      Alert.alert('Stronger Password Needed', 'For your security, please choose a password with at least 6 characters.');
+      Alert.alert(t('strongerPassword'), t('passwordLength'));
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('Passwords Do Not Match', 'Please ensure both password fields contain exactly the same text.');
+      Alert.alert(t('passwordsDontMatch'), t('ensureSamePassword'));
       return;
     }
 
@@ -70,15 +72,15 @@ try {
     await login(userData);
     
     Alert.alert(
-      'Welcome to the Family! 🎉', 
-      `We're thrilled to have you, ${result.user.name}! Together, we'll make Nairobi cleaner and greener.`,
-      [{ text: 'Start My Journey', onPress: () => router.replace('/') }]
+      t('welcomeToFamily'), 
+      t('welcomeMessageSignup', result.user.name),
+      [{ text: t('startJourney'), onPress: () => router.replace('/') }]
     );
   }
 } catch (error) {
   Alert.alert(
-    'Account Creation Paused', 
-    error instanceof Error ? error.message : 'Please check your connection and try again in a moment.'
+    t('accountCreationPaused'), 
+    error instanceof Error ? error.message : t('checkConnection')
   );
 } finally {
   setIsLoading(false);
@@ -86,11 +88,11 @@ try {
   };
 
   const getPasswordStrength = () => {
-    if (password.length === 0) return { strength: 'Empty', color: '#94A3B8' };
-    if (password.length < 6) return { strength: 'Too Short', color: '#EF4444' };
-    if (password.length < 8) return { strength: 'Fair', color: '#F59E0B' };
-    if (password.length < 12) return { strength: 'Good', color: '#10B981' };
-    return { strength: 'Strong', color: '#047857' };
+    if (password.length === 0) return { strength: t('empty'), color: '#94A3B8' };
+    if (password.length < 6) return { strength: t('tooShort'), color: '#EF4444' };
+    if (password.length < 8) return { strength: t('fair'), color: '#F59E0B' };
+    if (password.length < 12) return { strength: t('good'), color: '#10B981' };
+    return { strength: t('strong'), color: '#047857' };
   };
 
   const passwordStrength = getPasswordStrength();
@@ -104,25 +106,22 @@ try {
         contentContainerStyle={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
       >
-        {/* Inspiring Header Section */}
         <View style={styles.header}>
           <View style={styles.logoContainer}>
             <View style={styles.logoCircle}>
               <Ionicons name="sparkles" size={42} color="#FFFFFF" />
             </View>
           </View>
-          <Text style={styles.title}>Join SmartWaste</Text>
-          <Text style={styles.subtitle}>Become a Nairobi Clean City Champion</Text>
-          <Text style={styles.tagline}>Create your account and start making a visible difference in our community</Text>
+          <Text style={styles.title}>{t('joinSmartWaste')}</Text>
+          <Text style={styles.subtitle}>{t('becomeChampion')}</Text>
+          <Text style={styles.tagline}>{t('createAccountStart')}</Text>
         </View>
 
-        {/* Elegant Form Container */}
         <View style={styles.formContainer}>
-          <Text style={styles.formTitle}>Your Information</Text>
+          <Text style={styles.formTitle}>{t('yourInformation')}</Text>
           
-          {/* Full Name Input */}
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Full Name</Text>
+            <Text style={styles.inputLabel}>{t('fullName')}</Text>
             <View style={[
               styles.inputContainer, 
               isFocused.name && styles.inputContainerFocused
@@ -135,7 +134,7 @@ try {
               />
               <TextInput
                 style={styles.input}
-                placeholder="Enter your full name"
+                placeholder={t('enterFullName')}
                 placeholderTextColor="#94A3B8"
                 value={name}
                 onChangeText={setName}
@@ -146,9 +145,8 @@ try {
             </View>
           </View>
 
-          {/* Email Input */}
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Email Address</Text>
+            <Text style={styles.inputLabel}>{t('emailAddress')}</Text>
             <View style={[
               styles.inputContainer, 
               isFocused.email && styles.inputContainerFocused
@@ -161,7 +159,7 @@ try {
               />
               <TextInput
                 style={styles.input}
-                placeholder="Enter your email address"
+                placeholder={t('enterEmail')}
                 placeholderTextColor="#94A3B8"
                 value={email}
                 onChangeText={setEmail}
@@ -174,10 +172,9 @@ try {
             </View>
           </View>
 
-          {/* Password Input with Strength Indicator */}
           <View style={styles.inputGroup}>
             <View style={styles.passwordHeader}>
-              <Text style={styles.inputLabel}>Create Password</Text>
+              <Text style={styles.inputLabel}>{t('createPassword')}</Text>
               {password.length > 0 && (
                 <Text style={[styles.passwordStrength, { color: passwordStrength.color }]}>
                   {passwordStrength.strength}
@@ -196,7 +193,7 @@ try {
               />
               <TextInput
                 style={styles.input}
-                placeholder="Choose a secure password"
+                placeholder={t('chooseSecurePassword')}
                 placeholderTextColor="#94A3B8"
                 value={password}
                 onChangeText={setPassword}
@@ -218,13 +215,12 @@ try {
               </TouchableOpacity>
             </View>
             <Text style={styles.passwordHint}>
-              {showPassword ? '👁️ Password is visible' : '👁️ Tap to show password'} • Minimum 6 characters
+              {showPassword ? t('passwordVisible') : t('tapToShowPassword')} • {t('minimumCharacters')}
             </Text>
           </View>
 
-          {/* Confirm Password Input */}
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Confirm Password</Text>
+            <Text style={styles.inputLabel}>{t('confirmPassword')}</Text>
             <View style={[
               styles.inputContainer, 
               isFocused.confirmPassword && styles.inputContainerFocused,
@@ -241,7 +237,7 @@ try {
               />
               <TextInput
                 style={styles.input}
-                placeholder="Re-enter your password"
+                placeholder={t('reenterPassword')}
                 placeholderTextColor="#94A3B8"
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
@@ -255,14 +251,13 @@ try {
               )}
             </View>
             {confirmPassword && password !== confirmPassword && (
-              <Text style={styles.errorText}>❌ Passwords do not match</Text>
+              <Text style={styles.errorText}>{t('passwordsDontMatchError')}</Text>
             )}
             {confirmPassword && password === confirmPassword && password.length >= 6 && (
-              <Text style={styles.successText}>✅ Passwords match perfectly!</Text>
+              <Text style={styles.successText}>{t('passwordsMatch')}</Text>
             )}
           </View>
 
-          {/* Beautiful Signup Button */}
           <TouchableOpacity 
             style={[
               styles.signupButton, 
@@ -276,17 +271,16 @@ try {
               <ActivityIndicator color="white" size="small" />
             ) : (
               <View style={styles.buttonContent}>
-                <Text style={styles.signupButtonText}>Create My Account</Text>
+                <Text style={styles.signupButtonText}>{t('createAccount')}</Text>
                 <Ionicons name="sparkles" size={20} color="white" />
               </View>
             )}
           </TouchableOpacity>
 
-          {/* Elegant Login Section */}
           <View style={styles.loginSection}>
             <View style={styles.divider}>
               <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>Already have an account?</Text>
+              <Text style={styles.dividerText}>{t('alreadyHaveAccount')}</Text>
               <View style={styles.dividerLine} />
             </View>
             
@@ -294,18 +288,17 @@ try {
               style={styles.loginButton}
               onPress={() => router.back()}
             >
-              <Text style={styles.loginButtonText}>Sign In to Existing Account</Text>
+              <Text style={styles.loginButtonText}>{t('signInExisting')}</Text>
             </TouchableOpacity>
             
             <Text style={styles.loginHint}>
-              Welcome back! We've missed your contributions to our clean city mission
+              {t('welcomeBackMessage')}
             </Text>
           </View>
         </View>
 
-        {/* Inspiring Footer */}
         <View style={styles.footer}>
-          <Text style={styles.footerText}>🌟 Your journey to a cleaner Nairobi starts here</Text>
+          <Text style={styles.footerText}>{t('journeyStartsHere')}</Text>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

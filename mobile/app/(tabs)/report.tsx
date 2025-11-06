@@ -14,23 +14,25 @@ import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 export default function ReportScreen() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [description, setDescription] = useState('');
   const [images, setImages] = useState<string[]>([]);
-  const [address, setAddress] = useState('Getting location...');
+  const [address, setAddress] = useState(t('gettingLocation'));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(true);
 
   const getCurrentLocation = async () => {
     try {
       setIsGettingLocation(true);
-      setAddress('Locating...');
+      setAddress(t('locating'));
       
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        setAddress('Location permission denied');
+        setAddress(t('locationDenied'));
         setIsGettingLocation(false);
         return;
       }
@@ -49,13 +51,13 @@ export default function ReportScreen() {
       if (addressResult.length > 0) {
         const addr = addressResult[0];
         const fullAddress = `${addr.name || ''} ${addr.street || ''}, ${addr.city || 'Nairobi'}, ${addr.region || 'Kenya'}`.trim();
-        setAddress(fullAddress || 'Location detected');
+        setAddress(fullAddress || t('locationDetected'));
       } else {
-        setAddress('Location detected');
+        setAddress(t('locationDetected'));
       }
       
     } catch (error) {
-      setAddress('Error getting location');
+      setAddress(t('locationError'));
     } finally {
       setIsGettingLocation(false);
     }
@@ -68,7 +70,7 @@ export default function ReportScreen() {
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission required', 'Sorry, we need camera roll permissions to select photos.');
+      Alert.alert(t('permissionRequired'), t('cameraRollPermission'));
       return;
     }
 
@@ -87,7 +89,7 @@ export default function ReportScreen() {
   const takePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission required', 'Sorry, we need camera permissions to take photos.');
+      Alert.alert(t('permissionRequired'), t('cameraPermission'));
       return;
     }
 
@@ -108,12 +110,12 @@ export default function ReportScreen() {
 
 const submitReport = async () => {
   if (!description.trim()) {
-    Alert.alert('Missing Information', 'Please describe the waste issue so collectors know what to expect.');
+    Alert.alert(t('missingInfo'), t('describeIssue'));
     return;
   }
 
   if (images.length === 0) {
-    Alert.alert('Photo Required', 'Please add at least one photo to help waste collectors identify the location and issue.');
+    Alert.alert(t('photoRequired'), t('photoRequiredDesc'));
     return;
   }
 
@@ -130,22 +132,17 @@ const submitReport = async () => {
     const submittedBy = await getUserId();
 
     if (!submittedBy) {
-      Alert.alert('Login Required', 'Please log in to submit a report');
+      Alert.alert(t('loginRequired'), t('loginRequiredDesc'));
       setIsSubmitting(false);
       return;
     }
 
-    // UPLOAD ALL PHOTOS TO CLOUDINARY
     let uploadedPhotoUrls = [];
     
     if (images.length > 0) {
-      console.log(`📤 Uploading ${images.length} photos to Cloudinary...`);
-      
-      // Upload each photo
       for (let i = 0; i < images.length; i++) {
         try {
           const imageUri = images[i];
-          console.log(`📸 Uploading photo ${i + 1} of ${images.length}...`);
           
           const formData = new FormData();
           formData.append('file', {
@@ -164,20 +161,15 @@ const submitReport = async () => {
           
           if (cloudinaryData.secure_url) {
             uploadedPhotoUrls.push(cloudinaryData.secure_url);
-            console.log(`✅ Photo ${i + 1} uploaded:`, cloudinaryData.secure_url);
-          } else {
-            console.log(`❌ Photo ${i + 1} upload failed`);
           }
         } catch (uploadError) {
-          console.log(`❌ Photo ${i + 1} upload error:`, uploadError);
+          console.log('Photo upload error:', uploadError);
         }
       }
     }
 
-    // Use first uploaded photo or placeholder
     const primaryPhotoUrl = uploadedPhotoUrls.length > 0 ? uploadedPhotoUrls[0] : 'https://placehold.co/300x200/2d5a3c/ffffff/png?text=Waste+Photo';
 
-    // SUBMIT TO BACKEND WITH PHOTO URLS
     const reportData = {
       description: description.trim(),
       location: address,
@@ -185,12 +177,10 @@ const submitReport = async () => {
       longitude: longitude,
       wasteType: 'general',
       userId: submittedBy,
-      photo: primaryPhotoUrl, // Main photo for single photo field
-      photos: uploadedPhotoUrls, // NEW: Array of all photos
+      photo: primaryPhotoUrl,
+      photos: uploadedPhotoUrls,
       priority: 'pending'
     };
-
-    console.log(`📤 Submitting to backend with ${uploadedPhotoUrls.length} photos...`);
 
     const response = await fetch('https://smart-waste-nairobi-chi.vercel.app/api/reports/submit', {
       method: 'POST',
@@ -203,47 +193,41 @@ const submitReport = async () => {
     const result = await response.json();
 
     if (!response.ok) {
-      throw new Error(result.message || 'Failed to submit report');
+      throw new Error(result.message || t('submitFailed'));
     }
 
-    console.log(`✅ Backend submission successful with ${uploadedPhotoUrls.length} photos!`);
+    if (images.length > 0) {
+      const { saveReportPhoto } = require('../../utils/userHelper');
+      for (let i = 0; i < images.length; i++) {
+        await saveReportPhoto(`${result.report._id}_${i}`, images[i]);
+      }
+    }
 
-// Save ALL photos locally for mobile app
-// Save ALL photos locally for mobile app - USE EXISTING FUNCTION
-if (images.length > 0) {
-  const { saveReportPhoto } = require('../../utils/userHelper'); // Use existing function
-  
-  // Save each photo with indexed keys
-  for (let i = 0; i < images.length; i++) {
-    await saveReportPhoto(`${result.report._id}_${i}`, images[i]);
-  }
-  console.log(`💾 ${images.length} photos saved locally for mobile app`);
-}
+    const localReport = {
+      id: result.report._id,
+      description: description.trim(),
+      images: images,
+      photoUrls: uploadedPhotoUrls,
+      address: address,
+      location: address,
+      timestamp: new Date().toISOString(),
+      status: 'Submitted',
+      priority: 'pending'
+    };
 
-const localReport = {
-  id: result.report._id,
-  description: description.trim(),
-  images: images, // ALL local photos for mobile
-  photoUrls: uploadedPhotoUrls, // ALL Cloudinary URLs
-  address: address,
-  location: address,
-  timestamp: new Date().toISOString(),
-  status: 'Submitted',
-  priority: 'pending'
-};
     Alert.alert(
-      '✅ Report Submitted Successfully!', 
-      `Your waste report with ${uploadedPhotoUrls.length} photos has been received!`,
+      t('reportSubmitted'), 
+      t('reportSubmittedDesc', uploadedPhotoUrls.length),
       [
         {
-          text: 'View My Reports',
+          text: t('viewMyReports'),
           onPress: () => router.push({
             pathname: '/(tabs)/status',
             params: { newReport: JSON.stringify(localReport) }
           })
         },
         {
-          text: 'Submit Another',
+          text: t('submitAnother'),
           onPress: () => {
             setDescription('');
             setImages([]);
@@ -254,8 +238,7 @@ const localReport = {
     );
     
   } catch (error: any) {
-    console.log('❌ Submission error:', error);
-    Alert.alert('❌ Submission Failed', error.message || 'Please try again later.');
+    Alert.alert(t('submissionFailed'), error.message || t('tryAgainLater'));
   } finally {
     setIsSubmitting(false);
   }
@@ -263,18 +246,18 @@ const localReport = {
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.title}>Report Waste Issue</Text>
+      <Text style={styles.title}>{t('reportWasteIssue')}</Text>
       
       <View style={styles.locationContainer}>
         <View style={styles.locationHeader}>
-          <Text style={styles.locationLabel}>📍 Current Location</Text>
+          <Text style={styles.locationLabel}>{t('currentLocation')}</Text>
           <TouchableOpacity 
             style={styles.refreshButton}
             onPress={getCurrentLocation}
             disabled={isGettingLocation}
           >
             <Text style={styles.refreshButtonText}>
-              {isGettingLocation ? '🔄' : '🔄 Refresh'}
+              {isGettingLocation ? '🔄' : `🔄 ${t('refresh')}`}
             </Text>
           </TouchableOpacity>
         </View>
@@ -282,17 +265,17 @@ const localReport = {
         {isGettingLocation ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="small" color="#2d5a3c" />
-            <Text style={styles.loadingText}>Getting your location...</Text>
+            <Text style={styles.loadingText}>{t('gettingLocation')}</Text>
           </View>
         ) : (
           <Text style={styles.addressText}>{address}</Text>
         )}
       </View>
 
-      <Text style={styles.label}>Describe the waste issue *</Text>
+      <Text style={styles.label}>{t('describeIssueLabel')}</Text>
       <TextInput
         style={styles.textInput}
-        placeholder="e.g., Overflowing bins at market, illegal dumping site, full public bins..."
+        placeholder={t('describePlaceholder')}
         multiline
         numberOfLines={4}
         value={description}
@@ -300,8 +283,8 @@ const localReport = {
         placeholderTextColor="#999"
       />
 
-      <Text style={styles.label}>Add Photos *</Text>
-      <Text style={styles.photoSubtitle}>At least one photo required to help collectors identify the issue</Text>
+      <Text style={styles.label}>{t('addPhotosLabel')}</Text>
+      <Text style={styles.photoSubtitle}>{t('photoRequiredSubtitle')}</Text>
       
       <View style={styles.photoButtons}>
         <TouchableOpacity 
@@ -309,20 +292,20 @@ const localReport = {
           onPress={takePhoto}
           disabled={isSubmitting}
         >
-          <Text style={styles.photoButtonText}>📸 Take Photo</Text>
+          <Text style={styles.photoButtonText}>{t('takePhoto')}</Text>
         </TouchableOpacity>
         <TouchableOpacity 
           style={[styles.photoButton, isSubmitting && styles.buttonDisabled]} 
           onPress={pickImage}
           disabled={isSubmitting}
         >
-          <Text style={styles.photoButtonText}>🖼️ Choose from Gallery</Text>
+          <Text style={styles.photoButtonText}>{t('chooseFromGallery')}</Text>
         </TouchableOpacity>
       </View>
 
       {images.length > 0 && (
         <View style={styles.imagesContainer}>
-          <Text style={styles.imagesCount}>{images.length} photo(s) added</Text>
+          <Text style={styles.imagesCount}>{t('photosAdded', images.length)}</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             <View style={styles.imagesRow}>
               {images.map((image, index) => (
@@ -353,10 +336,10 @@ const localReport = {
         {isSubmitting ? (
           <View style={styles.submittingContainer}>
             <ActivityIndicator color="white" size="small" />
-            <Text style={styles.submittingText}>Submitting Report...</Text>
+            <Text style={styles.submittingText}>{t('submittingReport')}</Text>
           </View>
         ) : (
-          <Text style={styles.submitButtonText}>📤 Submit Report</Text>
+          <Text style={styles.submitButtonText}>{t('submitReport')}</Text>
         )}
       </TouchableOpacity>
 
@@ -365,7 +348,7 @@ const localReport = {
         onPress={() => router.back()}
         disabled={isSubmitting}
       >
-        <Text style={styles.backButtonText}>← Back to Home</Text>
+        <Text style={styles.backButtonText}>{t('backToHome')}</Text>
       </TouchableOpacity>
     </ScrollView>
   );

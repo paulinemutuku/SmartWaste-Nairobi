@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image } from 'react-native';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { useState, useEffect, useCallback } from 'react';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 type Report = {
   id: string;
@@ -17,6 +18,7 @@ type Report = {
 export default function StatusScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
+  const { t } = useLanguage();
   const [reports, setReports] = useState<Report[]>([]);
 
   useEffect(() => {
@@ -27,10 +29,9 @@ export default function StatusScreen() {
   if (params.newReport) {
     try {
       const newReport: Report = JSON.parse(params.newReport as string);
-      console.log('📸 New report with images:', newReport.images);
       setReports(prev => [newReport, ...prev]);
     } catch (error) {
-      console.log('❌ Error parsing new report:', error);
+      console.log('Error parsing new report:', error);
     }
   }
 }, [params.newReport]);
@@ -38,30 +39,24 @@ export default function StatusScreen() {
 const loadReports = async () => {
   try {
     const { reportService } = require('../../services/api');
-    const { getStoredPhotos } = require('../../utils/userHelper'); // Use existing function
+    const { getStoredPhotos } = require('../../utils/userHelper');
     
     const { getUserId } = require('../../utils/userHelper');
     const userId = await getUserId();
 
     if (!userId) {
-      console.log('No user ID found');
       setReports([]);
       return;
     }
 
-    // Get all stored photos first
     const allStoredPhotos = await getStoredPhotos();
-    console.log('📸 All stored photos keys:', Object.keys(allStoredPhotos));
 
     const result = await reportService.getUserReports(userId);
 
     if (result.success) {
-  // Get all stored photos first
   const allStoredPhotos = await getStoredPhotos();
-  console.log('📸 All stored photos keys:', Object.keys(allStoredPhotos));
 
   const transformedReports = result.reports.map((report: any) => {
-    // Get ALL local photos for this report
     const localPhotos = [];
     Object.keys(allStoredPhotos).forEach(key => {
       if (key.startsWith(report._id + '_')) {
@@ -69,12 +64,9 @@ const loadReports = async () => {
       }
     });
     
-    // Also check for single photo (backward compatibility)
     if (localPhotos.length === 0 && allStoredPhotos[report._id]) {
       localPhotos.push(allStoredPhotos[report._id]);
     }
-    
-    console.log(`Report ${report._id} has ${localPhotos.length} local photos`);
 
     const priority = report.priority || 'pending';
     
@@ -87,12 +79,11 @@ const loadReports = async () => {
       id: report._id,
       address: report.location,
       location: report.location,
-      status: report.status === 'submitted' ? 'Submitted' : 
-              report.status === 'in-progress' ? 'In Progress' : 'Completed',
+      status: report.status === 'submitted' ? t('submitted') : 
+              report.status === 'in-progress' ? t('inProgress') : t('completed'),
       timestamp: report.createdAt,
       description: report.description,
       priority: priority,
-      // Use ALL local photos OR backend photos OR single photo
       images: localPhotos.length > 0 ? localPhotos : 
               (report.photos && report.photos.length > 0 ? report.photos : 
               (photoUrl ? [photoUrl] : []))
@@ -109,29 +100,29 @@ const loadReports = async () => {
 
   const getStatusColor = (status: string) => {
     switch(status) {
-      case 'Submitted': return '#FFA500';
-      case 'In Progress': return '#4682B4';
-      case 'Completed': return '#2E8B57';
+      case t('submitted'): return '#FFA500';
+      case t('inProgress'): return '#4682B4';
+      case t('completed'): return '#2E8B57';
       default: return '#666';
     }
   };
 
   const getPriorityColor = (priority: string) => {
-    switch(priority.toLowerCase()) { // ← FIXED: Make case-insensitive
+    switch(priority.toLowerCase()) {
       case 'high': 
       case 'critical': return '#FF4444';
       case 'medium': return '#FFA500';
       case 'low': return '#2E8B57';
-      case 'pending': return '#666'; // ← ADDED: Color for pending
+      case 'pending': return '#666';
       default: return '#666';
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch(status) {
-      case 'Submitted': return '📋';
-      case 'In Progress': return '🔄';
-      case 'Completed': return '✅';
+      case t('submitted'): return '📋';
+      case t('inProgress'): return '🔄';
+      case t('completed'): return '✅';
       default: return '📄';
     }
   };
@@ -142,32 +133,32 @@ const loadReports = async () => {
     const diff = now.getTime() - date.getTime();
     const hours = Math.floor(diff / (1000 * 60 * 60));
     
-    if (hours < 1) return 'Just now';
-    if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+    if (hours < 1) return t('justNow');
+    if (hours < 24) return t('hoursAgo', hours);
     
     const days = Math.floor(hours / 24);
-    return `${days} day${days > 1 ? 's' : ''} ago`;
+    return t('daysAgo', days);
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>My Reports</Text>
-        <Text style={styles.subtitle}>Track your waste complaints</Text>
+        <Text style={styles.title}>{t('myReports')}</Text>
+        <Text style={styles.subtitle}>{t('trackComplaints')}</Text>
       </View>
 
       <View style={styles.statsContainer}>
         <View style={styles.statItem}>
           <Text style={styles.statNumber}>{reports.length}</Text>
-          <Text style={styles.statLabel}>Total Reports</Text>
+          <Text style={styles.statLabel}>{t('totalReports')}</Text>
         </View>
         <View style={styles.statItem}>
-          <Text style={styles.statNumber}>{reports.filter(r => r.status === 'Completed').length}</Text>
-          <Text style={styles.statLabel}>Resolved</Text>
+          <Text style={styles.statNumber}>{reports.filter(r => r.status === t('completed')).length}</Text>
+          <Text style={styles.statLabel}>{t('resolved')}</Text>
         </View>
         <View style={styles.statItem}>
-          <Text style={styles.statNumber}>{reports.filter(r => r.status !== 'Completed').length}</Text>
-          <Text style={styles.statLabel}>Active</Text>
+          <Text style={styles.statNumber}>{reports.filter(r => r.status !== t('completed')).length}</Text>
+          <Text style={styles.statLabel}>{t('active')}</Text>
         </View>
       </View>
 
@@ -180,11 +171,11 @@ const loadReports = async () => {
             <View style={styles.cardHeader}>
               <View style={styles.locationContainer}>
                 <Text style={styles.locationIcon}>📍</Text>
-                <Text style={styles.location}>{item.address || item.location || 'Nairobi'}</Text>
+                <Text style={styles.location}>{item.address || item.location || t('nairobi')}</Text>
               </View>
               <View style={[styles.priorityBadge, { backgroundColor: getPriorityColor(item.priority) }]}>
                 <Text style={styles.priorityText}>
-                  {item.priority.charAt(0).toUpperCase() + item.priority.slice(1)} {/* Capitalize first letter */}
+                  {item.priority.charAt(0).toUpperCase() + item.priority.slice(1)}
                 </Text>
               </View>
             </View>
@@ -193,23 +184,15 @@ const loadReports = async () => {
             
             {item.images && item.images.length > 0 && item.images[0] ? (
               <View style={styles.imagesContainer}>
-                <Text style={styles.imagesLabel}>📸 Photo</Text>
+                <Text style={styles.imagesLabel}>{t('photo')}</Text>
                 <Image 
                   source={{ uri: item.images[0] }} 
                   style={styles.thumbnail}
-                  onError={() => {
-                    console.log('❌ IMAGE LOAD ERROR for report:', item.id);
-                    console.log('📷 Failed URL:', item.images?.[0] || 'No URL');
-                  }}
-                  onLoad={() => {
-                    console.log('✅ IMAGE LOADED for report:', item.id);
-                    console.log('📷 Success URL:', item.images?.[0] || 'No URL');
-                  }}
                 />
               </View>
             ) : (
               <View style={styles.imagesContainer}>
-                <Text style={styles.noPhotoText}>📷 No photo available</Text>
+                <Text style={styles.noPhotoText}>{t('noPhoto')}</Text>
               </View>
             )}
             
@@ -227,13 +210,13 @@ const loadReports = async () => {
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Text style={styles.emptyIcon}>📋</Text>
-            <Text style={styles.emptyTitle}>No Reports Yet</Text>
-            <Text style={styles.emptyText}>Submit your first waste report to see it here</Text>
+            <Text style={styles.emptyTitle}>{t('noReports')}</Text>
+            <Text style={styles.emptyText}>{t('submitFirstReport')}</Text>
             <TouchableOpacity 
               style={styles.submitButton}
               onPress={() => router.push('/report')}
             >
-              <Text style={styles.submitButtonText}>Report Waste Issue</Text>
+              <Text style={styles.submitButtonText}>{t('reportWasteIssue')}</Text>
             </TouchableOpacity>
           </View>
         }
@@ -243,7 +226,7 @@ const loadReports = async () => {
         style={styles.backButton}
         onPress={() => router.push('/(tabs)')}
       >
-        <Text style={styles.backButtonText}>← Back to Home</Text>
+        <Text style={styles.backButtonText}>{t('backToHome')}</Text>
       </TouchableOpacity>
     </View>
   );

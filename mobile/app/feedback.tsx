@@ -11,33 +11,34 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function FeedbackScreen() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [feedback, setFeedback] = useState('');
   const [rating, setRating] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
 const handleSubmit = async () => {
   if (!feedback.trim()) {
-    Alert.alert('Error', 'Please enter your feedback before submitting.');
+    Alert.alert(t('error'), t('enterFeedback'));
     return;
   }
 
   if (rating === 0) {
-    Alert.alert('Error', 'Please select a rating before submitting.');
+    Alert.alert(t('error'), t('selectRating'));
     return;
   }
 
   setIsSubmitting(true);
 
   try {
-    // Get current user ID
     const { getUserId } = require('../utils/userHelper');
     const submittedBy = await getUserId();
 
     if (!submittedBy) {
-      Alert.alert('Error', 'Please log in to submit feedback.');
+      Alert.alert(t('error'), t('loginToSubmit'));
       setIsSubmitting(false);
       return;
     }
@@ -52,17 +53,17 @@ const handleSubmit = async () => {
     const result = await feedbackService.submitFeedback(feedbackData);
     
     Alert.alert(
-      'Thank You! 🌟',
-      'Your feedback has been submitted successfully. We appreciate your input!',
+      t('thankYou'),
+      t('feedbackSubmitted'),
       [
         {
-          text: 'OK',
+          text: t('ok'),
           onPress: () => router.back()
         }
       ]
     );
   } catch (error) {
-    Alert.alert('Error', 'Failed to submit feedback. Please try again.');
+    Alert.alert(t('error'), t('submitFailed'));
     console.error('Feedback submission error:', error);
   } finally {
     setIsSubmitting(false);
@@ -94,31 +95,29 @@ const handleSubmit = async () => {
         >
           <Ionicons name="arrow-back" size={24} color="#2E8B57" />
         </TouchableOpacity>
-        <Text style={styles.title}>Send Feedback</Text>
+        <Text style={styles.title}>{t('sendFeedback')}</Text>
       </View>
 
       <View style={styles.content}>
         <Text style={styles.subtitle}>
-          We'd love to hear your thoughts, suggestions, or concerns
+          {t('feedbackSubtitle')}
         </Text>
 
-        {/* Rating Section */}
         <View style={styles.ratingSection}>
-          <Text style={styles.ratingLabel}>How would you rate your experience?</Text>
+          <Text style={styles.ratingLabel}>{t('rateExperience')}</Text>
           <View style={styles.starsContainer}>
             {renderStars()}
           </View>
           <Text style={styles.ratingText}>
-            {rating === 0 ? 'Select a rating' : `You rated: ${rating}/5 stars`}
+            {rating === 0 ? t('selectRating') : t('youRated', rating)}
           </Text>
         </View>
 
-        {/* Feedback Input */}
         <View style={styles.inputSection}>
-          <Text style={styles.inputLabel}>Your Feedback *</Text>
+          <Text style={styles.inputLabel}>{t('yourFeedback')}</Text>
           <TextInput
             style={styles.textInput}
-            placeholder="Tell us what you think about SmartWaste Nairobi... What do you like? What can we improve?"
+            placeholder={t('feedbackPlaceholder')}
             multiline
             numberOfLines={8}
             value={feedback}
@@ -126,10 +125,9 @@ const handleSubmit = async () => {
             placeholderTextColor="#999"
             textAlignVertical="top"
           />
-          <Text style={styles.charCount}>{feedback.length}/500 characters</Text>
+          <Text style={styles.charCount}>{t('charCount', feedback.length)}</Text>
         </View>
 
-        {/* Submit Button */}
         <TouchableOpacity
           style={[
             styles.submitButton,
@@ -143,17 +141,15 @@ const handleSubmit = async () => {
           ) : (
             <>
               <Ionicons name="send" size={20} color="white" />
-              <Text style={styles.submitButtonText}>Submit Feedback</Text>
+              <Text style={styles.submitButtonText}>{t('submitFeedback')}</Text>
             </>
           )}
         </TouchableOpacity>
 
-        {/* Note */}
         <View style={styles.noteSection}>
           <Ionicons name="information-circle" size={20} color="#666" />
           <Text style={styles.noteText}>
-            Your feedback helps us improve SmartWaste for all Nairobi residents. 
-            We read every submission and appreciate your input!
+            {t('feedbackNote')}
           </Text>
         </View>
       </View>

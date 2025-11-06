@@ -15,6 +15,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const { width, height } = Dimensions.get('window');
 
@@ -26,15 +27,16 @@ export default function LoginScreen() {
   const [isFocused, setIsFocused] = useState({ email: false, password: false });
   const router = useRouter();
   const { login } = useAuth();
+  const { t } = useLanguage();
 
 const handleLogin = async () => {
   if (!email || !password) {
-    Alert.alert('Missing Information', 'Please enter both your email address and password to continue.');
+    Alert.alert(t('missingInfo'), t('enterEmailPassword'));
     return;
   }
 
   if (!email.includes('@')) {
-    Alert.alert('Invalid Email', 'Please enter a valid email address with @ symbol.');
+    Alert.alert(t('invalidEmail'), t('validEmailRequired'));
     return;
   }
 
@@ -54,15 +56,15 @@ const handleLogin = async () => {
       await login(userData);
       
       Alert.alert(
-        'Welcome Back! 🌟', 
-        `It's wonderful to see you again, ${result.user.name}! Ready to continue making Nairobi cleaner?`,
-        [{ text: 'Let\'s Go!', onPress: () => router.replace('/') }]
+        t('welcomeBack'), 
+        t('welcomeMessage', result.user.name),
+        [{ text: t('letsGo'), onPress: () => router.replace('/') }]
       );
     }
   } catch (error) {
     Alert.alert(
-      'Unable to Sign In', 
-      error instanceof Error ? error.message : 'Please check your connection and try again.'
+      t('signInFailed'), 
+      error instanceof Error ? error.message : t('checkConnection')
     );
   } finally {
     setIsLoading(false);
@@ -88,16 +90,16 @@ const handleLogin = async () => {
               <Ionicons name="leaf" size={42} color="#FFFFFF" />
             </View>
           </View>
-          <Text style={styles.title}>Welcome to SmartWaste</Text>
-          <Text style={styles.subtitle}>Nairobi's Clean City Initiative</Text>
-          <Text style={styles.tagline}>Sign in to continue your impact on our beautiful city</Text>
+          <Text style={styles.title}>{t('welcomeToSmartWaste')}</Text>
+          <Text style={styles.subtitle}>{t('nairobiInitiative')}</Text>
+          <Text style={styles.tagline}>{t('signInToContinue')}</Text>
         </View>
 
         <View style={styles.formContainer}>
-          <Text style={styles.formTitle}>Your Account</Text>
+          <Text style={styles.formTitle}>{t('yourAccount')}</Text>
           
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Email Address</Text>
+            <Text style={styles.inputLabel}>{t('emailAddress')}</Text>
             <View style={[
               styles.inputContainer, 
               isFocused.email && styles.inputContainerFocused
@@ -110,7 +112,7 @@ const handleLogin = async () => {
               />
               <TextInput
                 style={styles.input}
-                placeholder="Enter your email address"
+                placeholder={t('enterEmail')}
                 placeholderTextColor="#94A3B8"
                 value={email}
                 onChangeText={setEmail}
@@ -124,7 +126,7 @@ const handleLogin = async () => {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Password</Text>
+            <Text style={styles.inputLabel}>{t('password')}</Text>
             <View style={[
               styles.inputContainer, 
               isFocused.password && styles.inputContainerFocused
@@ -137,7 +139,7 @@ const handleLogin = async () => {
               />
               <TextInput
                 style={styles.input}
-                placeholder="Enter your password"
+                placeholder={t('enterPassword')}
                 placeholderTextColor="#94A3B8"
                 value={password}
                 onChangeText={setPassword}
@@ -159,7 +161,7 @@ const handleLogin = async () => {
               </TouchableOpacity>
             </View>
             <Text style={styles.passwordHint}>
-              {showPassword ? '👁️ Password is visible' : '👁️ Tap to show password'}
+              {showPassword ? t('passwordVisible') : t('tapToShowPassword')}
             </Text>
           </View>
 
@@ -176,7 +178,7 @@ const handleLogin = async () => {
               <ActivityIndicator color="white" size="small" />
             ) : (
               <View style={styles.buttonContent}>
-                <Text style={styles.loginButtonText}>Sign In to Your Account</Text>
+                <Text style={styles.loginButtonText}>{t('signInToAccount')}</Text>
                 <Ionicons name="arrow-forward" size={20} color="white" />
               </View>
             )}
@@ -185,7 +187,7 @@ const handleLogin = async () => {
           <View style={styles.signupSection}>
             <View style={styles.divider}>
               <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>New to SmartWaste?</Text>
+              <Text style={styles.dividerText}>{t('newToSmartWaste')}</Text>
               <View style={styles.dividerLine} />
             </View>
             
@@ -193,17 +195,17 @@ const handleLogin = async () => {
               style={styles.signupButton}
               onPress={handleSignup}
             >
-              <Text style={styles.signupButtonText}>Create Your Account</Text>
+              <Text style={styles.signupButtonText}>{t('createAccount')}</Text>
             </TouchableOpacity>
             
             <Text style={styles.signupHint}>
-              Join thousands of Nairobians making our city cleaner every day
+              {t('joinThousands')}
             </Text>
           </View>
         </View>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>🌿 Together, we're building a cleaner, greener Nairobi</Text>
+          <Text style={styles.footerText}>{t('buildingNairobi')}</Text>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

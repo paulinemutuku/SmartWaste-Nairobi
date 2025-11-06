@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LanguageContext = createContext();
@@ -32,18 +32,180 @@ export const LanguageProvider = ({ children }) => {
     }
   };
 
-  const changeLanguage = async (newLanguage) => {
-    try {
-      setLanguage(newLanguage);
-      await AsyncStorage.setItem('appLanguage', newLanguage);
-    } catch (error) {
-      console.error('Error saving language:', error);
-    }
+  const changeLanguage = (newLanguage) => {
+    setLanguage(newLanguage);
+    AsyncStorage.setItem('appLanguage', newLanguage).catch(console.error);
   };
 
   const translations = {
     English: {
-      // Profile Screen
+      // Home Page
+      appName: 'SmartWaste',
+      appTagline: 'Transforming Nairobi\'s Waste Management',
+      heroTitle: 'Building Cleaner Communities Together',
+      heroDescription: 'Report waste issues in real-time, track resolution progress, and contribute to a cleaner Nairobi',
+      reportIssue: 'Report Issue',
+      reportIssueDesc: 'Submit waste complaint',
+      myReports: 'My Reports',
+      myReportsDesc: 'Track submission status',
+      profile: 'Profile',
+      profileDesc: 'Account & settings',
+      howItWorks: 'How It Works',
+      step1Title: 'Report',
+      step1Desc: 'Snap photos of waste issues',
+      step2Title: 'Cluster',
+      step2Desc: 'Nearby reports are grouped',
+      step3Title: 'Optimize',
+      step3Desc: 'Smart route planning',
+      step4Title: 'Resolve',
+      step4Desc: 'Fast collection response',
+      impactTitle: 'Your Impact Matters',
+      impactDescription: 'Every report directly contributes to optimized collection routes, reduced environmental pollution, and safer, cleaner neighborhoods across Nairobi.',
+      efficiencyStat: '+40%',
+      efficiencyLabel: 'Collection Efficiency',
+      fuelStat: '-25%',
+      fuelLabel: 'Fuel Costs',
+      clusteringStat: '100m',
+      clusteringLabel: 'Smart Clustering',
+      ctaTitle: 'Ready to Make a Difference?',
+      ctaDescription: 'Join thousands of Nairobians cleaning their communities',
+      ctaButton: 'Report Your First Issue',
+
+      // Report Page
+      gettingLocation: 'Getting location...',
+      locating: 'Locating...',
+      locationDenied: 'Location permission denied',
+      locationDetected: 'Location detected',
+      locationError: 'Error getting location',
+      permissionRequired: 'Permission required',
+      cameraRollPermission: 'Sorry, we need camera roll permissions to select photos.',
+      cameraPermission: 'Sorry, we need camera permissions to take photos.',
+      missingInfo: 'Missing Information',
+      describeIssue: 'Please describe the waste issue so collectors know what to expect.',
+      photoRequired: 'Photo Required',
+      photoRequiredDesc: 'Please add at least one photo to help waste collectors identify the location and issue.',
+      loginRequired: 'Login Required',
+      loginRequiredDesc: 'Please log in to submit a report',
+      submitFailed: 'Failed to submit report',
+      reportSubmitted: 'Report Submitted Successfully!',
+      reportSubmittedDesc: (count) => `Your waste report with ${count} photos has been received!`,
+      viewMyReports: 'View My Reports',
+      submitAnother: 'Submit Another',
+      tryAgainLater: 'Please try again later.',
+      reportWasteIssue: 'Report Waste Issue',
+      currentLocation: '📍 Current Location',
+      refresh: 'Refresh',
+      describeIssueLabel: 'Describe the waste issue *',
+      describePlaceholder: 'e.g., Overflowing bins at market, illegal dumping site, full public bins...',
+      addPhotosLabel: 'Add Photos *',
+      photoRequiredSubtitle: 'At least one photo required to help collectors identify the issue',
+      takePhoto: '📸 Take Photo',
+      chooseFromGallery: '🖼️ Choose from Gallery',
+      photosAdded: (count) => `${count} photo(s) added`,
+      submittingReport: 'Submitting Report...',
+      submitReport: '📤 Submit Report',
+      backToHome: '← Back to Home',
+
+      // Status Page
+      myReports: 'My Reports',
+      trackComplaints: 'Track your waste complaints',
+      totalReports: 'Total Reports',
+      resolved: 'Resolved',
+      active: 'Active',
+      submitted: 'Submitted',
+      inProgress: 'In Progress',
+      completed: 'Completed',
+      nairobi: 'Nairobi',
+      photo: '📸 Photo',
+      noPhoto: '📷 No photo available',
+      justNow: 'Just now',
+      hoursAgo: (hours) => `${hours} hour${hours > 1 ? 's' : ''} ago`,
+      daysAgo: (days) => `${days} day${days > 1 ? 's' : ''} ago`,
+      noReports: 'No Reports Yet',
+      submitFirstReport: 'Submit your first waste report to see it here',
+
+      // Login Page
+      missingInfo: 'Missing Information',
+      enterEmailPassword: 'Please enter both your email address and password to continue.',
+      invalidEmail: 'Invalid Email',
+      validEmailRequired: 'Please enter a valid email address with @ symbol.',
+      signInFailed: 'Unable to Sign In',
+      checkConnection: 'Please check your connection and try again.',
+      welcomeBack: 'Welcome Back! 🌟',
+      welcomeMessage: (name) => `It's wonderful to see you again, ${name}! Ready to continue making Nairobi cleaner?`,
+      letsGo: 'Let\'s Go!',
+      welcomeToSmartWaste: 'Welcome to SmartWaste',
+      nairobiInitiative: 'Nairobi\'s Clean City Initiative',
+      signInToContinue: 'Sign in to continue your impact on our beautiful city',
+      yourAccount: 'Your Account',
+      emailAddress: 'Email Address',
+      enterEmail: 'Enter your email address',
+      password: 'Password',
+      enterPassword: 'Enter your password',
+      passwordVisible: '👁️ Password is visible',
+      tapToShowPassword: '👁️ Tap to show password',
+      signInToAccount: 'Sign In to Your Account',
+      newToSmartWaste: 'New to SmartWaste?',
+      createAccount: 'Create Your Account',
+      joinThousands: 'Join thousands of Nairobians making our city cleaner every day',
+      buildingNairobi: '🌿 Together, we\'re building a cleaner, greener Nairobi',
+
+      // Signup Page
+      completeProfile: 'Complete Your Profile',
+      fillAllFields: 'Please fill in all fields to create your account and join our community.',
+      validEmailRequired: 'Valid Email Required',
+      completeEmail: 'Please enter a complete email address with @ symbol to continue.',
+      strongerPassword: 'Stronger Password Needed',
+      passwordLength: 'For your security, please choose a password with at least 6 characters.',
+      passwordsDontMatch: 'Passwords Do Not Match',
+      ensureSamePassword: 'Please ensure both password fields contain exactly the same text.',
+      accountCreationPaused: 'Account Creation Paused',
+      welcomeToFamily: 'Welcome to the Family! 🎉',
+      welcomeMessageSignup: (name) => `We're thrilled to have you, ${name}! Together, we'll make Nairobi cleaner and greener.`,
+      startJourney: 'Start My Journey',
+      empty: 'Empty',
+      tooShort: 'Too Short',
+      fair: 'Fair',
+      good: 'Good',
+      strong: 'Strong',
+      joinSmartWaste: 'Join SmartWaste',
+      becomeChampion: 'Become a Nairobi Clean City Champion',
+      createAccountStart: 'Create your account and start making a visible difference in our community',
+      yourInformation: 'Your Information',
+      fullName: 'Full Name',
+      enterFullName: 'Enter your full name',
+      createPassword: 'Create Password',
+      chooseSecurePassword: 'Choose a secure password',
+      minimumCharacters: 'Minimum 6 characters',
+      confirmPassword: 'Confirm Password',
+      reenterPassword: 'Re-enter your password',
+      passwordsDontMatchError: '❌ Passwords do not match',
+      passwordsMatch: '✅ Passwords match perfectly!',
+      alreadyHaveAccount: 'Already have an account?',
+      signInExisting: 'Sign In to Existing Account',
+      welcomeBackMessage: 'Welcome back! We\'ve missed your contributions to our clean city mission',
+      journeyStartsHere: '🌟 Your journey to a cleaner Nairobi starts here',
+
+      // Feedback Page
+      error: 'Error',
+      enterFeedback: 'Please enter your feedback before submitting.',
+      selectRating: 'Please select a rating before submitting.',
+      loginToSubmit: 'Please log in to submit feedback.',
+      thankYou: 'Thank You! 🌟',
+      feedbackSubmitted: 'Your feedback has been submitted successfully. We appreciate your input!',
+      ok: 'OK',
+      sendFeedback: 'Send Feedback',
+      feedbackSubtitle: 'We\'d love to hear your thoughts, suggestions, or concerns',
+      rateExperience: 'How would you rate your experience?',
+      selectRating: 'Select a rating',
+      youRated: (rating) => `You rated: ${rating}/5 stars`,
+      yourFeedback: 'Your Feedback *',
+      feedbackPlaceholder: 'Tell us what you think about SmartWaste Nairobi... What do you like? What can we improve?',
+      charCount: (count) => `${count}/500 characters`,
+      submitFeedback: 'Submit Feedback',
+      feedbackNote: 'Your feedback helps us improve SmartWaste for all Nairobi residents. We read every submission and appreciate your input!',
+
+      // Profile Page (existing)
       welcomeTitle: 'Welcome to SmartWaste',
       welcomeSubtitle: 'Sign in to personalize your experience',
       userName: 'SmartWaste User',
@@ -65,15 +227,11 @@ export const LanguageProvider = ({ children }) => {
       shareApp: 'Share SmartWaste',
       appVersion: 'SmartWaste Nairobi v1.0',
       buildingCity: 'Building a cleaner city together',
-      
-      // Language Modal
       chooseLanguage: 'Choose Language',
       english: 'English',
       swahili: 'Kiswahili',
       confirmSelection: 'Confirm Selection',
       languageUpdated: 'Language Updated',
-      
-      // Privacy Modal
       privacyPolicyTitle: 'Privacy Policy',
       yourPrivacyMatters: 'Your Privacy Matters',
       informationWeCollect: 'Information We Collect',
@@ -82,7 +240,173 @@ export const LanguageProvider = ({ children }) => {
       lastUpdated: 'Last updated: December 2024',
     },
     Swahili: {
-      // Profile Screen
+      // Home Page
+      appName: 'SmartWaste',
+      appTagline: 'Kubadilisha Usimamizi wa Taka Nairobi',
+      heroTitle: 'Kujenga Jamii Safi Pamoja',
+      heroDescription: 'Ripoti matatizo ya taka kwa wakati halisi, fuatilia maendeleo ya utatuzi, na changia kwenye Nairobi safi',
+      reportIssue: 'Ripoti Tatizo',
+      reportIssueDesc: 'Wasilisha malalamiko ya taka',
+      myReports: 'Ripoti Zangu',
+      myReportsDesc: 'Fuatilia hali ya uwasilishaji',
+      profile: 'Wasifu',
+      profileDesc: 'Akaunti na mipangilio',
+      howItWorks: 'Inafanyaje Kazi',
+      step1Title: 'Ripoti',
+      step1Desc: 'Piga picha za matatizo ya taka',
+      step2Title: 'Kusanya',
+      step2Desc: 'Ripoti karibu zimewekwa kwenye kundi',
+      step3Title: 'Boresha',
+      step3Desc: 'Upangaji njia mzuri',
+      step4Title: 'Tatua',
+      step4Desc: 'Majibu ya haraka ya ukusanyaji',
+      impactTitle: 'Athari Yako Ni Muhimu',
+      impactDescription: 'Kila ripoti inachangia moja kwa moja kwenye njia bora za ukusanyaji, kupunguza uchafuzi wa mazingira, na vitongoji salama na safi katika Nairobi.',
+      efficiencyStat: '+40%',
+      efficiencyLabel: 'Ufanisi wa Ukusanyaji',
+      fuelStat: '-25%',
+      fuelLabel: 'Gharama za Mafuta',
+      clusteringStat: '100m',
+      clusteringLabel: 'Kusanya Kwa Akili',
+      ctaTitle: 'Tayari Kufanya Tofauti?',
+      ctaDescription: 'Jiunge na maelfu ya Wanaibi wanaosafisha jamii zao',
+      ctaButton: 'Ripoti Tatizo Lako la Kwanza',
+
+      // Report Page
+      gettingLocation: 'Inapata eneo...',
+      locating: 'Inatafuta...',
+      locationDenied: 'Kibali cha eneo kimekataliwa',
+      locationDetected: 'Eneo limegunduliwa',
+      locationError: 'Hitilafu ya kupata eneo',
+      permissionRequired: 'Kibali kinahitajika',
+      cameraRollPermission: 'Samahani, tunahitaji vibali vya kamera ili kuchagua picha.',
+      cameraPermission: 'Samahani, tunahitaji vibali vya kamera ili kupiga picha.',
+      missingInfo: 'Taarifa Hazijakamilika',
+      describeIssue: 'Tafadhali elezea tatizo la taka ili wakusanyaji wajue nini cha kutarajia.',
+      photoRequired: 'Picha Inahitajika',
+      photoRequiredDesc: 'Tafadhali ongeza angalau picha moja ili kusaidia wakusanyaji wa taka kutambua eneo na tatizo.',
+      loginRequired: 'Kuingia Kunahitajika',
+      loginRequiredDesc: 'Tafadhali ingia kwenye akaunti yako ili kuwasilisha ripoti',
+      submitFailed: 'Imeshindwa kuwasilisha ripoti',
+      reportSubmitted: 'Ripoti Imewasilishwa Kikamilifu!',
+      reportSubmittedDesc: (count) => `Ripoti yako ya taka na picha ${count} imepokelewa!`,
+      viewMyReports: 'Angalia Ripoti Zangu',
+      submitAnother: 'Wasilisha Nyingine',
+      tryAgainLater: 'Tafadhali jaribu tena baadaye.',
+      reportWasteIssue: 'Ripoti Tatizo la Taka',
+      currentLocation: '📍 Eneo la Sasa',
+      refresh: 'Sasisha',
+      describeIssueLabel: 'Elezea tatizo la taka *',
+      describePlaceholder: 'mfano, Makataba yaliyojaa sokoni, tovuti haramu ya kutupa taka, makataba ya umma yaliyojaa...',
+      addPhotosLabel: 'Ongeza Picha *',
+      photoRequiredSubtitle: 'Angalau picha moja inahitajika kusaidia wakusanyaji kutambua tatizo',
+      takePhoto: '📸 Piga Picha',
+      chooseFromGallery: '🖼️ Chagua Kutoka Kwenye Galeri',
+      photosAdded: (count) => `Picha ${count} zimeongezwa`,
+      submittingReport: 'Inawasilisha Ripoti...',
+      submitReport: '📤 Wasilisha Ripoti',
+      backToHome: '← Rudi Nyumbani',
+
+      // Status Page
+      myReports: 'Ripoti Zangu',
+      trackComplaints: 'Fuatilia malalamiko yako ya taka',
+      totalReports: 'Jumla ya Ripoti',
+      resolved: 'Yametatuliwa',
+      active: 'Inaendelea',
+      submitted: 'Imepelekwa',
+      inProgress: 'Inaendelea',
+      completed: 'Imekamilika',
+      nairobi: 'Nairobi',
+      photo: '📸 Picha',
+      noPhoto: '📷 Hakuna picha inayopatikana',
+      justNow: 'Hivi punde',
+      hoursAgo: (hours) => `Saa ${hours} zilizopita`,
+      daysAgo: (days) => `Siku ${days} zilizopita`,
+      noReports: 'Bado Hakuna Ripoti',
+      submitFirstReport: 'Wasilisha ripoti yako ya kwanza ya taka ili uione hapa',
+
+      // Login Page
+      missingInfo: 'Taarifa Hazijakamilika',
+      enterEmailPassword: 'Tafadhali ingiza anwani yako ya barua pepe na nenosiri ili kuendelea.',
+      invalidEmail: 'Barua Pepe Batili',
+      validEmailRequired: 'Tafadhali ingiza anwani halali ya barua pepe yenye alama ya @.',
+      signInFailed: 'Haikuweza Kuingia',
+      checkConnection: 'Tafadhali angalia muunganisho wako na ujaribu tena.',
+      welcomeBack: 'Karibu Tena! 🌟',
+      welcomeMessage: (name) => `Ni vizuri kukuona tena, ${name}! Tayari kuendelea kufanya Nairobi iwe safi?`,
+      letsGo: 'Twende!',
+      welcomeToSmartWaste: 'Karibu kwenye SmartWaste',
+      nairobiInitiative: 'Mpango wa Jiji Safi wa Nairobi',
+      signInToContinue: 'Ingia ili uendeleze athari yako kwenye jiji letu zuri',
+      yourAccount: 'Akaunti Yako',
+      emailAddress: 'Anwani ya Barua Pepe',
+      enterEmail: 'Ingiza anwani yako ya barua pepe',
+      password: 'Nenosiri',
+      enterPassword: 'Ingiza nenosiri lako',
+      passwordVisible: '👁️ Nenosiri linaonekana',
+      tapToShowPassword: '👁️ Gusa kuonyesha nenosiri',
+      signInToAccount: 'Ingia Kwenye Akaunti Yako',
+      newToSmartWaste: 'Mpya kwenye SmartWaste?',
+      createAccount: 'Unda Akaunti Yako',
+      joinThousands: 'Jiunge na maelfu ya Wanaibi wanaofanya jiji letu kuwa safi kila siku',
+      buildingNairobi: '🌿 Pamoja, tunajenga Nairobi safi na ya kijani zaidi',
+
+      // Signup Page
+      completeProfile: 'Kamilisha Wasifu Wako',
+      fillAllFields: 'Tafadhali jaza sehemu zote ili uunde akaunti yako na ujiunge na jamii yetu.',
+      validEmailRequired: 'Barua Pepe Halali Inahitajika',
+      completeEmail: 'Tafadhali ingiza anwani kamili ya barua pepe yenye alama ya @ ili kuendelea.',
+      strongerPassword: 'Nenosiri Thabiti Linahitajika',
+      passwordLength: 'Kwa usalama wako, tafadhali chagua nenosiri lenye herufi angalau 6.',
+      passwordsDontMatch: 'Nenosiri Hazifanani',
+      ensureSamePassword: 'Tafadhali hakikisha sehemu zote mbili za nenosiri zina maandishi sawa.',
+      accountCreationPaused: 'Uundaji wa Akaunti Umewekwa Pembeni',
+      welcomeToFamily: 'Karibu Kwenye Familia! 🎉',
+      welcomeMessageSignup: (name) => `Tunafurahi kukuwa nawe, ${name}! Pamoja, tutafanya Nairobi iwe safi na ya kijani zaidi.`,
+      startJourney: 'Anzisha Safari Yangu',
+      empty: 'Tupu',
+      tooShort: 'Fupi Sana',
+      fair: 'Wastani',
+      good: 'Nzuri',
+      strong: 'Thabiti',
+      joinSmartWaste: 'Jiunge na SmartWaste',
+      becomeChampion: 'Kuwa Bingwa wa Jiji Safi la Nairobi',
+      createAccountStart: 'Unda akaunti yako na uanze kufanya tofauti inayoonekana kwenye jamii yetu',
+      yourInformation: 'Taarifa Zako',
+      fullName: 'Jina Kamili',
+      enterFullName: 'Ingiza jina lako kamili',
+      createPassword: 'Unda Nenosiri',
+      chooseSecurePassword: 'Chagua nenosiri salama',
+      minimumCharacters: 'Herufi angalau 6',
+      confirmPassword: 'Thibitisha Nenosiri',
+      reenterPassword: 'Ingiza tena nenosiri lako',
+      passwordsDontMatchError: '❌ Nenosiri hazifanani',
+      passwordsMatch: '✅ Nenosiri zinafanana kikamilifu!',
+      alreadyHaveAccount: 'Tayari una akaunti?',
+      signInExisting: 'Ingia Kwenye Akaunti Iliyopo',
+      welcomeBackMessage: 'Karibu tena! Tumekukosa mchango wako kwenye misheni yetu ya jiji safi',
+      journeyStartsHere: '🌟 Safari yako kwenye Nairobi safi inaanzia hapa',
+
+      // Feedback Page
+      error: 'Hitilafu',
+      enterFeedback: 'Tafadhali ingiza maoni yako kabla ya kuwasilisha.',
+      selectRating: 'Tafadhali chagua ukadiriaji kabla ya kuwasilisha.',
+      loginToSubmit: 'Tafadhali ingia kwenye akaunti yako ili kuwasilisha maoni.',
+      thankYou: 'Asante! 🌟',
+      feedbackSubmitted: 'Maoni yako yamewasilishwa kikamilifu. Tunathamini mchango wako!',
+      ok: 'SAWA',
+      sendFeedback: 'Tuma Maoni',
+      feedbackSubtitle: 'Tungependa kusikia mawazo yako, mapendekezo, au wasiwasi wako',
+      rateExperience: 'Ungekadiriaje uzoefu wako?',
+      selectRating: 'Chagua ukadiriaji',
+      youRated: (rating) => `Uliukadiria: ${rating}/5 nyota`,
+      yourFeedback: 'Maoni Yako *',
+      feedbackPlaceholder: 'Tuambie unafikiria nini kuhusu SmartWaste Nairobi... Unapenda nini? Tunaweza kuboresha nini?',
+      charCount: (count) => `${count}/500 herufi`,
+      submitFeedback: 'Wasilisha Maoni',
+      feedbackNote: 'Maoni yako yanatusaidia kuboresha SmartWaste kwa wakazi wote wa Nairobi. Tunasoma kila uwasilishaji na tunathamini mchango wako!',
+
+      // Profile Page (existing)
       welcomeTitle: 'Karibu kwenye SmartWaste',
       welcomeSubtitle: 'Ingia ili kubinafsisha uzoefu wako',
       userName: 'Mtumiaji wa SmartWaste',
@@ -104,15 +428,11 @@ export const LanguageProvider = ({ children }) => {
       shareApp: 'Shiriki SmartWaste',
       appVersion: 'SmartWaste Nairobi Toleo 1.0',
       buildingCity: 'Kujenga jiji safi pamoja',
-      
-      // Language Modal
       chooseLanguage: 'Chagua Lugha',
       english: 'Kiingereza',
       swahili: 'Kiswahili',
       confirmSelection: 'Thibitisha Uchaguzi',
       languageUpdated: 'Lugha Imebadilishwa',
-      
-      // Privacy Modal
       privacyPolicyTitle: 'Sera ya Faragha',
       yourPrivacyMatters: 'Faragha Yako Ni Muhimu',
       informationWeCollect: 'Taarifa Tunazokusanya',
@@ -122,16 +442,20 @@ export const LanguageProvider = ({ children }) => {
     }
   };
 
-  const t = (key) => {
-    return translations[language]?.[key] || key;
+  const t = (key, param) => {
+    const translation = translations[language]?.[key] || key;
+    if (typeof translation === 'function') {
+      return translation(param);
+    }
+    return translation;
   };
 
-  const value = {
+  const value = useMemo(() => ({
     language,
     changeLanguage,
     t,
     isLoading
-  };
+  }), [language, isLoading]);
 
   return (
     <LanguageContext.Provider value={value}>

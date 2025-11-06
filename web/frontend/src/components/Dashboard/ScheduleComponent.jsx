@@ -29,12 +29,17 @@ function ScheduleComponent() {
 
       if (reportsData.success) {
         setReports(reportsData.reports);
+        console.log("📊 Reports loaded:", reportsData.reports.length);
+        console.log("📍 Sample report location:", reportsData.reports[0]?.location || reportsData.reports[0]?.address);
+        
         const clustersData = createSmartClusters(reportsData.reports);
         setClusters(clustersData);
+        console.log("🗺️ Clusters created:", clustersData.length);
       }
 
       if (collectorsData.success) {
         setCollectors(collectorsData.collectors);
+        console.log("👷 Collectors loaded:", collectorsData.collectors.length);
       }
 
       loadSchedules();
@@ -46,20 +51,30 @@ function ScheduleComponent() {
   };
 
   const createSmartClusters = (reports) => {
+    // FIXED: Handle both location structures
     const reportsWithLocation = reports.filter(report => 
-      report.location?.latitude && report.location?.longitude
+      (report.latitude && report.longitude) || // Mobile app structure
+      (report.location?.latitude && report.location?.longitude) // Expected structure
     );
+    
+    console.log("📍 Reports with valid location:", reportsWithLocation.length);
     
     const clusterMap = new Map();
     
     reportsWithLocation.forEach((report) => {
-      const area = report.location?.address?.split(',')[0] || 'Nairobi';
+      // FIXED: Handle both location structures
+      const latitude = report.latitude || report.location?.latitude;
+      const longitude = report.longitude || report.location?.longitude;
+      const address = report.address || report.location?.address || 'Nairobi Area';
+      
+      const area = address.split(',')[0] || 'Nairobi Area';
+      
       if (!clusterMap.has(area)) {
         clusterMap.set(area, {
           id: area,
           name: area,
           reports: [],
-          center: [report.location.latitude, report.location.longitude],
+          center: [latitude, longitude],
           reportCount: 0,
           urgency: 'pending'
         });
@@ -70,7 +85,9 @@ function ScheduleComponent() {
       cluster.reportCount = cluster.reports.length;
     });
 
-    return Array.from(clusterMap.values());
+    const clustersArray = Array.from(clusterMap.values());
+    console.log("🗺️ Final clusters:", clustersArray);
+    return clustersArray;
   };
 
   const loadSchedules = async () => {
@@ -79,6 +96,7 @@ function ScheduleComponent() {
       const result = await response.json();
       if (result.success) {
         setSchedules(result.schedules);
+        console.log("📅 Schedules loaded:", result.schedules.length);
       }
     } catch (error) {
       console.error("Error loading schedules:", error);
@@ -105,6 +123,8 @@ function ScheduleComponent() {
         status: 'scheduled'
       };
 
+      console.log("📤 Creating schedule:", scheduleData);
+
       const response = await fetch("https://smart-waste-nairobi-chi.vercel.app/api/schedules", {
         method: "POST",
         headers: {
@@ -121,10 +141,12 @@ function ScheduleComponent() {
         setSelectedCollector("");
         setScheduleDate("");
         loadSchedules();
+      } else {
+        alert("❌ Failed to create schedule: " + (result.message || 'Unknown error'));
       }
     } catch (error) {
       console.error("Error creating schedule:", error);
-      alert("❌ Error creating schedule");
+      alert("❌ Error creating schedule: " + error.message);
     }
   };
 
@@ -169,6 +191,9 @@ function ScheduleComponent() {
         <div className="card-header bg-success text-white">
           <h4 className="mb-0">🗓️ Smart Collection Schedule</h4>
           <small>Intelligent route planning based on citizen reports</small>
+          <div className="mt-2">
+            <small>📊 {reports.length} total reports • 🗺️ {clusters.length} clusters • 👷 {collectors.filter(c => c.activeAccount).length} available collectors</small>
+          </div>
         </div>
       </div>
 
@@ -195,6 +220,9 @@ function ScheduleComponent() {
                     </option>
                   ))}
                 </select>
+                {clusters.length === 0 && (
+                  <small className="text-danger">No clusters found. Check if reports have location data.</small>
+                )}
               </div>
 
               {/* Collector Selection */}
@@ -212,6 +240,9 @@ function ScheduleComponent() {
                     </option>
                   ))}
                 </select>
+                {collectors.filter(c => c.activeAccount).length === 0 && (
+                  <small className="text-danger">No active collectors available.</small>
+                )}
               </div>
 
               {/* Date Selection */}
@@ -230,7 +261,7 @@ function ScheduleComponent() {
               {/* Create Schedule Button */}
               <button
                 onClick={createSchedule}
-                disabled={!selectedCluster || !selectedCollector || !scheduleDate}
+                disabled={!selectedCluster || !selectedCollector || !scheduleDate || clusters.length === 0}
                 className="btn btn-success w-100 btn-lg"
               >
                 🚀 Create Smart Schedule

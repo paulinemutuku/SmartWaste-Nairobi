@@ -1,8 +1,10 @@
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Image } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { t } = useLanguage();
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -12,14 +14,14 @@ export default function HomeScreen() {
           style={styles.logo}
           resizeMode="contain"
         />
-        <Text style={styles.title}>SmartWaste</Text>
-        <Text style={styles.subtitle}>Transforming Nairobi's Waste Management</Text>
+        <Text style={styles.title}>{t('appName')}</Text>
+        <Text style={styles.subtitle}>{t('appTagline')}</Text>
       </View>
 
       <View style={styles.hero}>
-        <Text style={styles.heroTitle}>Building Cleaner Communities Together</Text>
+        <Text style={styles.heroTitle}>{t('heroTitle')}</Text>
         <Text style={styles.heroText}>
-          Report waste issues in real-time, track resolution progress, and contribute to a cleaner Nairobi
+          {t('heroDescription')}
         </Text>
       </View>
 
@@ -28,46 +30,46 @@ export default function HomeScreen() {
           <View style={styles.iconContainer}>
             <Text style={styles.actionIcon}>📝</Text>
           </View>
-          <Text style={styles.actionTitle}>Report Issue</Text>
-          <Text style={styles.actionDesc}>Submit waste complaint</Text>
+          <Text style={styles.actionTitle}>{t('reportIssue')}</Text>
+          <Text style={styles.actionDesc}>{t('reportIssueDesc')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.actionCard} onPress={() => router.push('/status')}>
           <View style={styles.iconContainer}>
             <Text style={styles.actionIcon}>📊</Text>
           </View>
-          <Text style={styles.actionTitle}>My Reports</Text>
-          <Text style={styles.actionDesc}>Track submission status</Text>
+          <Text style={styles.actionTitle}>{t('myReports')}</Text>
+          <Text style={styles.actionDesc}>{t('myReportsDesc')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.actionCard} onPress={() => router.push('/profile')}>
           <View style={styles.iconContainer}>
             <Text style={styles.actionIcon}>👤</Text>
           </View>
-          <Text style={styles.actionTitle}>Profile</Text>
-          <Text style={styles.actionDesc}>Account & settings</Text>
+          <Text style={styles.actionTitle}>{t('profile')}</Text>
+          <Text style={styles.actionDesc}>{t('profileDesc')}</Text>
         </TouchableOpacity>
       </View>
 
       {/* New Feature Highlights Section */}
       <View style={styles.features}>
-        <Text style={styles.featuresTitle}>How It Works</Text>
+        <Text style={styles.featuresTitle}>{t('howItWorks')}</Text>
         
         <View style={styles.featureRow}>
           <View style={styles.featureItem}>
             <View style={styles.featureNumber}>
               <Text style={styles.featureNumberText}>1</Text>
             </View>
-            <Text style={styles.featureItemTitle}>Report</Text>
-            <Text style={styles.featureItemDesc}>Snap photos of waste issues</Text>
+            <Text style={styles.featureItemTitle}>{t('step1Title')}</Text>
+            <Text style={styles.featureItemDesc}>{t('step1Desc')}</Text>
           </View>
 
           <View style={styles.featureItem}>
             <View style={styles.featureNumber}>
               <Text style={styles.featureNumberText}>2</Text>
             </View>
-            <Text style={styles.featureItemTitle}>Cluster</Text>
-            <Text style={styles.featureItemDesc}>Nearby reports are grouped</Text>
+            <Text style={styles.featureItemTitle}>{t('step2Title')}</Text>
+            <Text style={styles.featureItemDesc}>{t('step2Desc')}</Text>
           </View>
         </View>
 
@@ -76,49 +78,48 @@ export default function HomeScreen() {
             <View style={styles.featureNumber}>
               <Text style={styles.featureNumberText}>3</Text>
             </View>
-            <Text style={styles.featureItemTitle}>Optimize</Text>
-            <Text style={styles.featureItemDesc}>Smart route planning</Text>
+            <Text style={styles.featureItemTitle}>{t('step3Title')}</Text>
+            <Text style={styles.featureItemDesc}>{t('step3Desc')}</Text>
           </View>
 
           <View style={styles.featureItem}>
             <View style={styles.featureNumber}>
               <Text style={styles.featureNumberText}>4</Text>
             </View>
-            <Text style={styles.featureItemTitle}>Resolve</Text>
-            <Text style={styles.featureItemDesc}>Fast collection response</Text>
+            <Text style={styles.featureItemTitle}>{t('step4Title')}</Text>
+            <Text style={styles.featureItemDesc}>{t('step4Desc')}</Text>
           </View>
         </View>
       </View>
 
       <View style={styles.infoSection}>
-        <Text style={styles.infoTitle}>Your Impact Matters</Text>
+        <Text style={styles.infoTitle}>{t('impactTitle')}</Text>
         <Text style={styles.infoText}>
-          Every report directly contributes to optimized collection routes, reduced environmental pollution, 
-          and safer, cleaner neighborhoods across Nairobi.
+          {t('impactDescription')}
         </Text>
         
         <View style={styles.impactStats}>
           <View style={styles.impactItem}>
-            <Text style={styles.impactNumber}>+40%</Text>
-            <Text style={styles.impactLabel}>Collection Efficiency</Text>
+            <Text style={styles.impactNumber}>{t('efficiencyStat')}</Text>
+            <Text style={styles.impactLabel}>{t('efficiencyLabel')}</Text>
           </View>
           <View style={styles.impactItem}>
-            <Text style={styles.impactNumber}>-25%</Text>
-            <Text style={styles.impactLabel}>Fuel Costs</Text>
+            <Text style={styles.impactNumber}>{t('fuelStat')}</Text>
+            <Text style={styles.impactLabel}>{t('fuelLabel')}</Text>
           </View>
           <View style={styles.impactItem}>
-            <Text style={styles.impactNumber}>100m</Text>
-            <Text style={styles.impactLabel}>Smart Clustering</Text>
+            <Text style={styles.impactNumber}>{t('clusteringStat')}</Text>
+            <Text style={styles.impactLabel}>{t('clusteringLabel')}</Text>
           </View>
         </View>
       </View>
 
       {/* Call to Action */}
       <View style={styles.ctaSection}>
-        <Text style={styles.ctaTitle}>Ready to Make a Difference?</Text>
-        <Text style={styles.ctaText}>Join thousands of Nairobians cleaning their communities</Text>
+        <Text style={styles.ctaTitle}>{t('ctaTitle')}</Text>
+        <Text style={styles.ctaText}>{t('ctaDescription')}</Text>
         <TouchableOpacity style={styles.ctaButton} onPress={() => router.push('/report')}>
-          <Text style={styles.ctaButtonText}>Report Your First Issue</Text>
+          <Text style={styles.ctaButtonText}>{t('ctaButton')}</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
