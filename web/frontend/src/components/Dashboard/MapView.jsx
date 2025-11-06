@@ -15,120 +15,117 @@ const MapView = () => {
   const [clusters, setClusters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentLocation, setCurrentLocation] = useState([-0.4170, 36.9510]); // Nanyuki center
+  const [dataSource, setDataSource] = useState(""); // To track where data is coming from
 
-  // Better mock data that adapts to current location
-  const getMockReports = (centerLat, centerLng) => {
-    return [
-      // Cluster 1 - reports within 100m of each other
-      { 
-        _id: 'mock-1', 
-        description: "Full bins near town center", 
-        latitude: centerLat + 0.001, 
-        longitude: centerLng + 0.001,
-        address: "Town Center Area",
-        createdAt: new Date()
-      },
-      { 
-        _id: 'mock-2', 
-        description: "Illegal dumping site", 
-        latitude: centerLat + 0.0012, 
-        longitude: centerLng + 0.0011,
-        address: "Behind Commercial Street",
-        createdAt: new Date() 
-      },
-      { 
-        _id: 'mock-3', 
-        description: "Overflowing containers", 
-        latitude: centerLat + 0.0008, 
-        longitude: centerLng + 0.0009,
-        address: "Market Area",
-        createdAt: new Date()
-      },
-      
-      // Cluster 2 - reports within 100m of each other but far from cluster 1  
-      { 
-        _id: 'mock-4', 
-        description: "Full bins in residential area", 
-        latitude: centerLat - 0.002, 
-        longitude: centerLng - 0.002,
-        address: "Residential Estate",
-        createdAt: new Date()
-      },
-      { 
-        _id: 'mock-5', 
-        description: "Waste accumulation near school", 
-        latitude: centerLat - 0.0021, 
-        longitude: centerLng - 0.0022,
-        address: "School Zone",
-        createdAt: new Date()
-      }
-    ];
-  };
+  // Nairobi-specific mock data - always available for demonstration
+  const nairobiMockReports = [
+    // Dandora Cluster
+    { 
+      _id: 'nairobi-dandora-1', 
+      description: "Full bins near Dandora Market", 
+      latitude: -1.2600, 
+      longitude: 36.8900,
+      address: "Dandora Market, Nairobi",
+      createdAt: new Date(),
+      isMock: true
+    },
+    { 
+      _id: 'nairobi-dandora-2', 
+      description: "Illegal dumping behind market", 
+      latitude: -1.2601, 
+      longitude: 36.8902,
+      address: "Dandora Market Backside",
+      createdAt: new Date(),
+      isMock: true
+    },
+    // Kayole Cluster  
+    { 
+      _id: 'nairobi-kayole-1', 
+      description: "Full bins in Kayole Estate", 
+      latitude: -1.2750, 
+      longitude: 36.9100,
+      address: "Kayole Estate, Nairobi",
+      createdAt: new Date(),
+      isMock: true
+    },
+    { 
+      _id: 'nairobi-kayole-2', 
+      description: "Illegal dumping near shopping center", 
+      latitude: -1.2751, 
+      longitude: 36.9101,
+      address: "Kayole Shopping Center",
+      createdAt: new Date(),
+      isMock: true
+    }
+  ];
 
   useEffect(() => {
-    // Get current location for mock data
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          setCurrentLocation([latitude, longitude]);
-          loadRealReports([latitude, longitude]);
-        },
-        () => {
-          // If geolocation fails, use Nanyuki center and load reports
-          loadRealReports(currentLocation);
-        }
-      );
-    } else {
-      loadRealReports(currentLocation);
-    }
+    loadRealReports();
   }, []);
 
-  const loadRealReports = async (location) => {
+  const loadRealReports = async () => {
     try {
       setLoading(true);
+      console.log("🔄 Loading reports from API...");
       
       const response = await fetch("https://smart-waste-nairobi-chi.vercel.app/api/reports/all");
       const result = await response.json();
       
       let allReports = [];
+      let source = "";
       
       if (response.ok && result.success) {
         const reportsWithLocation = result.reports.filter(report => 
           report.latitude && report.longitude
         );
-        allReports = reportsWithLocation;
-        console.log("Real reports with location:", reportsWithLocation.length);
+        
+        console.log(`📊 API returned: ${result.reports?.length} total, ${reportsWithLocation.length} with location`);
+        
+        if (reportsWithLocation.length > 0) {
+          allReports = reportsWithLocation;
+          source = "API Real Data";
+        } else {
+          // If API returns reports but no location data, use Nairobi mock
+          allReports = nairobiMockReports;
+          source = "Nairobi Mock Data (No locations in API)";
+        }
+      } else {
+        // If API fails, use Nairobi mock
+        allReports = nairobiMockReports;
+        source = "Nairobi Mock Data (API Failed)";
       }
       
-      // If no real reports, use mock data based on current location
+      // If still no data, use Nairobi mock
       if (allReports.length === 0) {
-        console.log("Using mock data for demonstration at:", location);
-        allReports = getMockReports(location[0], location[1]);
+        allReports = nairobiMockReports;
+        source = "Nairobi Mock Data (No Data)";
       }
       
       setReports(allReports);
+      setDataSource(source);
       
-      // Create clusters with PROPER 100m distance
+      // Create clusters
       const clustered = createClusters(allReports);
       setClusters(clustered);
 
-      console.log("Final clustering result:", {
+      console.log("🎯 Final Result:", {
+        dataSource: source,
         totalReports: allReports.length,
         clustersCreated: clustered.length,
-        clusterDetails: clustered.map(c => ({
-          reports: c.reports.length,
-          center: c.center,
-          areaName: c.areaName
+        reports: allReports.map(r => ({
+          id: r._id,
+          lat: r.latitude,
+          lng: r.longitude,
+          isMock: r.isMock || false
         }))
       });
 
     } catch (error) {
-      console.error("Error loading reports:", error);
-      // Use mock data on error and cluster it
-      const mockReports = getMockReports(currentLocation[0], currentLocation[1]);
-      setReports(mockReports);
-      setClusters(createClusters(mockReports));
+      console.error("❌ Error loading reports:", error);
+      // Use Nairobi mock data on error
+      setReports(nairobiMockReports);
+      setClusters(createClusters(nairobiMockReports));
+      setDataSource("Nairobi Mock Data (Error)");
     } finally {
       setLoading(false);
     }
@@ -136,19 +133,15 @@ const MapView = () => {
 
   // Get automatic area name based on coordinates
   const getAreaNameFromCoordinates = (lat, lng) => {
-    // These are approximate coordinates for demonstration
-    // In a real app, you'd use a reverse geocoding service
-    
-    // Nanyuki areas
-    if (lat > -0.41 && lng > 36.94) return "Town Center";
-    if (lat > -0.42 && lng > 36.95) return "Commercial District";
-    if (lat < -0.43) return "Outskirts Area";
-    if (lng < 36.94) return "Residential Zone";
-    
-    // Nairobi areas (fallback)
+    // Nairobi areas
     if (lat > -1.265 && lng > 36.885) return "Dandora Area";
     if (lat > -1.280 && lng > 36.905) return "Kayole Area"; 
     if (lat < -1.280) return "Industrial Area";
+    if (lng < 36.800) return "Westlands";
+    
+    // Nanyuki areas (fallback)
+    if (lat > -0.41 && lng > 36.94) return "Town Center";
+    if (lat > -0.42 && lng > 36.95) return "Commercial District";
     
     return "Reported Location";
   };
@@ -272,13 +265,13 @@ const MapView = () => {
       {/* Simple Green Header */}
       <div className="bg-success text-white py-2 px-3" style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1000 }}>
         <h5 className="mb-0">Report Clusters</h5>
-        <small>{clusters.length} clusters found • {reports.length} total reports</small>
+        <small>{dataSource} • {clusters.length} clusters • {reports.length} reports</small>
       </div>
 
-      {/* Full Screen Map */}
+      {/* Full Screen Map - Centered on data location */}
       <MapContainer
-        center={currentLocation}
-        zoom={13}
+        center={clusters.length > 0 ? clusters[0].center : currentLocation}
+        zoom={12}
         style={{ width: "100%", height: "100%", marginTop: "50px" }}
       >
         <TileLayer
@@ -358,7 +351,7 @@ const MapView = () => {
           </div>
         ))}
         <p style={{ fontSize: '11px', color: '#666', margin: 0, marginTop: '5px' }}>
-          {clusters.length} priority areas identified
+          Data: {dataSource}
         </p>
       </div>
 
