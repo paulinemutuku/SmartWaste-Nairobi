@@ -17,24 +17,54 @@ const MapView = () => {
 
   const nairobiCenter = [-1.2921, 36.8219];
 
-  // Nairobi mock clusters for demonstration
+  // PROPER Nairobi mock clusters with 100m+ separation
   const nairobiMockClusters = [
     {
-      id: 'nairobi-cluster-1',
+      id: 'nairobi-dandora',
       reports: [
-        { description: "Full bins near Dandora Market", latitude: -1.2600, longitude: 36.8900 },
-        { description: "Illegal dumping site", latitude: -1.2602, longitude: 36.8903 },
-        { description: "Overflowing containers", latitude: -1.2598, longitude: 36.8897 }
+        { 
+          _id: 'mock-1', 
+          description: "Full bins near Dandora Market", 
+          latitude: -1.2865, 
+          longitude: 36.8523,
+          createdAt: new Date()
+        },
+        { 
+          _id: 'mock-2', 
+          description: "Illegal dumping site", 
+          latitude: -1.2867, 
+          longitude: 36.8521,
+          createdAt: new Date() 
+        },
+        { 
+          _id: 'mock-3', 
+          description: "Overflowing containers", 
+          latitude: -1.2863, 
+          longitude: 36.8525,
+          createdAt: new Date()
+        }
       ],
-      center: [-1.2600, 36.8900],
+      center: [-1.2865, 36.8523],
       color: '#e74c3c',
       area: "Dandora Market"
     },
     {
-      id: 'nairobi-cluster-2', 
+      id: 'nairobi-kayole', 
       reports: [
-        { description: "Full bins in Kayole Estate", latitude: -1.2750, longitude: 36.9100 },
-        { description: "Illegal dumping near shopping center", latitude: -1.2753, longitude: 36.9102 }
+        { 
+          _id: 'mock-4', 
+          description: "Full bins in Kayole Estate", 
+          latitude: -1.2750, 
+          longitude: 36.9100,
+          createdAt: new Date()
+        },
+        { 
+          _id: 'mock-5', 
+          description: "Illegal dumping near shopping center", 
+          latitude: -1.2752, 
+          longitude: 36.9103,
+          createdAt: new Date()
+        }
       ],
       center: [-1.2750, 36.9100],
       color: '#3498db',
@@ -53,46 +83,46 @@ const MapView = () => {
       const response = await fetch("https://smart-waste-nairobi-chi.vercel.app/api/reports/all");
       const result = await response.json();
       
+      let allReports = [];
+      
       if (response.ok && result.success) {
         const reportsWithLocation = result.reports.filter(report => 
           report.latitude && report.longitude
         );
-        
-        setReports(reportsWithLocation);
-        
-        // Create clusters with proper 100m distance
-        const clustered = createClusters(reportsWithLocation);
-        setClusters(clustered);
-
-        console.log("Clustering completed:", {
-          totalReports: reportsWithLocation.length,
-          clusters: clustered.length,
-          clusterDetails: clustered.map(c => ({
-            reports: c.reports.length,
-            center: c.center,
-            area: c.area
-          }))
-        });
+        allReports = reportsWithLocation;
       }
+      
+      setReports(allReports);
+      
+      // Create clusters with PROPER 100m distance
+      const clustered = createClusters(allReports);
+      
+      // If no real clusters, use mock data
+      if (clustered.length === 0 && allReports.length === 0) {
+        console.log("Using Nairobi mock clusters for demonstration");
+        setClusters(nairobiMockClusters);
+      } else {
+        setClusters(clustered);
+      }
+
     } catch (error) {
       console.error("Error loading reports:", error);
-      // Fallback to mock data if real data fails
+      // Use mock data on error
       setClusters(nairobiMockClusters);
     } finally {
       setLoading(false);
     }
   };
 
-  // Improved clustering with accurate 100m distance
-  const createClusters = (reports, maxDistance = 0.001) => {
+  // PROPER 100-meter clustering with accurate distance calculation
+  const createClusters = (reports, maxDistanceMeters = 100) => {
     if (!reports || reports.length === 0) {
-      return [...nairobiMockClusters]; // Show mock data when no real clusters
+      return [];
     }
 
     const clusters = [];
     const usedReports = new Set();
     
-    // Different colors for different clusters
     const clusterColors = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c'];
     
     reports.forEach((report, index) => {
@@ -108,16 +138,18 @@ const MapView = () => {
       
       usedReports.add(index);
       
-      // Find nearby reports within 100m (approximately 0.001 degrees)
+      // Find nearby reports within 100m using PROPER distance calculation
       reports.forEach((otherReport, otherIndex) => {
         if (!usedReports.has(otherIndex) && index !== otherIndex) {
-          const distance = getDistance(
+          const distance = calculateDistance(
             report.latitude, report.longitude,
             otherReport.latitude, otherReport.longitude
           );
           
+          console.log(`Distance between reports: ${distance.toFixed(2)}m`);
+          
           // Only cluster if within 100m
-          if (distance <= maxDistance) {
+          if (distance <= maxDistanceMeters) {
             cluster.reports.push(otherReport);
             usedReports.add(otherIndex);
             
@@ -133,17 +165,27 @@ const MapView = () => {
       clusters.push(cluster);
     });
     
-    // If no real clusters found, use mock data
-    if (clusters.length === 0) {
-      return [...nairobiMockClusters];
-    }
+    console.log("Clustering result:", {
+      totalReports: reports.length,
+      clustersCreated: clusters.length,
+      clusterSizes: clusters.map(c => c.reports.length)
+    });
     
     return clusters;
   };
 
-  // Calculate distance between two coordinates in degrees
-  const getDistance = (lat1, lon1, lat2, lon2) => {
-    return Math.sqrt(Math.pow(lat2 - lat1, 2) + Math.pow(lon2 - lon1, 2));
+  // PROPER distance calculation in meters using Haversine formula
+  const calculateDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371000; // Earth radius in meters
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const distance = R * c;
+    return distance;
   };
 
   const getClusterIcon = (cluster) => {
@@ -190,6 +232,7 @@ const MapView = () => {
       {/* Simple Green Header */}
       <div className="bg-success text-white py-2 px-3" style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1000 }}>
         <h5 className="mb-0">Map View</h5>
+        <small>{clusters.length} clusters found • {reports.length} total reports</small>
       </div>
 
       {/* Full Screen Map */}
@@ -203,7 +246,7 @@ const MapView = () => {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
 
-        {/* Show only clusters */}
+        {/* Show clusters */}
         {clusters.map((cluster) => (
           <Marker
             key={cluster.id}
@@ -212,23 +255,19 @@ const MapView = () => {
           >
             <Popup>
               <div style={{ minWidth: "250px" }}>
-                <h6 style={{ color: '#2d5a3c', marginBottom: '10px' }}>
+                <h6 style={{ color: cluster.color, marginBottom: '10px' }}>
                   📍 {cluster.reports.length} Reports {cluster.area && `- ${cluster.area}`}
                 </h6>
                 <p><strong>Location:</strong> 
                   <br />
-                  <small>Lat: {cluster.center[0].toFixed(4)}</small>
+                  <small>Lat: {cluster.center[0].toFixed(6)}</small>
                   <br />
-                  <small>Lng: {cluster.center[1].toFixed(4)}</small>
+                  <small>Lng: {cluster.center[1].toFixed(6)}</small>
                 </p>
-                <p><strong>Status:</strong> 
-                  <span className="badge bg-warning" style={{ marginLeft: '8px' }}>
-                    Needs Assessment
-                  </span>
-                </p>
+                <p><strong>Cluster Size:</strong> {cluster.reports.length} reports within 100m</p>
                 <div className="mt-3">
                   <button className="btn btn-success btn-sm w-100 mb-2">
-                    📋 View Reports
+                    📋 View {cluster.reports.length} Reports
                   </button>
                   <button className="btn btn-primary btn-sm w-100">
                     🚚 Plan Route
@@ -279,7 +318,7 @@ const MapView = () => {
         </p>
       </div>
 
-      {/* View Reports Button - IMPORTANT! */}
+      {/* View Reports Button */}
       <div style={{
         position: 'absolute',
         bottom: '20px',
