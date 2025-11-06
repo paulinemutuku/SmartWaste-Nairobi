@@ -17,58 +17,50 @@ const MapView = () => {
 
   const nairobiCenter = [-1.2921, 36.8219];
 
-  // PROPER Nairobi mock clusters with 100m+ separation
-  const nairobiMockClusters = [
-    {
-      id: 'nairobi-dandora',
-      reports: [
-        { 
-          _id: 'mock-1', 
-          description: "Full bins near Dandora Market", 
-          latitude: -1.2865, 
-          longitude: 36.8523,
-          createdAt: new Date()
-        },
-        { 
-          _id: 'mock-2', 
-          description: "Illegal dumping site", 
-          latitude: -1.2867, 
-          longitude: 36.8521,
-          createdAt: new Date() 
-        },
-        { 
-          _id: 'mock-3', 
-          description: "Overflowing containers", 
-          latitude: -1.2863, 
-          longitude: 36.8525,
-          createdAt: new Date()
-        }
-      ],
-      center: [-1.2865, 36.8523],
-      color: '#e74c3c',
-      area: "Dandora Market"
+  // Better Nairobi mock data - reports that are actually close together
+  const nairobiMockReports = [
+    // Dandora Cluster - reports within 100m of each other
+    { 
+      _id: 'mock-dandora-1', 
+      description: "Full bins near Dandora Market", 
+      latitude: -1.2600, 
+      longitude: 36.8900,
+      address: "Dandora Market, Nairobi",
+      createdAt: new Date()
     },
-    {
-      id: 'nairobi-kayole', 
-      reports: [
-        { 
-          _id: 'mock-4', 
-          description: "Full bins in Kayole Estate", 
-          latitude: -1.2750, 
-          longitude: 36.9100,
-          createdAt: new Date()
-        },
-        { 
-          _id: 'mock-5', 
-          description: "Illegal dumping near shopping center", 
-          latitude: -1.2752, 
-          longitude: 36.9103,
-          createdAt: new Date()
-        }
-      ],
-      center: [-1.2750, 36.9100],
-      color: '#3498db',
-      area: "Kayole Estate"
+    { 
+      _id: 'mock-dandora-2', 
+      description: "Illegal dumping behind market", 
+      latitude: -1.2601, 
+      longitude: 36.8902,
+      address: "Dandora Market Backside",
+      createdAt: new Date() 
+    },
+    { 
+      _id: 'mock-dandora-3', 
+      description: "Overflowing containers near entrance", 
+      latitude: -1.2599, 
+      longitude: 36.8898,
+      address: "Dandora Market Entrance",
+      createdAt: new Date()
+    },
+    
+    // Kayole Cluster - reports within 100m of each other  
+    { 
+      _id: 'mock-kayole-1', 
+      description: "Full bins in Kayole Estate", 
+      latitude: -1.2750, 
+      longitude: 36.9100,
+      address: "Kayole Estate, Nairobi",
+      createdAt: new Date()
+    },
+    { 
+      _id: 'mock-kayole-2', 
+      description: "Illegal dumping near shopping center", 
+      latitude: -1.2751, 
+      longitude: 36.9101,
+      address: "Kayole Shopping Center",
+      createdAt: new Date()
     }
   ];
 
@@ -90,91 +82,107 @@ const MapView = () => {
           report.latitude && report.longitude
         );
         allReports = reportsWithLocation;
+        console.log("Real reports with location:", reportsWithLocation.length);
+      }
+      
+      // If no real reports, use mock data
+      if (allReports.length === 0) {
+        console.log("Using Nairobi mock data for demonstration");
+        allReports = nairobiMockReports;
       }
       
       setReports(allReports);
       
       // Create clusters with PROPER 100m distance
       const clustered = createClusters(allReports);
-      
-      // If no real clusters, use mock data
-      if (clustered.length === 0 && allReports.length === 0) {
-        console.log("Using Nairobi mock clusters for demonstration");
-        setClusters(nairobiMockClusters);
-      } else {
-        setClusters(clustered);
-      }
+      setClusters(clustered);
+
+      console.log("Final clustering result:", {
+        totalReports: allReports.length,
+        clustersCreated: clustered.length,
+        clusterDetails: clustered.map(c => ({
+          reports: c.reports.length,
+          center: c.center,
+          areaName: c.areaName
+        }))
+      });
 
     } catch (error) {
       console.error("Error loading reports:", error);
-      // Use mock data on error
-      setClusters(nairobiMockClusters);
+      // Use mock data on error and cluster it
+      setReports(nairobiMockReports);
+      setClusters(createClusters(nairobiMockReports));
     } finally {
       setLoading(false);
     }
   };
 
-  // PROPER 100-meter clustering with accurate distance calculation
+  // IMPROVED clustering algorithm - DBSCAN-like approach
   const createClusters = (reports, maxDistanceMeters = 100) => {
     if (!reports || reports.length === 0) {
       return [];
     }
 
     const clusters = [];
-    const usedReports = new Set();
-    
+    const visited = new Set();
     const clusterColors = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c'];
     
+    // Get area name from coordinates
+    const getAreaName = (lat, lng) => {
+      if (lat > -1.265 && lng > 36.885) return "Dandora Area";
+      if (lat > -1.280 && lng > 36.905) return "Kayole Area"; 
+      if (lat < -1.280) return "Industrial Area";
+      if (lng < 36.800) return "Westlands";
+      return "Central Nairobi";
+    };
+
     reports.forEach((report, index) => {
-      if (usedReports.has(index)) return;
-      
+      if (visited.has(index)) return;
+
       const cluster = {
         id: `cluster-${clusters.length + 1}`,
         reports: [report],
         center: [report.latitude, report.longitude],
         color: clusterColors[clusters.length % clusterColors.length],
-        area: "Reported Area"
+        areaName: getAreaName(report.latitude, report.longitude)
       };
-      
-      usedReports.add(index);
-      
-      // Find nearby reports within 100m using PROPER distance calculation
-      reports.forEach((otherReport, otherIndex) => {
-        if (!usedReports.has(otherIndex) && index !== otherIndex) {
-          const distance = calculateDistance(
-            report.latitude, report.longitude,
-            otherReport.latitude, otherReport.longitude
-          );
-          
-          console.log(`Distance between reports: ${distance.toFixed(2)}m`);
-          
-          // Only cluster if within 100m
-          if (distance <= maxDistanceMeters) {
-            cluster.reports.push(otherReport);
-            usedReports.add(otherIndex);
-            
-            // Update cluster center to average position
-            cluster.center = [
-              cluster.reports.reduce((sum, r) => sum + r.latitude, 0) / cluster.reports.length,
-              cluster.reports.reduce((sum, r) => sum + r.longitude, 0) / cluster.reports.length
-            ];
+
+      visited.add(index);
+
+      // Find all nearby reports recursively
+      const findNeighbors = (currentReport, currentIndex) => {
+        reports.forEach((otherReport, otherIndex) => {
+          if (!visited.has(otherIndex) && currentIndex !== otherIndex) {
+            const distance = calculateDistance(
+              currentReport.latitude, currentReport.longitude,
+              otherReport.latitude, otherReport.longitude
+            );
+
+            if (distance <= maxDistanceMeters) {
+              cluster.reports.push(otherReport);
+              visited.add(otherIndex);
+              
+              // Update cluster center
+              cluster.center = [
+                cluster.reports.reduce((sum, r) => sum + r.latitude, 0) / cluster.reports.length,
+                cluster.reports.reduce((sum, r) => sum + r.longitude, 0) / cluster.reports.length
+              ];
+
+              // Recursively find neighbors of this new report
+              findNeighbors(otherReport, otherIndex);
+            }
           }
-        }
-      });
-      
+        });
+      };
+
+      findNeighbors(report, index);
       clusters.push(cluster);
     });
-    
-    console.log("Clustering result:", {
-      totalReports: reports.length,
-      clustersCreated: clusters.length,
-      clusterSizes: clusters.map(c => c.reports.length)
-    });
-    
+
     return clusters;
   };
 
-  // PROPER distance calculation in meters using Haversine formula
+  // Accurate distance calculation in meters using Haversine formula
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
     const R = 6371000; // Earth radius in meters
     const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -214,6 +222,11 @@ const MapView = () => {
       iconSize: [size, size],
       iconAnchor: [size/2, size/2]
     });
+  };
+
+  // Function to navigate to reports assessment
+  const viewReportsAssessment = () => {
+    window.location.href = '/reports-assessment';
   };
 
   if (loading) {
@@ -256,7 +269,7 @@ const MapView = () => {
             <Popup>
               <div style={{ minWidth: "250px" }}>
                 <h6 style={{ color: cluster.color, marginBottom: '10px' }}>
-                  📍 {cluster.reports.length} Reports {cluster.area && `- ${cluster.area}`}
+                  📍 {cluster.reports.length} Reports - {cluster.areaName}
                 </h6>
                 <p><strong>Location:</strong> 
                   <br />
@@ -264,13 +277,16 @@ const MapView = () => {
                   <br />
                   <small>Lng: {cluster.center[1].toFixed(6)}</small>
                 </p>
-                <p><strong>Cluster Size:</strong> {cluster.reports.length} reports within 100m</p>
+                <p><strong>Cluster Size:</strong> {cluster.reports.length} reports within 100m radius</p>
                 <div className="mt-3">
-                  <button className="btn btn-success btn-sm w-100 mb-2">
-                    📋 View {cluster.reports.length} Reports
+                  <button 
+                    className="btn btn-success btn-sm w-100 mb-2"
+                    onClick={viewReportsAssessment}
+                  >
+                    📋 View All Reports
                   </button>
                   <button className="btn btn-primary btn-sm w-100">
-                    🚚 Plan Route
+                    🚚 Plan Collection Route
                   </button>
                 </div>
               </div>
@@ -279,7 +295,7 @@ const MapView = () => {
         ))}
       </MapContainer>
 
-      {/* Simple Legend */}
+      {/* Improved Legend with Area Names */}
       <div style={{
         position: 'absolute',
         top: '60px',
@@ -288,9 +304,10 @@ const MapView = () => {
         padding: '10px',
         borderRadius: '8px',
         boxShadow: '0 2px 10px rgba(0,0,0,0.3)',
-        zIndex: 1000
+        zIndex: 1000,
+        maxWidth: '200px'
       }}>
-        <h6 style={{ marginBottom: '8px', color: '#2d5a3c', fontSize: '14px' }}>Clusters</h6>
+        <h6 style={{ marginBottom: '8px', color: '#2d5a3c', fontSize: '14px' }}>🗺️ Waste Clusters</h6>
         {clusters.map((cluster, index) => (
           <div key={cluster.id} style={{ display: 'flex', alignItems: 'center', marginBottom: '5px' }}>
             <div style={{ 
@@ -309,12 +326,12 @@ const MapView = () => {
               {cluster.reports.length}
             </div>
             <span style={{ fontSize: '12px' }}>
-              {cluster.area || `Cluster ${index + 1}`}
+              {cluster.areaName}
             </span>
           </div>
         ))}
         <p style={{ fontSize: '11px', color: '#666', margin: 0, marginTop: '5px' }}>
-          {clusters.length} areas need attention
+          {clusters.length} priority areas identified
         </p>
       </div>
 
@@ -328,7 +345,7 @@ const MapView = () => {
       }}>
         <button 
           className="btn btn-success btn-lg shadow"
-          onClick={() => window.location.href = '/reports-assessment'}
+          onClick={viewReportsAssessment}
         >
           📋 View All Reports ({reports.length})
         </button>
