@@ -14,12 +14,11 @@ const MapView = () => {
   const [reports, setReports] = useState([]);
   const [clusters, setClusters] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [currentLocation, setCurrentLocation] = useState([-0.4170, 36.9510]); // Nanyuki center
-  const [dataSource, setDataSource] = useState(""); // To track where data is coming from
+  const [dataSource, setDataSource] = useState("");
 
-  // Nairobi-specific mock data - always available for demonstration
+  // NAIROBI MOCK DATA - For demonstration alongside real data
   const nairobiMockReports = [
-    // Dandora Cluster
+    // Dandora Cluster - reports within 100m
     { 
       _id: 'nairobi-dandora-1', 
       description: "Full bins near Dandora Market", 
@@ -38,7 +37,17 @@ const MapView = () => {
       createdAt: new Date(),
       isMock: true
     },
-    // Kayole Cluster  
+    { 
+      _id: 'nairobi-dandora-3', 
+      description: "Overflowing containers", 
+      latitude: -1.2599, 
+      longitude: 36.8898,
+      address: "Market Entrance",
+      createdAt: new Date(),
+      isMock: true
+    },
+    
+    // Kayole Cluster - reports within 100m but far from Dandora
     { 
       _id: 'nairobi-kayole-1', 
       description: "Full bins in Kayole Estate", 
@@ -60,69 +69,51 @@ const MapView = () => {
   ];
 
   useEffect(() => {
-    loadRealReports();
+    loadAllReports();
   }, []);
 
-  const loadRealReports = async () => {
+  const loadAllReports = async () => {
     try {
       setLoading(true);
-      console.log("🔄 Loading reports from API...");
+      console.log("🔄 Loading ALL reports (real + mock)...");
       
       const response = await fetch("https://smart-waste-nairobi-chi.vercel.app/api/reports/all");
       const result = await response.json();
       
       let allReports = [];
-      let source = "";
       
       if (response.ok && result.success) {
-        const reportsWithLocation = result.reports.filter(report => 
+        const realReportsWithLocation = result.reports.filter(report => 
           report.latitude && report.longitude
         );
         
-        console.log(`📊 API returned: ${result.reports?.length} total, ${reportsWithLocation.length} with location`);
+        console.log(`📊 Real data: ${realReportsWithLocation.length} reports with location`);
         
-        if (reportsWithLocation.length > 0) {
-          allReports = reportsWithLocation;
-          source = "API Real Data";
-        } else {
-          // If API returns reports but no location data, use Nairobi mock
-          allReports = nairobiMockReports;
-          source = "Nairobi Mock Data (No locations in API)";
-        }
+        // COMBINE REAL DATA + NAIROBI MOCK DATA
+        allReports = [...realReportsWithLocation, ...nairobiMockReports];
+        setDataSource(`Mixed Data (${realReportsWithLocation.length} real + ${nairobiMockReports.length} mock)`);
       } else {
-        // If API fails, use Nairobi mock
+        // If API fails, use only mock data
         allReports = nairobiMockReports;
-        source = "Nairobi Mock Data (API Failed)";
-      }
-      
-      // If still no data, use Nairobi mock
-      if (allReports.length === 0) {
-        allReports = nairobiMockReports;
-        source = "Nairobi Mock Data (No Data)";
+        setDataSource("Nairobi Mock Data Only");
       }
       
       setReports(allReports);
-      setDataSource(source);
       
-      // Create clusters
+      // Create clusters from combined data
       const clustered = createClusters(allReports);
       setClusters(clustered);
 
-      console.log("🎯 Final Result:", {
-        dataSource: source,
+      console.log("🎯 Final Combined Result:", {
         totalReports: allReports.length,
-        clustersCreated: clustered.length,
-        reports: allReports.map(r => ({
-          id: r._id,
-          lat: r.latitude,
-          lng: r.longitude,
-          isMock: r.isMock || false
-        }))
+        realReports: allReports.filter(r => !r.isMock).length,
+        mockReports: allReports.filter(r => r.isMock).length,
+        clustersCreated: clustered.length
       });
 
     } catch (error) {
       console.error("❌ Error loading reports:", error);
-      // Use Nairobi mock data on error
+      // Use only mock data on error
       setReports(nairobiMockReports);
       setClusters(createClusters(nairobiMockReports));
       setDataSource("Nairobi Mock Data (Error)");
@@ -131,22 +122,42 @@ const MapView = () => {
     }
   };
 
-  // Get automatic area name based on coordinates
+  // IMPROVED area name detection - uses actual location data
   const getAreaNameFromCoordinates = (lat, lng) => {
-    // Nairobi areas
+    // Try to get address from report data first
+    const reportsAtLocation = reports.filter(report => 
+      Math.abs(report.latitude - lat) < 0.001 && 
+      Math.abs(report.longitude - lng) < 0.001
+    );
+    
+    if (reportsAtLocation.length > 0) {
+      const address = reportsAtLocation[0].address;
+      if (address) {
+        // Extract area name from address
+        if (address.includes('Dandora')) return 'Dandora Area';
+        if (address.includes('Kayole')) return 'Kayole Area';
+        if (address.includes('Nanyuki')) return 'Nanyuki Area';
+        if (address.includes('Market')) return 'Market Area';
+        if (address.includes('School')) return 'School Zone';
+        if (address.includes('Estate')) return 'Residential Estate';
+        if (address.includes('Center')) return 'Commercial Center';
+      }
+    }
+    
+    // Fallback to coordinate-based detection
     if (lat > -1.265 && lng > 36.885) return "Dandora Area";
     if (lat > -1.280 && lng > 36.905) return "Kayole Area"; 
     if (lat < -1.280) return "Industrial Area";
-    if (lng < 36.800) return "Westlands";
     
-    // Nanyuki areas (fallback)
-    if (lat > -0.41 && lng > 36.94) return "Town Center";
-    if (lat > -0.42 && lng > 36.95) return "Commercial District";
+    // Nanyuki areas
+    if (lat > -0.41 && lng > 36.94) return "Nanyuki Town Center";
+    if (lat > -0.42 && lng > 36.95) return "Nanyuki Commercial";
+    if (lat < -0.43) return "Nanyuki Outskirts";
     
     return "Reported Location";
   };
 
-  // IMPROVED clustering algorithm - DBSCAN-like approach
+  // IMPROVED clustering algorithm
   const createClusters = (reports, maxDistanceMeters = 100) => {
     if (!reports || reports.length === 0) {
       return [];
@@ -164,7 +175,8 @@ const MapView = () => {
         reports: [report],
         center: [report.latitude, report.longitude],
         color: clusterColors[clusters.length % clusterColors.length],
-        areaName: getAreaNameFromCoordinates(report.latitude, report.longitude)
+        areaName: getAreaNameFromCoordinates(report.latitude, report.longitude),
+        hasMockData: report.isMock || false
       };
 
       visited.add(index);
@@ -188,7 +200,10 @@ const MapView = () => {
                 cluster.reports.reduce((sum, r) => sum + r.longitude, 0) / cluster.reports.length
               ];
 
-              // Recursively find neighbors of this new report
+              // Update area name based on all reports in cluster
+              cluster.areaName = getAreaNameFromCoordinates(cluster.center[0], cluster.center[1]);
+
+              // Recursively find neighbors
               findNeighbors(otherReport, otherIndex);
             }
           }
@@ -202,9 +217,9 @@ const MapView = () => {
     return clusters;
   };
 
-  // Accurate distance calculation in meters using Haversine formula
+  // Accurate distance calculation in meters
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 6371000; // Earth radius in meters
+    const R = 6371000;
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
     const a = 
@@ -212,12 +227,12 @@ const MapView = () => {
       Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
       Math.sin(dLon/2) * Math.sin(dLon/2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    const distance = R * c;
-    return distance;
+    return R * c;
   };
 
   const getClusterIcon = (cluster) => {
     const size = Math.min(30 + (cluster.reports.length * 5), 60);
+    const isMixed = cluster.reports.some(r => r.isMock) && cluster.reports.some(r => !r.isMock);
     
     return L.divIcon({
       html: `
@@ -234,8 +249,10 @@ const MapView = () => {
           font-weight: bold; 
           font-size: ${size > 40 ? '14px' : '12px'}; 
           box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+          position: relative;
         ">
           ${cluster.reports.length}
+          ${isMixed ? '<div style="position: absolute; top: -5px; right: -5px; background: gold; color: black; border-radius: 50%; width: 15px; height: 15px; font-size: 8px; display: flex; align-items: center; justify-content: center;">M</div>' : ''}
         </div>
       `,
       className: 'cluster-marker',
@@ -244,7 +261,6 @@ const MapView = () => {
     });
   };
 
-  // Function to navigate to reports assessment
   const viewReportsAssessment = () => {
     window.location.href = '/reports-assessment';
   };
@@ -255,23 +271,23 @@ const MapView = () => {
         <div className="spinner-border text-primary" role="status">
           <span className="visually-hidden">Loading reports...</span>
         </div>
-        <p className="ms-3">Loading waste reports...</p>
+        <p className="ms-3">Loading combined waste reports...</p>
       </div>
     );
   }
 
   return (
     <div style={{ width: "100%", height: "100vh", position: "relative" }}>
-      {/* Simple Green Header */}
+      {/* Header */}
       <div className="bg-success text-white py-2 px-3" style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1000 }}>
         <h5 className="mb-0">Report Clusters</h5>
-        <small>{dataSource} • {clusters.length} clusters • {reports.length} reports</small>
+        <small>{dataSource} • {clusters.length} clusters</small>
       </div>
 
-      {/* Full Screen Map - Centered on data location */}
+      {/* Map - Centered on first cluster or default */}
       <MapContainer
-        center={clusters.length > 0 ? clusters[0].center : currentLocation}
-        zoom={12}
+        center={clusters.length > 0 ? clusters[0].center : [-1.2921, 36.8219]}
+        zoom={10}
         style={{ width: "100%", height: "100%", marginTop: "50px" }}
       >
         <TileLayer
@@ -279,7 +295,7 @@ const MapView = () => {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
 
-        {/* Show clusters */}
+        {/* Show all clusters */}
         {clusters.map((cluster) => (
           <Marker
             key={cluster.id}
@@ -291,22 +307,26 @@ const MapView = () => {
                 <h6 style={{ color: cluster.color, marginBottom: '10px' }}>
                   📍 {cluster.reports.length} Reports - {cluster.areaName}
                 </h6>
+                <p><strong>Data:</strong> 
+                  {cluster.reports.some(r => r.isMock) && cluster.reports.some(r => !r.isMock) 
+                    ? ' Mixed (Real + Demo)' 
+                    : cluster.reports.some(r => r.isMock) 
+                    ? ' Demo Data' 
+                    : ' Real Data'
+                  }
+                </p>
                 <p><strong>Location:</strong> 
                   <br />
                   <small>Lat: {cluster.center[0].toFixed(6)}</small>
                   <br />
                   <small>Lng: {cluster.center[1].toFixed(6)}</small>
                 </p>
-                <p><strong>Cluster Size:</strong> {cluster.reports.length} reports within 100m radius</p>
                 <div className="mt-3">
                   <button 
                     className="btn btn-success btn-sm w-100 mb-2"
                     onClick={viewReportsAssessment}
                   >
                     📋 View All Reports
-                  </button>
-                  <button className="btn btn-primary btn-sm w-100">
-                    🚚 Plan Collection Route
                   </button>
                 </div>
               </div>
@@ -315,7 +335,7 @@ const MapView = () => {
         ))}
       </MapContainer>
 
-      {/* Improved Legend with Automatic Area Names */}
+      {/* Legend */}
       <div style={{
         position: 'absolute',
         top: '60px',
@@ -351,7 +371,7 @@ const MapView = () => {
           </div>
         ))}
         <p style={{ fontSize: '11px', color: '#666', margin: 0, marginTop: '5px' }}>
-          Data: {dataSource}
+          {clusters.length} areas • Mixed data
         </p>
       </div>
 
