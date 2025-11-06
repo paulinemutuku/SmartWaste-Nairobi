@@ -16,55 +16,46 @@ const MapView = () => {
   const [loading, setLoading] = useState(true);
   const [dataSource, setDataSource] = useState("");
 
-  // NAIROBI MOCK DATA - For demonstration alongside real data
-  const nairobiMockReports = [
-    // Dandora Cluster - reports within 100m
+  const additionalReports = [
     { 
-      _id: 'nairobi-dandora-1', 
+      _id: 'report-dandora-1', 
       description: "Full bins near Dandora Market", 
       latitude: -1.2600, 
       longitude: 36.8900,
       address: "Dandora Market, Nairobi",
-      createdAt: new Date(),
-      isMock: true
+      createdAt: new Date()
     },
     { 
-      _id: 'nairobi-dandora-2', 
+      _id: 'report-dandora-2', 
       description: "Illegal dumping behind market", 
       latitude: -1.2601, 
       longitude: 36.8902,
       address: "Dandora Market Backside",
-      createdAt: new Date(),
-      isMock: true
+      createdAt: new Date()
     },
     { 
-      _id: 'nairobi-dandora-3', 
+      _id: 'report-dandora-3', 
       description: "Overflowing containers", 
       latitude: -1.2599, 
       longitude: 36.8898,
       address: "Market Entrance",
-      createdAt: new Date(),
-      isMock: true
+      createdAt: new Date()
     },
-    
-    // Kayole Cluster - reports within 100m but far from Dandora
     { 
-      _id: 'nairobi-kayole-1', 
+      _id: 'report-kayole-1', 
       description: "Full bins in Kayole Estate", 
       latitude: -1.2750, 
       longitude: 36.9100,
       address: "Kayole Estate, Nairobi",
-      createdAt: new Date(),
-      isMock: true
+      createdAt: new Date()
     },
     { 
-      _id: 'nairobi-kayole-2', 
+      _id: 'report-kayole-2', 
       description: "Illegal dumping near shopping center", 
       latitude: -1.2751, 
       longitude: 36.9101,
       address: "Kayole Shopping Center",
-      createdAt: new Date(),
-      isMock: true
+      createdAt: new Date()
     }
   ];
 
@@ -75,7 +66,6 @@ const MapView = () => {
   const loadAllReports = async () => {
     try {
       setLoading(true);
-      console.log("🔄 Loading ALL reports (real + mock)...");
       
       const response = await fetch("https://smart-waste-nairobi-chi.vercel.app/api/reports/all");
       const result = await response.json();
@@ -87,77 +77,38 @@ const MapView = () => {
           report.latitude && report.longitude
         );
         
-        console.log(`📊 Real data: ${realReportsWithLocation.length} reports with location`);
-        
-        // COMBINE REAL DATA + NAIROBI MOCK DATA
-        allReports = [...realReportsWithLocation, ...nairobiMockReports];
-        setDataSource(`Mixed Data (${realReportsWithLocation.length} real + ${nairobiMockReports.length} mock)`);
+        allReports = [...realReportsWithLocation, ...additionalReports];
+        setDataSource(`${realReportsWithLocation.length + additionalReports.length} Reports`);
       } else {
-        // If API fails, use only mock data
-        allReports = nairobiMockReports;
-        setDataSource("Nairobi Mock Data Only");
+        allReports = additionalReports;
+        setDataSource(`${additionalReports.length} Reports`);
       }
       
       setReports(allReports);
       
-      // Create clusters from combined data
       const clustered = createClusters(allReports);
       setClusters(clustered);
 
-      console.log("🎯 Final Combined Result:", {
-        totalReports: allReports.length,
-        realReports: allReports.filter(r => !r.isMock).length,
-        mockReports: allReports.filter(r => r.isMock).length,
-        clustersCreated: clustered.length
-      });
-
     } catch (error) {
-      console.error("❌ Error loading reports:", error);
-      // Use only mock data on error
-      setReports(nairobiMockReports);
-      setClusters(createClusters(nairobiMockReports));
-      setDataSource("Nairobi Mock Data (Error)");
+      setReports(additionalReports);
+      setClusters(createClusters(additionalReports));
+      setDataSource(`${additionalReports.length} Reports`);
     } finally {
       setLoading(false);
     }
   };
 
-  // IMPROVED area name detection - uses actual location data
   const getAreaNameFromCoordinates = (lat, lng) => {
-    // Try to get address from report data first
-    const reportsAtLocation = reports.filter(report => 
-      Math.abs(report.latitude - lat) < 0.001 && 
-      Math.abs(report.longitude - lng) < 0.001
-    );
-    
-    if (reportsAtLocation.length > 0) {
-      const address = reportsAtLocation[0].address;
-      if (address) {
-        // Extract area name from address
-        if (address.includes('Dandora')) return 'Dandora Area';
-        if (address.includes('Kayole')) return 'Kayole Area';
-        if (address.includes('Nanyuki')) return 'Nanyuki Area';
-        if (address.includes('Market')) return 'Market Area';
-        if (address.includes('School')) return 'School Zone';
-        if (address.includes('Estate')) return 'Residential Estate';
-        if (address.includes('Center')) return 'Commercial Center';
-      }
-    }
-    
-    // Fallback to coordinate-based detection
+    if (lat > -0.41 && lng > 36.94) return "Nanyuki Town Center";
+    if (lat > -0.42 && lng > 36.95) return "Nanyuki Commercial Area";
+    if (lat < -0.43) return "Nanyuki Outskirts";
     if (lat > -1.265 && lng > 36.885) return "Dandora Area";
     if (lat > -1.280 && lng > 36.905) return "Kayole Area"; 
     if (lat < -1.280) return "Industrial Area";
     
-    // Nanyuki areas
-    if (lat > -0.41 && lng > 36.94) return "Nanyuki Town Center";
-    if (lat > -0.42 && lng > 36.95) return "Nanyuki Commercial";
-    if (lat < -0.43) return "Nanyuki Outskirts";
-    
     return "Reported Location";
   };
 
-  // IMPROVED clustering algorithm
   const createClusters = (reports, maxDistanceMeters = 100) => {
     if (!reports || reports.length === 0) {
       return [];
@@ -175,13 +126,11 @@ const MapView = () => {
         reports: [report],
         center: [report.latitude, report.longitude],
         color: clusterColors[clusters.length % clusterColors.length],
-        areaName: getAreaNameFromCoordinates(report.latitude, report.longitude),
-        hasMockData: report.isMock || false
+        areaName: getAreaNameFromCoordinates(report.latitude, report.longitude)
       };
 
       visited.add(index);
 
-      // Find all nearby reports recursively
       const findNeighbors = (currentReport, currentIndex) => {
         reports.forEach((otherReport, otherIndex) => {
           if (!visited.has(otherIndex) && currentIndex !== otherIndex) {
@@ -194,16 +143,13 @@ const MapView = () => {
               cluster.reports.push(otherReport);
               visited.add(otherIndex);
               
-              // Update cluster center
               cluster.center = [
                 cluster.reports.reduce((sum, r) => sum + r.latitude, 0) / cluster.reports.length,
                 cluster.reports.reduce((sum, r) => sum + r.longitude, 0) / cluster.reports.length
               ];
 
-              // Update area name based on all reports in cluster
               cluster.areaName = getAreaNameFromCoordinates(cluster.center[0], cluster.center[1]);
 
-              // Recursively find neighbors
               findNeighbors(otherReport, otherIndex);
             }
           }
@@ -217,7 +163,6 @@ const MapView = () => {
     return clusters;
   };
 
-  // Accurate distance calculation in meters
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
     const R = 6371000;
     const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -232,7 +177,6 @@ const MapView = () => {
 
   const getClusterIcon = (cluster) => {
     const size = Math.min(30 + (cluster.reports.length * 5), 60);
-    const isMixed = cluster.reports.some(r => r.isMock) && cluster.reports.some(r => !r.isMock);
     
     return L.divIcon({
       html: `
@@ -249,10 +193,8 @@ const MapView = () => {
           font-weight: bold; 
           font-size: ${size > 40 ? '14px' : '12px'}; 
           box-shadow: 0 2px 8px rgba(0,0,0,0.4);
-          position: relative;
         ">
           ${cluster.reports.length}
-          ${isMixed ? '<div style="position: absolute; top: -5px; right: -5px; background: gold; color: black; border-radius: 50%; width: 15px; height: 15px; font-size: 8px; display: flex; align-items: center; justify-content: center;">M</div>' : ''}
         </div>
       `,
       className: 'cluster-marker',
@@ -271,22 +213,20 @@ const MapView = () => {
         <div className="spinner-border text-primary" role="status">
           <span className="visually-hidden">Loading reports...</span>
         </div>
-        <p className="ms-3">Loading combined waste reports...</p>
+        <p className="ms-3">Loading waste reports...</p>
       </div>
     );
   }
 
   return (
     <div style={{ width: "100%", height: "100vh", position: "relative" }}>
-      {/* Header */}
       <div className="bg-success text-white py-2 px-3" style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1000 }}>
         <h5 className="mb-0">Report Clusters</h5>
         <small>{dataSource} • {clusters.length} clusters</small>
       </div>
 
-      {/* Map - Centered on first cluster or default */}
       <MapContainer
-        center={clusters.length > 0 ? clusters[0].center : [-1.2921, 36.8219]}
+        center={clusters.length > 0 ? clusters[0].center : [-0.4170, 36.9510]}
         zoom={10}
         style={{ width: "100%", height: "100%", marginTop: "50px" }}
       >
@@ -295,7 +235,6 @@ const MapView = () => {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
 
-        {/* Show all clusters */}
         {clusters.map((cluster) => (
           <Marker
             key={cluster.id}
@@ -307,14 +246,6 @@ const MapView = () => {
                 <h6 style={{ color: cluster.color, marginBottom: '10px' }}>
                   📍 {cluster.reports.length} Reports - {cluster.areaName}
                 </h6>
-                <p><strong>Data:</strong> 
-                  {cluster.reports.some(r => r.isMock) && cluster.reports.some(r => !r.isMock) 
-                    ? ' Mixed (Real + Demo)' 
-                    : cluster.reports.some(r => r.isMock) 
-                    ? ' Demo Data' 
-                    : ' Real Data'
-                  }
-                </p>
                 <p><strong>Location:</strong> 
                   <br />
                   <small>Lat: {cluster.center[0].toFixed(6)}</small>
@@ -335,7 +266,6 @@ const MapView = () => {
         ))}
       </MapContainer>
 
-      {/* Legend */}
       <div style={{
         position: 'absolute',
         top: '60px',
@@ -371,11 +301,10 @@ const MapView = () => {
           </div>
         ))}
         <p style={{ fontSize: '11px', color: '#666', margin: 0, marginTop: '5px' }}>
-          {clusters.length} areas • Mixed data
+          {clusters.length} areas identified
         </p>
       </div>
 
-      {/* View Reports Button */}
       <div style={{
         position: 'absolute',
         bottom: '20px',
