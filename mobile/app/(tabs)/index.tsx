@@ -67,7 +67,7 @@ export default function HomeScreen() {
               <Text style={styles.featureNumberText}>2</Text>
             </View>
             <Text style={styles.featureItemTitle}>Cluster</Text>
-            <Text style={styles.featureItemDesc}>AI groups nearby reports</Text>
+            <Text style={styles.featureItemDesc}>Nearby reports are grouped</Text>
           </View>
         </View>
 
