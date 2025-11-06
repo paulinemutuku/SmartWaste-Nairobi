@@ -36,8 +36,9 @@ const MapView = () => {
       if (response.ok && result.success) {
         setDebugInfo(prev => prev + `\nTotal reports from API: ${result.reports?.length || 0}`);
         
+        // FIXED: Check direct latitude/longitude fields instead of nested location object
         const reportsWithLocation = result.reports.filter(report => {
-          const hasLocation = report.location?.latitude && report.location?.longitude;
+          const hasLocation = report.latitude && report.longitude;
           if (!hasLocation) {
             setDebugInfo(prev => prev + `\nReport missing location: ${report._id}`);
           }
@@ -67,7 +68,8 @@ const MapView = () => {
             center: cluster.center,
             reportsData: cluster.reports.map(r => ({
               id: r._id,
-              location: r.location,
+              latitude: r.latitude,
+              longitude: r.longitude,
               description: r.description
             }))
           });
@@ -99,10 +101,11 @@ const MapView = () => {
     reports.forEach((report, index) => {
       if (usedReports.has(index)) return;
       
+      // FIXED: Use direct latitude/longitude fields
       const cluster = {
         id: `cluster-${clusters.length + 1}`,
         reports: [report],
-        center: [report.location.latitude, report.location.longitude],
+        center: [report.latitude, report.longitude],
         color: getClusterColor(clusters.length)
       };
       
@@ -111,9 +114,10 @@ const MapView = () => {
       // Find nearby reports within 100m
       reports.forEach((otherReport, otherIndex) => {
         if (!usedReports.has(otherIndex) && index !== otherIndex) {
+          // FIXED: Use direct latitude/longitude fields
           const distance = getDistance(
-            report.location.latitude, report.location.longitude,
-            otherReport.location.latitude, otherReport.location.longitude
+            report.latitude, report.longitude,
+            otherReport.latitude, otherReport.longitude
           );
           
           if (distance <= maxDistance) {
@@ -121,9 +125,10 @@ const MapView = () => {
             usedReports.add(otherIndex);
             
             // Update cluster center to average position
+            // FIXED: Use direct latitude/longitude fields
             cluster.center = [
-              cluster.reports.reduce((sum, r) => sum + r.location.latitude, 0) / cluster.reports.length,
-              cluster.reports.reduce((sum, r) => sum + r.location.longitude, 0) / cluster.reports.length
+              cluster.reports.reduce((sum, r) => sum + r.latitude, 0) / cluster.reports.length,
+              cluster.reports.reduce((sum, r) => sum + r.longitude, 0) / cluster.reports.length
             ];
           }
         }
@@ -228,7 +233,8 @@ const MapView = () => {
         {reports.map((report) => (
           <Marker
             key={report._id || report.id}
-            position={[report.location.latitude, report.location.longitude]}
+            // FIXED: Use direct latitude/longitude fields
+            position={[report.latitude, report.longitude]}
             icon={L.divIcon({
               html: `<div style="background-color: #95a5a6; width: 8px; height: 8px; border-radius: 50%; border: 1px solid white;"></div>`,
               className: 'individual-marker',
@@ -240,9 +246,10 @@ const MapView = () => {
               <div>
                 <strong>Individual Report</strong>
                 <p>{report.description || 'No description'}</p>
-                <small>Lat: {report.location.latitude.toFixed(4)}</small>
+                {/* FIXED: Use direct latitude/longitude fields */}
+                <small>Lat: {report.latitude?.toFixed(4)}</small>
                 <br />
-                <small>Lng: {report.location.longitude.toFixed(4)}</small>
+                <small>Lng: {report.longitude?.toFixed(4)}</small>
               </div>
             </Popup>
           </Marker>
