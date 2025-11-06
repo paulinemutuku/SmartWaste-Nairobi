@@ -6,18 +6,9 @@ export const useLogout = () => {
   const navigate = useNavigate();
   
   const logout = () => {
-    // Clear localStorage
     localStorage.removeItem("user");
-    
-    // Clear context
     dispatch({ type: "LOGOUT" });
-    
-    // Redirect to login page
     navigate("/login");
-    
-    // Optional: Clear any other stored data
-    // localStorage.removeItem("token");
-    // localStorage.removeItem("userPreferences");
   };
   
   return { logout };
