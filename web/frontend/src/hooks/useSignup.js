@@ -11,7 +11,7 @@ export const useSignup = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch("http://localhost:1337/api/user/signup", {
+      const response = await fetch("https://smart-waste-nairobi-chi.vercel.app/api/user/signup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

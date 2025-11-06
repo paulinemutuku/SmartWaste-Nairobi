@@ -34,7 +34,7 @@ const BinComponent = () => {
     setReports(mockReports);
     
 
-    fetch("http://localhost:1337/api/bins")
+    fetch("https://smart-waste-nairobi-chi.vercel.app/api/bins")
       .then(response => response.json())
       .then(data => {
         console.log("Existing bins data:", data);

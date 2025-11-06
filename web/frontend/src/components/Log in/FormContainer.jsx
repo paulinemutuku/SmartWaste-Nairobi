@@ -20,7 +20,7 @@ function FormContainer() {
     await login(email, password);
 
     // try {
-    //   const response = await fetch("http://localhost:1337/api/", {
+    //   const response = await fetch("https://smart-waste-nairobi-chi.vercel.app/api/", {
     //     method: "POST",
     //     headers: { "Content-Type": "application/json" },
     //     body: JSON.stringify({ email, password }),

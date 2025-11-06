@@ -10,7 +10,7 @@ function PublicUser() {
     const fetchData = async () => {
       try {
         const response = await axios.get(
-          "http://localhost:1337/api/user-details"
+          "https://smart-waste-nairobi-chi.vercel.app/api/user-details"
         );
         setUserData(response.data.users);
       } catch (error) {
@@ -23,7 +23,7 @@ function PublicUser() {
 
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`http://localhost:1337/api/user-details/${id}`);
+      await axios.delete(`https://smart-waste-nairobi-chi.vercel.app/api/user-details/${id}`);
 
       setUserData((prevData) => prevData.filter((users) => users._id !== id));
     } catch (error) {

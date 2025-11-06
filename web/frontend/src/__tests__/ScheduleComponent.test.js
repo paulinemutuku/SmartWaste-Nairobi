@@ -18,13 +18,13 @@ const sampleSchedule = [
 ];
 
 mockAxios
-  .onGet("http://localhost:1337/api/collector-details")
+  .onGet("https://smart-waste-nairobi-chi.vercel.app/api/collector-details")
   .reply(200, sampleCollectors);
 mockAxios
-  .onGet("http://localhost:1337/api/scheduleCollection")
+  .onGet("https://smart-waste-nairobi-chi.vercel.app/api/scheduleCollection")
   .reply(200, sampleSchedule);
 mockAxios
-  .onPost("http://localhost:1337/api/scheduleCollection")
+  .onPost("https://smart-waste-nairobi-chi.vercel.app/api/scheduleCollection")
   .reply(200, { message: "Schedule generated successfully." });
 
 test("renders ScheduleComponent and handles schedule generation", async () => {
