@@ -29,17 +29,12 @@ function ScheduleComponent() {
 
       if (reportsData.success) {
         setReports(reportsData.reports);
-        console.log("📊 Reports loaded:", reportsData.reports.length);
-        console.log("📍 Sample report location:", reportsData.reports[0]?.location || reportsData.reports[0]?.address);
-        
         const clustersData = createSmartClusters(reportsData.reports);
         setClusters(clustersData);
-        console.log("🗺️ Clusters created:", clustersData.length);
       }
 
       if (collectorsData.success) {
         setCollectors(collectorsData.collectors);
-        console.log("👷 Collectors loaded:", collectorsData.collectors.length);
       }
 
       loadSchedules();
@@ -50,44 +45,77 @@ function ScheduleComponent() {
     }
   };
 
+  // Improved clustering with proper geographic grouping
   const createSmartClusters = (reports) => {
-    // FIXED: Handle both location structures
     const reportsWithLocation = reports.filter(report => 
-      (report.latitude && report.longitude) || // Mobile app structure
-      (report.location?.latitude && report.location?.longitude) // Expected structure
+      (report.latitude && report.longitude) || 
+      (report.location?.latitude && report.location?.longitude)
     );
+
+    if (reportsWithLocation.length === 0) {
+      return [];
+    }
+
+    const clusters = [];
+    const usedReports = new Set();
     
-    console.log("📍 Reports with valid location:", reportsWithLocation.length);
-    
-    const clusterMap = new Map();
-    
-    reportsWithLocation.forEach((report) => {
-      // FIXED: Handle both location structures
-      const latitude = report.latitude || report.location?.latitude;
-      const longitude = report.longitude || report.location?.longitude;
-      const address = report.address || report.location?.address || 'Nairobi Area';
+    // DBSCAN-like clustering with 100m distance
+    const maxDistance = 0.001; // ~100 meters in coordinate degrees
+
+    reportsWithLocation.forEach((report, index) => {
+      if (usedReports.has(index)) return;
+
+      const lat1 = report.latitude || report.location?.latitude;
+      const lon1 = report.longitude || report.location?.longitude;
       
-      const area = address.split(',')[0] || 'Nairobi Area';
-      
-      if (!clusterMap.has(area)) {
-        clusterMap.set(area, {
-          id: area,
-          name: area,
-          reports: [],
-          center: [latitude, longitude],
-          reportCount: 0,
-          urgency: 'pending'
-        });
-      }
-      
-      const cluster = clusterMap.get(area);
-      cluster.reports.push(report);
+      const cluster = {
+        id: `cluster-${clusters.length + 1}`,
+        name: `Collection Zone ${clusters.length + 1}`,
+        reports: [report],
+        center: [lat1, lon1],
+        reportCount: 1,
+        urgency: 'pending'
+      };
+
+      usedReports.add(index);
+
+      // Find nearby reports
+      reportsWithLocation.forEach((otherReport, otherIndex) => {
+        if (!usedReports.has(otherIndex) && index !== otherIndex) {
+          const lat2 = otherReport.latitude || otherReport.location?.latitude;
+          const lon2 = otherReport.longitude || otherReport.location?.longitude;
+          
+          const distance = Math.sqrt(Math.pow(lat2 - lat1, 2) + Math.pow(lon2 - lon1, 2));
+          
+          if (distance <= maxDistance) {
+            cluster.reports.push(otherReport);
+            usedReports.add(otherIndex);
+            
+            // Update cluster center
+            cluster.center = [
+              cluster.reports.reduce((sum, r) => sum + (r.latitude || r.location?.latitude), 0) / cluster.reports.length,
+              cluster.reports.reduce((sum, r) => sum + (r.longitude || r.location?.longitude), 0) / cluster.reports.length
+            ];
+          }
+        }
+      });
+
       cluster.reportCount = cluster.reports.length;
+      
+      // Generate meaningful name based on area
+      const firstReport = cluster.reports[0];
+      const address = firstReport.address || firstReport.location?.address;
+      if (address && address !== 'Nairobi') {
+        const areaName = address.split(',')[0]?.trim();
+        if (areaName && areaName !== 'Nairobi') {
+          cluster.name = `${areaName} Area`;
+        }
+      }
+
+      clusters.push(cluster);
     });
 
-    const clustersArray = Array.from(clusterMap.values());
-    console.log("🗺️ Final clusters:", clustersArray);
-    return clustersArray;
+    return clusters;
   };
 
   const loadSchedules = async () => {
@@ -96,7 +124,6 @@ function ScheduleComponent() {
       const result = await response.json();
       if (result.success) {
         setSchedules(result.schedules);
-        console.log("📅 Schedules loaded:", result.schedules.length);
       }
     } catch (error) {
       console.error("Error loading schedules:", error);
@@ -123,8 +150,6 @@ function ScheduleComponent() {
         status: 'scheduled'
       };
 
-      console.log("📤 Creating schedule:", scheduleData);
-
       const response = await fetch("https://smart-waste-nairobi-chi.vercel.app/api/schedules", {
         method: "POST",
         headers: {
@@ -141,12 +166,10 @@ function ScheduleComponent() {
         setSelectedCollector("");
         setScheduleDate("");
         loadSchedules();
-      } else {
-        alert("❌ Failed to create schedule: " + (result.message || 'Unknown error'));
       }
     } catch (error) {
       console.error("Error creating schedule:", error);
-      alert("❌ Error creating schedule: " + error.message);
+      alert("❌ Error creating schedule");
     }
   };
 
@@ -186,22 +209,18 @@ function ScheduleComponent() {
 
   return (
     <div className="container-fluid">
-      {/* Header */}
-      <div className="card shadow-sm mb-4">
-        <div className="card-header bg-success text-white">
-          <h4 className="mb-0">🗓️ Smart Collection Schedule</h4>
-          <small>Intelligent route planning based on citizen reports</small>
-          <div className="mt-2">
-            <small>📊 {reports.length} total reports • 🗺️ {clusters.length} clusters • 👷 {collectors.filter(c => c.activeAccount).length} available collectors</small>
-          </div>
+      {/* Simplified Header */}
+      <div className="card shadow-sm mb-4 border-0">
+        <div className="card-header bg-success text-white py-3">
+          <h4 className="mb-0 fw-bold">Smart Collection Schedule</h4>
         </div>
       </div>
 
       <div className="row">
         {/* Schedule Creation Panel */}
         <div className="col-lg-4 mb-4">
-          <div className="card shadow-sm h-100">
-            <div className="card-header bg-primary text-white">
+          <div className="card shadow-sm h-100 border-0">
+            <div className="card-header bg-success text-white py-3">
               <h5 className="mb-0">📋 Create New Schedule</h5>
             </div>
             <div className="card-body">
@@ -220,9 +239,6 @@ function ScheduleComponent() {
                     </option>
                   ))}
                 </select>
-                {clusters.length === 0 && (
-                  <small className="text-danger">No clusters found. Check if reports have location data.</small>
-                )}
               </div>
 
               {/* Collector Selection */}
@@ -240,9 +256,6 @@ function ScheduleComponent() {
                     </option>
                   ))}
                 </select>
-                {collectors.filter(c => c.activeAccount).length === 0 && (
-                  <small className="text-danger">No active collectors available.</small>
-                )}
               </div>
 
               {/* Date Selection */}
@@ -261,7 +274,7 @@ function ScheduleComponent() {
               {/* Create Schedule Button */}
               <button
                 onClick={createSchedule}
-                disabled={!selectedCluster || !selectedCollector || !scheduleDate || clusters.length === 0}
+                disabled={!selectedCluster || !selectedCollector || !scheduleDate}
                 className="btn btn-success w-100 btn-lg"
               >
                 🚀 Create Smart Schedule
@@ -272,8 +285,8 @@ function ScheduleComponent() {
 
         {/* Active Schedules */}
         <div className="col-lg-8">
-          <div className="card shadow-sm">
-            <div className="card-header bg-dark text-white">
+          <div className="card shadow-sm border-0">
+            <div className="card-header bg-success text-white py-3">
               <h5 className="mb-0">📊 Active Collection Schedules</h5>
             </div>
             <div className="card-body">
@@ -336,7 +349,7 @@ function ScheduleComponent() {
           {/* Statistics */}
           <div className="row mt-4">
             <div className="col-md-4">
-              <div className="card text-white bg-primary">
+              <div className="card text-white bg-primary border-0">
                 <div className="card-body text-center">
                   <h5>Active Clusters</h5>
                   <h2>{clusters.length}</h2>
@@ -344,7 +357,7 @@ function ScheduleComponent() {
               </div>
             </div>
             <div className="col-md-4">
-              <div className="card text-white bg-warning">
+              <div className="card text-white bg-warning border-0">
                 <div className="card-body text-center">
                   <h5>Available Collectors</h5>
                   <h2>{collectors.filter(c => c.activeAccount).length}</h2>
@@ -352,7 +365,7 @@ function ScheduleComponent() {
               </div>
             </div>
             <div className="col-md-4">
-              <div className="card text-white bg-success">
+              <div className="card text-white bg-success border-0">
                 <div className="card-body text-center">
                   <h5>Total Reports</h5>
                   <h2>{reports.length}</h2>
