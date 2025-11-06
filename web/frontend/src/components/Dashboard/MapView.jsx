@@ -98,15 +98,11 @@ const MapView = () => {
     }
   };
 
-  const getAreaNameFromCoordinates = (lat, lng) => {
-    if (lat > -0.41 && lng > 36.94) return "Nanyuki Town Center";
-    if (lat > -0.42 && lng > 36.95) return "Nanyuki Commercial Area";
-    if (lat < -0.43) return "Nanyuki Outskirts";
-    if (lat > -1.265 && lng > 36.885) return "Dandora Area";
-    if (lat > -1.280 && lng > 36.905) return "Kayole Area"; 
-    if (lat < -1.280) return "Industrial Area";
-    
-    return "Reported Location";
+  const getPriorityFromClusterSize = (clusterSize) => {
+    if (clusterSize >= 20) return { name: "Critical Priority Zone", color: "#8B0000" };
+    if (clusterSize >= 5) return { name: "High Priority Zone", color: "#FF0000" };
+    if (clusterSize >= 3) return { name: "Medium Priority Area", color: "#FFA500" };
+    return { name: "Low Priority Zone", color: "#008000" };
   };
 
   const createClusters = (reports, maxDistanceMeters = 100) => {
@@ -116,7 +112,6 @@ const MapView = () => {
 
     const clusters = [];
     const visited = new Set();
-    const clusterColors = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c'];
     
     reports.forEach((report, index) => {
       if (visited.has(index)) return;
@@ -124,9 +119,7 @@ const MapView = () => {
       const cluster = {
         id: `cluster-${clusters.length + 1}`,
         reports: [report],
-        center: [report.latitude, report.longitude],
-        color: clusterColors[clusters.length % clusterColors.length],
-        areaName: getAreaNameFromCoordinates(report.latitude, report.longitude)
+        center: [report.latitude, report.longitude]
       };
 
       visited.add(index);
@@ -148,8 +141,6 @@ const MapView = () => {
                 cluster.reports.reduce((sum, r) => sum + r.longitude, 0) / cluster.reports.length
               ];
 
-              cluster.areaName = getAreaNameFromCoordinates(cluster.center[0], cluster.center[1]);
-
               findNeighbors(otherReport, otherIndex);
             }
           }
@@ -157,6 +148,11 @@ const MapView = () => {
       };
 
       findNeighbors(report, index);
+      
+      const priorityInfo = getPriorityFromClusterSize(cluster.reports.length);
+      cluster.areaName = priorityInfo.name;
+      cluster.color = priorityInfo.color;
+      
       clusters.push(cluster);
     });
 
@@ -277,7 +273,7 @@ const MapView = () => {
         zIndex: 1000,
         maxWidth: '200px'
       }}>
-        <h6 style={{ marginBottom: '8px', color: '#2d5a3c', fontSize: '14px' }}>🗺️ Report Clusters</h6>
+        <h6 style={{ marginBottom: '8px', color: '#2d5a3c', fontSize: '14px' }}>🗺️ Priority Clusters</h6>
         {clusters.map((cluster, index) => (
           <div key={cluster.id} style={{ display: 'flex', alignItems: 'center', marginBottom: '5px' }}>
             <div style={{ 
@@ -301,7 +297,7 @@ const MapView = () => {
           </div>
         ))}
         <p style={{ fontSize: '11px', color: '#666', margin: 0, marginTop: '5px' }}>
-          {clusters.length} areas identified
+          {clusters.length} priority areas
         </p>
       </div>
 
