@@ -98,3 +98,49 @@ body {
   color: rgb(146, 146, 141);
 }
 
+/* Admin Info Styles */
+.admin-info {
+  padding: 15px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  margin-bottom: 10px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.admin-name {
+  font-weight: bold;
+  font-size: 14px;
+  color: #fff;
+  margin-bottom: 5px;
+}
+
+.admin-email {
+  font-size: 12px;
+  color: #e0e0e0;
+}
+
+/* Logout Styles */
+.logout-item {
+  cursor: pointer;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  margin-top: 10px;
+  padding-top: 20px;
+  color: #ffffff;
+  transition: all 0.3s ease;
+  font-size: 18px;
+}
+
+.logout-item:hover {
+  background-color: rgba(220, 53, 69, 0.2);
+  color: #ff6b6b;
+}
+
+/* Ensure links have consistent styling */
+.sidebar-list-item a {
+  color: #ffffff !important;
+  text-decoration: none;
+  display: block;
+}
+
+.sidebar-list-item {
+  color: #ffffff !important;
+}

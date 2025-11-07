@@ -6,16 +6,15 @@ import {
   BsPeopleFill,
   BsMenuButtonWideFill,
   BsCalendar3,
+  BsBoxArrowRight
 } from "react-icons/bs";
 import { RiMapPinFill } from "react-icons/ri";
+import { useAuthContext } from "../hooks/useAuthContext";
+import { useLogout } from "../hooks/useLogout";
 
 const Sidebar = ({ openSidebarToggle, OpenSidebar }) => {
-  const style = {
-    link: {
-      color: "#9e9ea4",
-      textDecoration: "none",
-    },
-  };
+  const { user } = useAuthContext();
+  const { logout } = useLogout();
 
   return (
     <aside
@@ -31,42 +30,55 @@ const Sidebar = ({ openSidebarToggle, OpenSidebar }) => {
         </span>
       </div>
 
+      {/* Admin Info Section */}
+      {user && user.user && (
+        <div className="admin-info">
+          <div className="admin-name">Welcome, {user.user.name}</div>
+          <div className="admin-email">{user.user.email}</div>
+        </div>
+      )}
+
       <ul className="sidebar-list">
-        <a href="/dashboard" style={style.link}>
+        <a href="/dashboard">
           <li className="sidebar-list-item">
             <BsGrid1X2Fill className="icon" /> Dashboard
           </li>
         </a>
-        <a href="/report-clusters" style={style.link}>
+        <a href="/report-clusters">
           <li className="sidebar-list-item">
-             <BsFillArchiveFill className="icon" /> Report Clusters
+            <BsFillArchiveFill className="icon" /> Report Clusters
           </li>
         </a>
-        <a href="/collectors" style={style.link}>
+        <a href="/collectors">
           <li className="sidebar-list-item">
             <BsPeopleFill className="icon" /> Collectors
           </li>
         </a>
-        <a href="/public-users" style={style.link}>
+        <a href="/public-users">
           <li className="sidebar-list-item">
             <BsPeopleFill className="icon" /> Public-users
           </li>
         </a>
-        <a href="/mapview" style={style.link}>
+        <a href="/mapview">
           <li className="sidebar-list-item">
             <RiMapPinFill className="icon" /> Map View
           </li>
         </a>
-        <a href="/feedback" style={style.link}>
+        <a href="/feedback">
           <li className="sidebar-list-item">
             <BsMenuButtonWideFill className="icon" /> Feedback
           </li>
         </a>
-        <a href="/schedule" style={style.link}>
+        <a href="/schedule">
           <li className="sidebar-list-item">
             <BsCalendar3 className="icon" /> Schedule
           </li>
         </a>
+        
+        {/* Logout Button */}
+        <li className="sidebar-list-item logout-item" onClick={logout}>
+          <BsBoxArrowRight className="icon" /> Logout
+        </li>
       </ul>
     </aside>
   );
