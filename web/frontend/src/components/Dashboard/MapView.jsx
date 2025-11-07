@@ -217,7 +217,7 @@ const MapView = () => {
   return (
     <div style={{ width: "100%", height: "100vh", position: "relative" }}>
       <div className="bg-success text-white py-2 px-3" style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1000 }}>
-        <h5 className="mb-0">Report Clusters</h5>
+        <h5 className="mb-0">Map View</h5>
         <small>{dataSource} • {clusters.length} clusters</small>
       </div>
 
