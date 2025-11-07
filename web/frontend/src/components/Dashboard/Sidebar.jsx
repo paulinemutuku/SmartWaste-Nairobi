@@ -33,8 +33,7 @@ const Sidebar = ({ openSidebarToggle, OpenSidebar }) => {
       {/* Admin Info Section */}
       {user && user.user && (
         <div className="admin-info">
-          <div className="admin-name">Welcome, {user.user.name}</div>
-          <div className="admin-email">{user.user.email}</div>
+          <div className="admin-name">{user.user.name}</div>
         </div>
       )}
 
