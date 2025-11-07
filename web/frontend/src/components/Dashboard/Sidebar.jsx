@@ -9,8 +9,8 @@ import {
   BsBoxArrowRight
 } from "react-icons/bs";
 import { RiMapPinFill } from "react-icons/ri";
-import { useAuthContext } from "../hooks/useAuthContext";
-import { useLogout } from "../hooks/useLogout";
+import { useAuthContext } from "../../../hooks/useAuthContext";
+import { useLogout } from "../../../hooks/useLogout";
 
 const Sidebar = ({ openSidebarToggle, OpenSidebar }) => {
   const { user } = useAuthContext();
