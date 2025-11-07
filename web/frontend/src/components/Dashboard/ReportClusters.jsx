@@ -163,7 +163,7 @@ function ReportClusters() {
   };
 
   const handleAssignRoute = (clusterId) => {
-    alert(`Route assignment for ${clusterId} - This would integrate with route optimization in Phase 2`);
+    alert(`To do`);
   };
 
   const handleViewDetails = (cluster) => {
