@@ -4,12 +4,18 @@
   "icons": [
     {
       "src": "favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
+      "sizes": "64x64 32x32 24x24 16x16", 
       "type": "image/x-icon"
+    },
+    {
+      "src": "icon.png",
+      "type": "image/png",
+      "sizes": "192x192 512x512",
+      "purpose": "any maskable"
     }
   ],
   "start_url": ".",
-  "display": "standalone",
+  "display": "standalone", 
   "theme_color": "#2d5a3c",
   "background_color": "#ffffff"
 }

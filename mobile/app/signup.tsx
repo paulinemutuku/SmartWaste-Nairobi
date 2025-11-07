@@ -470,7 +470,7 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   signupButtonDisabled: {
-    backgroundColor: '#C4B5FD',
+    backgroundColor: '#10B981',
   },
   signupButtonInactive: {
     backgroundColor: '#CBD5E1',
