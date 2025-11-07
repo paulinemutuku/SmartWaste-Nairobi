@@ -11,7 +11,6 @@ function ScheduleComponent() {
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Mock data that matches the map view
   const mockClusters = [
     {
       id: "dandora-cluster",
@@ -51,7 +50,6 @@ function ScheduleComponent() {
     try {
       setLoading(true);
       
-      // Try to load real data first
       let realClusters = [];
       let realCollectors = [];
       
@@ -76,7 +74,6 @@ function ScheduleComponent() {
         console.log("Using mock data for demonstration");
       }
 
-      // Use real data if available, otherwise use mock data
       const finalClusters = realClusters.length > 0 ? realClusters : mockClusters;
       const finalCollectors = realCollectors.length > 0 ? realCollectors : mockCollectors;
 
@@ -86,7 +83,6 @@ function ScheduleComponent() {
       loadSchedules();
     } catch (error) {
       console.error("Error loading data:", error);
-      // Fallback to mock data
       setClusters(mockClusters);
       setCollectors(mockCollectors);
     } finally {
@@ -101,13 +97,13 @@ function ScheduleComponent() {
     );
 
     if (reportsWithLocation.length === 0) {
-      return mockClusters; // Fallback to mock data
+      return mockClusters; 
     }
 
     const clusters = [];
     const usedReports = new Set();
     
-    const maxDistance = 0.001; // ~100 meters
+    const maxDistance = 0.001;
 
     reportsWithLocation.forEach((report, index) => {
       if (usedReports.has(index)) return;
@@ -126,7 +122,6 @@ function ScheduleComponent() {
 
       usedReports.add(index);
 
-      // Find nearby reports
       reportsWithLocation.forEach((otherReport, otherIndex) => {
         if (!usedReports.has(otherIndex) && index !== otherIndex) {
           const lat2 = otherReport.latitude || otherReport.location?.latitude;
@@ -138,7 +133,6 @@ function ScheduleComponent() {
             cluster.reports.push(otherReport);
             usedReports.add(otherIndex);
             
-            // Update cluster center
             cluster.center = [
               cluster.reports.reduce((sum, r) => sum + (r.latitude || r.location?.latitude), 0) / cluster.reports.length,
               cluster.reports.reduce((sum, r) => sum + (r.longitude || r.location?.longitude), 0) / cluster.reports.length
@@ -149,7 +143,6 @@ function ScheduleComponent() {
 
       cluster.reportCount = cluster.reports.length;
       
-      // Generate meaningful name based on area
       const firstReport = cluster.reports[0];
       const address = firstReport.address || firstReport.location?.address;
       if (address && address !== 'Nairobi') {
@@ -197,7 +190,6 @@ function ScheduleComponent() {
         status: 'scheduled'
       };
 
-      // For demo purposes - in real app, this would be an API call
       const response = await fetch("https://smart-waste-nairobi-chi.vercel.app/api/schedules", {
         method: "POST",
         headers: {
@@ -211,7 +203,6 @@ function ScheduleComponent() {
       if (result.success) {
         alert("✅ Schedule created successfully!");
         
-        // Remove the scheduled cluster from active clusters
         setClusters(prev => prev.filter(cluster => cluster.id !== selectedCluster));
         
         setSelectedCluster("");
@@ -237,8 +228,6 @@ function ScheduleComponent() {
         alert("✅ Schedule marked as completed!");
         loadSchedules();
         
-        // Note: The cluster remains removed since it was scheduled
-        // In a real system, we might want to handle completed schedules differently
       }
     } catch (error) {
       console.error("Error completing schedule:", error);
@@ -251,7 +240,6 @@ function ScheduleComponent() {
     return tomorrow.toISOString().split('T')[0];
   };
 
-  // Get active clusters (not yet scheduled)
   const activeClusters = clusters.filter(cluster => 
     !schedules.some(schedule => schedule.clusterId === cluster.id && schedule.status !== 'completed')
   );

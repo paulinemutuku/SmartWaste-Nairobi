@@ -353,7 +353,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ddd',
   },
-  // REMOVED: debugText style
   noPhotoText: {
     fontSize: 12,
     color: '#999',

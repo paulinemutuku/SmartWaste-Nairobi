@@ -3,7 +3,6 @@ const Feedback = require('../models/Feedback');
 const router = express.Router();
 const mongoose = require('mongoose');
 
-// Submit feedback
 router.post('/submit', async (req, res) => {
   try {
     const { rating, message, submittedBy } = req.body;
@@ -47,7 +46,6 @@ router.post('/submit', async (req, res) => {
   }
 });
 
-// Get all feedback (for web dashboard)
 router.get('/all', async (req, res) => {
   try {
     const feedback = await Feedback.find()
@@ -68,7 +66,6 @@ router.get('/all', async (req, res) => {
   }
 });
 
-// Get feedback by user
 router.get('/user/:userId', async (req, res) => {
   try {
     const { userId } = req.params;

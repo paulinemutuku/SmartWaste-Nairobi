@@ -43,7 +43,7 @@ function Home() {
   id: report._id,
   type: "citizen_report",
   description: report.description,
-  urgency: report.priority || 'pending', // Use actual priority from database
+  urgency: report.priority || 'pending', 
   status: report.status === 'submitted' ? 'pending' : 
           report.status === 'in-progress' ? 'assigned' : 'completed',
   location: report.location || 'Nairobi',

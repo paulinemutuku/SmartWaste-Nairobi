@@ -39,7 +39,6 @@ export const LanguageProvider = ({ children }) => {
 
   const translations = {
     English: {
-      // Home Page
       appName: 'SmartWaste',
       appTagline: 'Transforming Nairobi\'s Waste Management',
       heroTitle: 'Building Cleaner Communities Together',
@@ -71,7 +70,6 @@ export const LanguageProvider = ({ children }) => {
       ctaDescription: 'Join thousands of Nairobians cleaning their communities',
       ctaButton: 'Report Your First Issue',
 
-      // Report Page
       gettingLocation: 'Getting location...',
       locating: 'Locating...',
       locationDenied: 'Location permission denied',
@@ -106,7 +104,6 @@ export const LanguageProvider = ({ children }) => {
       submitReport: '📤 Submit Report',
       backToHome: '← Back to Home',
 
-      // Status Page
       myReports: 'My Reports',
       trackComplaints: 'Track your waste complaints',
       totalReports: 'Total Reports',
@@ -124,7 +121,6 @@ export const LanguageProvider = ({ children }) => {
       noReports: 'No Reports Yet',
       submitFirstReport: 'Submit your first waste report to see it here',
 
-      // Login Page
       missingInfo: 'Missing Information',
       enterEmailPassword: 'Please enter both your email address and password to continue.',
       invalidEmail: 'Invalid Email',
@@ -150,7 +146,6 @@ export const LanguageProvider = ({ children }) => {
       joinThousands: 'Join thousands of Nairobians making our city cleaner every day',
       buildingNairobi: '🌿 Together, we\'re building a cleaner, greener Nairobi',
 
-      // Signup Page
       completeProfile: 'Complete Your Profile',
       fillAllFields: 'Please fill in all fields to create your account and join our community.',
       validEmailRequired: 'Valid Email Required',
@@ -186,7 +181,6 @@ export const LanguageProvider = ({ children }) => {
       welcomeBackMessage: 'Welcome back! We\'ve missed your contributions to our clean city mission',
       journeyStartsHere: '🌟 Your journey to a cleaner Nairobi starts here',
 
-      // Feedback Page
       error: 'Error',
       enterFeedback: 'Please enter your feedback before submitting.',
       selectRating: 'Please select a rating before submitting.',
@@ -205,7 +199,6 @@ export const LanguageProvider = ({ children }) => {
       submitFeedback: 'Submit Feedback',
       feedbackNote: 'Your feedback helps us improve SmartWaste for all Nairobi residents. We read every submission and appreciate your input!',
 
-      // Profile Page (existing)
       welcomeTitle: 'Welcome to SmartWaste',
       welcomeSubtitle: 'Sign in to personalize your experience',
       userName: 'SmartWaste User',
@@ -240,7 +233,6 @@ export const LanguageProvider = ({ children }) => {
       lastUpdated: 'Last updated: December 2024',
     },
     Swahili: {
-      // Home Page
       appName: 'SmartWaste',
       appTagline: 'Kubadilisha Usimamizi wa Taka Nairobi',
       heroTitle: 'Kujenga Jamii Safi Pamoja',
@@ -272,7 +264,6 @@ export const LanguageProvider = ({ children }) => {
       ctaDescription: 'Jiunge na maelfu ya Wanaibi wanaosafisha jamii zao',
       ctaButton: 'Ripoti Tatizo Lako la Kwanza',
 
-      // Report Page
       gettingLocation: 'Inapata eneo...',
       locating: 'Inatafuta...',
       locationDenied: 'Kibali cha eneo kimekataliwa',
@@ -307,7 +298,6 @@ export const LanguageProvider = ({ children }) => {
       submitReport: '📤 Wasilisha Ripoti',
       backToHome: '← Rudi Nyumbani',
 
-      // Status Page
       myReports: 'Ripoti Zangu',
       trackComplaints: 'Fuatilia malalamiko yako ya taka',
       totalReports: 'Jumla ya Ripoti',
@@ -325,7 +315,6 @@ export const LanguageProvider = ({ children }) => {
       noReports: 'Bado Hakuna Ripoti',
       submitFirstReport: 'Wasilisha ripoti yako ya kwanza ya taka ili uione hapa',
 
-      // Login Page
       missingInfo: 'Taarifa Hazijakamilika',
       enterEmailPassword: 'Tafadhali ingiza anwani yako ya barua pepe na nenosiri ili kuendelea.',
       invalidEmail: 'Barua Pepe Batili',
@@ -351,7 +340,6 @@ export const LanguageProvider = ({ children }) => {
       joinThousands: 'Jiunge na maelfu ya Wanaibi wanaofanya jiji letu kuwa safi kila siku',
       buildingNairobi: '🌿 Pamoja, tunajenga Nairobi safi na ya kijani zaidi',
 
-      // Signup Page
       completeProfile: 'Kamilisha Wasifu Wako',
       fillAllFields: 'Tafadhali jaza sehemu zote ili uunde akaunti yako na ujiunge na jamii yetu.',
       validEmailRequired: 'Barua Pepe Halali Inahitajika',
@@ -387,7 +375,6 @@ export const LanguageProvider = ({ children }) => {
       welcomeBackMessage: 'Karibu tena! Tumekukosa mchango wako kwenye misheni yetu ya jiji safi',
       journeyStartsHere: '🌟 Safari yako kwenye Nairobi safi inaanzia hapa',
 
-      // Feedback Page
       error: 'Hitilafu',
       enterFeedback: 'Tafadhali ingiza maoni yako kabla ya kuwasilisha.',
       selectRating: 'Tafadhali chagua ukadiriaji kabla ya kuwasilisha.',
@@ -406,7 +393,6 @@ export const LanguageProvider = ({ children }) => {
       submitFeedback: 'Wasilisha Maoni',
       feedbackNote: 'Maoni yako yanatusaidia kuboresha SmartWaste kwa wakazi wote wa Nairobi. Tunasoma kila uwasilishaji na tunathamini mchango wako!',
 
-      // Profile Page (existing)
       welcomeTitle: 'Karibu kwenye SmartWaste',
       welcomeSubtitle: 'Ingia ili kubinafsisha uzoefu wako',
       userName: 'Mtumiaji wa SmartWaste',

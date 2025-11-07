@@ -30,18 +30,15 @@ function ReportClusters() {
     try {
       setLoading(true);
       
-      // First, get all reports from backend
       const response = await fetch("https://smart-waste-nairobi-chi.vercel.app/api/reports/all");
       const result = await response.json();
       
       if (response.ok && result.success) {
         const reports = result.reports;
         
-        // Group reports into clusters by location (simple clustering)
         const clusterGroups = createClusters(reports);
         setClusters(clusterGroups);
         
-        // Calculate statistics
         const totalClusters = clusterGroups.length;
         const highPriority = clusterGroups.filter(cluster => 
           cluster.priority === 'high' || cluster.priority === 'critical'
@@ -68,7 +65,6 @@ function ReportClusters() {
   };
 
   const createClusters = (reports) => {
-    // Simple clustering - group by general location area
     const locationGroups = {};
     
     reports.forEach(report => {
@@ -87,7 +83,6 @@ function ReportClusters() {
         locationGroups[locationKey].reports.push(report);
         locationGroups[locationKey].totalReports++;
         
-        // Count urgent reports
         const urgency = getUrgencyFromDescription(report.description);
         if (urgency === 'critical' || urgency === 'high') {
           locationGroups[locationKey].urgentCount++;
@@ -95,7 +90,6 @@ function ReportClusters() {
       }
     });
 
-    // Convert to cluster array with metadata
     return Object.values(locationGroups).map((cluster, index) => {
       const priority = cluster.urgentCount > 2 ? 'critical' : 
                       cluster.urgentCount > 0 ? 'high' : 
@@ -170,12 +164,10 @@ function ReportClusters() {
 
   const handleAssignRoute = (clusterId) => {
     alert(`Route assignment for ${clusterId} - This would integrate with route optimization in Phase 2`);
-    // Future: Integrate with route optimization system
   };
 
   const handleViewDetails = (cluster) => {
     alert(`Cluster Details:\nLocation: ${cluster.location}\nReports: ${cluster.reportCount}\nUrgent: ${cluster.urgentCount}\nPriority: ${cluster.priority}`);
-    // Future: Show detailed modal with all reports in this cluster
   };
 
   if (loading) {

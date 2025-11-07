@@ -1,5 +1,3 @@
-// Logo.js
-
 import React from "react";
 import logoImg from "../pics/logo.png";
 
