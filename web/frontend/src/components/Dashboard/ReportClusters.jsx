@@ -318,16 +318,6 @@ function ReportClusters() {
         <div className="col-md-12">
           <div className="card bg-light">
             <div className="card-body">
-              <h6>
-                <FontAwesomeIcon icon={faInfoCircle} className="me-2" />
-                How Report Clusters Work
-              </h6>
-              <p className="mb-0 small">
-                • Clusters are automatically created when multiple citizens report issues in the same area<br/>
-                • Priority is determined by the number and urgency of reports<br/>
-                • Collection routes can be assigned to handle multiple reports efficiently<br/>
-                • System updates in real-time as new reports are submitted
-              </p>
             </div>
           </div>
         </div>
