@@ -33,7 +33,7 @@ const style = {
     padding: "10px",
     borderRadius: "100px",
     display: "grid",
-    placeItem: "center",
+    placeItems: "center",
   },
   text: {
     color: "#4f9e5f",
