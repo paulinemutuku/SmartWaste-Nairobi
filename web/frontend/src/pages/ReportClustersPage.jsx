@@ -7,7 +7,6 @@ import ReportClusters from "../components/Dashboard/ReportClusters";
 function ReportClustersPage() {
   return (
     <div className="grid-container">
-      <Header />
       <Sidebar />
       <ReportClusters />
     </div>
