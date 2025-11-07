@@ -23,7 +23,7 @@ export const useSignup = () => {
 
       if (!response.ok) {
         setIsLoading(false);
-        setError(json.error);
+        setError(json.message || json.error || "Something went wrong");
       } else {
         localStorage.setItem("user", JSON.stringify(json));
 
