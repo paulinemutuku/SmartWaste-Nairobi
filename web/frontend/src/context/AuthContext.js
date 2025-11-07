@@ -19,11 +19,14 @@ export const AuthContextProvider = ({ children }) => {
   });
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem("user"));
-    if (user) {
-      dispatch({ type: "LOGIN", payload: user });
-    }
-  }, []);
+  const user = JSON.parse(localStorage.getItem("user"));
+  
+  if (user && user.token && user.user) {
+    dispatch({ type: "LOGIN", payload: user });
+  } else {
+    localStorage.removeItem("user");
+  }
+}, []);
 
   console.log("AthContext state", state);
 
