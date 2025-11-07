@@ -185,9 +185,9 @@ function ReportClusters() {
 
   return (
     <div className="container-fluid">
-      <h3 style={style.header}>SmartWaste Nairobi - Report Clusters</h3>
+      <h3 style={style.header}>Report Clusters</h3>
       <p className="text-muted text-center mb-4">
-        Dynamic clusters based on real-time citizen reports
+        Dynamic clusters based on citizen reports
       </p>
       
       {/* Statistics Cards */}
