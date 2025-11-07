@@ -132,7 +132,7 @@ function Collectors() {
   return (
     <div className="container-fluid">
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h3 style={style.header}>Nairobi Collection Teams</h3>
+        <h3 style={style.header}>Nairobi Collection Team</h3>
         <button 
           className="btn btn-primary"
           onClick={() => setShowAddForm(!showAddForm)}

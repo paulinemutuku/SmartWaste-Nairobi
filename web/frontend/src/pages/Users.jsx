@@ -102,10 +102,7 @@ function Users() {
 
   return (
     <div className="container-fluid">
-      <h3 style={style.header}>SmartWaste Nairobi - Citizen Users</h3>
-      <p className="text-muted text-center mb-4">
-        Mobile app users contributing to cleaner Nairobi
-      </p>
+      <h3 style={style.header}>Citizen Users</h3>
       
       {/* Statistics Cards */}
       <div className="row justify-content-center mb-4">
