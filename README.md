@@ -95,11 +95,11 @@ npm start
 
 | Landing Page | Report Interface | Status Tracking |
 |--------------|------------------|-----------------|
-| <img src="screenshots/mobile/01-landing-page.jpg" width="200"> | <img src="screenshots/mobile/02-report-interface.jpg" width="200"> | <img src="screenshots/mobile/03-status-tracking.jpg" width="200"> |
+| <img src="screenshots/01-landing-page.jpg" width="200"> | <img src="screenshots/02-report-interface.jpg" width="200"> | <img src="screenshots/03-status-tracking.jpg" width="200"> |
 
 | Multi-language Support | User Profile | Authentication |
 |------------------------|---------------|----------------|
-| <img src="screenshots/mobile/04-multilanguage.jpg" width="200"> | <img src="screenshots/mobile/05-user-profile.jpg" width="200"> | <img src="screenshots/mobile/06-authentication.jpg" width="200"> |
+| <img src="screenshots/04-multilanguage.jpg" width="200"> | <img src="screenshots/05-user-profile.jpg" width="200"> | <img src="screenshots/06-authentication.jpg" width="200"> |
 
 </div>
 
@@ -108,11 +108,11 @@ npm start
 
 | Admin Dashboard | Reports Assessment | Collector Management |
 |-----------------|-------------------|---------------------|
-| <img src="screenshots/web/01-dashboard.png" width="250"> | <img src="screenshots/web/02-reports-assessment.png" width="250"> | <img src="screenshots/web/03-collector-management.png" width="250"> |
+| <img src="screenshots/01-dashboard.png" width="250"> | <img src="screenshots/02-reports-assessment.png" width="250"> | <img src="screenshots/03-collector-management.png" width="250"> |
 
 | Map Visualization | User Management | Schedule Planning |
 |-------------------|-----------------|-------------------|
-| <img src="screenshots/web/04-map-view.png" width="250"> | <img src="screenshots/web/05-user-management.png" width="250"> | <img src="screenshots/web/06-schedule.png" width="250"> |
+| <img src="screenshots/04-map-view.png" width="250"> | <img src="screenshots/05-user-management.png" width="250"> | <img src="screenshots/06-schedule.png" width="250"> |
 
 </div>
 
