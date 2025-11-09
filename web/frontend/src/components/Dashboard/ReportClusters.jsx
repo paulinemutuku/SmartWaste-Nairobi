@@ -190,6 +190,9 @@ function ReportClusters() {
     try {
       setRouteLoading(true);
       const selectedDepotObj = depots.find(d => d.id === selectedDepot);
+
+      console.log('Selected clusters:', selectedClusters);
+      console.log('Available clusters:', clusters);
       
       const response = await fetch("https://smart-waste-nairobi-chi.vercel.app/api/optimization/optimize-routes", {
         method: "POST",
@@ -203,6 +206,7 @@ function ReportClusters() {
       });
 
       const result = await response.json();
+      console.log('Optimization result:', result);
       
       if (result.success) {
         setOptimizedRoutes(result.optimizedRoutes);
