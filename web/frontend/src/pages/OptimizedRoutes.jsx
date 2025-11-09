@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import Header from "../components/Dashboard/Header";
 import Sidebar from "../components/Dashboard/Sidebar";
 
 // Fix for leaflet markers
@@ -71,7 +70,6 @@ const OptimizedRoutes = () => {
   if (loading) {
     return (
       <div className="grid-container">
-        <Header OpenSidebar={OpenSidebar} />
         <Sidebar openSidebarToggle={openSidebarToggle} OpenSidebar={OpenSidebar} />
         <main className="main-container">
           <div className="d-flex justify-content-center align-items-center" style={{height: "50vh"}}>
@@ -87,7 +85,6 @@ const OptimizedRoutes = () => {
 
   return (
     <div className="grid-container">
-      <Header OpenSidebar={OpenSidebar} />
       <Sidebar openSidebarToggle={openSidebarToggle} OpenSidebar={OpenSidebar} />
       
       <main className="main-container">
