@@ -13,6 +13,7 @@ import ReportClustersPage from "./pages/ReportClustersPage";
 import "./App.css";
 import ReportsAssessment from "./pages/ReportsAssessment";
 import FeedbackComponent from './components/Dashboard/FeedbackComponent';
+import OptimizedRoutes from "./pages/OptimizedRoutes";
 
 const App = () => {
   const { user } = useAuthContext();
@@ -30,6 +31,7 @@ const App = () => {
           <Route path="/schedule" element={<Schedule />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/reports-assessment" element={<ReportsAssessment />} />
+          <Route path="/optimized-routes" element={<OptimizedRoutes />} />
           <Route
             path="/"
             element={!user ? <Login /> : <Navigate to="/dashboard" />}
