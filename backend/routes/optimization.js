@@ -2,44 +2,36 @@ const express = require('express');
 const Report = require('../models/Report');
 const router = express.Router();
 
-// NEW: Route optimization algorithm
-router.get('/optimized-routes', async (req, res) => {
+router.post('/optimize-routes', async (req, res) => {
   try {
-    console.log('🔄 Calculating optimized routes...');
+    const { clusterIds, depotLocation } = req.body;
     
-    // Get all reports with valid locations
-    const reports = await Report.find({
-      latitude: { $exists: true, $ne: null },
-      longitude: { $exists: true, $ne: null },
-      status: { $in: ['submitted', 'pending'] }
-    });
+    const allReports = await Report.find({
+      'location.address': { $exists: true, $ne: '' }
+    }).limit(50);
 
-    if (reports.length === 0) {
+    const clusters = createSmartClusters(allReports);
+    const selectedClusters = clusters.filter(cluster => 
+      clusterIds.includes(cluster.id)
+    );
+
+    if (selectedClusters.length === 0) {
       return res.json({
         success: true,
-        message: 'No reports available for route optimization',
         optimizedRoutes: []
       });
     }
 
-    // Use your existing clustering logic
-    const clusters = createClusters(reports);
-    
-    // NEW: Generate optimized routes from clusters
-    const optimizedRoutes = generateOptimizedRoutes(clusters);
-    
-    console.log(`✅ Generated ${optimizedRoutes.length} optimized routes from ${clusters.length} clusters`);
+    const optimizedRoutes = generateOptimizedRoutes(selectedClusters, depotLocation);
     
     res.json({
       success: true,
-      message: 'Routes optimized successfully',
-      clusters: clusters.length,
-      routes: optimizedRoutes.length,
-      optimizedRoutes: optimizedRoutes
+      originalClusters: selectedClusters.length,
+      optimizedRoutes: optimizedRoutes,
+      efficiency: calculateEfficiency(selectedClusters, optimizedRoutes)
     });
-    
+
   } catch (error) {
-    console.log('❌ ROUTE OPTIMIZATION ERROR:', error);
     res.status(500).json({
       success: false,
       message: 'Error optimizing routes',
@@ -48,157 +40,87 @@ router.get('/optimized-routes', async (req, res) => {
   }
 });
 
-// Reuse your clustering logic (from MapView.jsx)
-const createClusters = (reports, maxDistanceMeters = 100) => {
-  if (!reports || reports.length === 0) return [];
-
-  const clusters = [];
-  const visited = new Set();
-  
-  reports.forEach((report, index) => {
-    if (visited.has(index)) return;
-
-    const cluster = {
-      id: `cluster-${clusters.length + 1}`,
-      reports: [report],
-      center: [report.latitude, report.longitude]
-    };
-
-    visited.add(index);
-
-    const findNeighbors = (currentReport, currentIndex) => {
-      reports.forEach((otherReport, otherIndex) => {
-        if (!visited.has(otherIndex) && currentIndex !== otherIndex) {
-          const distance = calculateDistance(
-            currentReport.latitude, currentReport.longitude,
-            otherReport.latitude, otherReport.longitude
-          );
-
-          if (distance <= maxDistanceMeters) {
-            cluster.reports.push(otherReport);
-            visited.add(otherIndex);
-            
-            cluster.center = [
-              cluster.reports.reduce((sum, r) => sum + r.latitude, 0) / cluster.reports.length,
-              cluster.reports.reduce((sum, r) => sum + r.longitude, 0) / cluster.reports.length
-            ];
-
-            findNeighbors(otherReport, otherIndex);
-          }
-        }
-      });
-    };
-
-    findNeighbors(report, index);
-    
-    const priorityInfo = getPriorityFromClusterSize(cluster.reports.length);
-    cluster.priority = priorityInfo.name;
-    cluster.color = priorityInfo.color;
-    
-    clusters.push(cluster);
-  });
-
-  return clusters;
-};
-
-// NEW: Route optimization algorithm
-const generateOptimizedRoutes = (clusters) => {
+const generateOptimizedRoutes = (clusters, depot = [-1.286389, 36.817223]) => {
   if (clusters.length === 0) return [];
 
-  // Sort clusters by priority (Critical -> High -> Medium -> Low)
-  const priorityOrder = {
-    "Critical Priority Zone": 4,
-    "High Priority Zone": 3, 
-    "Medium Priority Area": 2,
-    "Low Priority Zone": 1
-  };
+  const sortedClusters = [...clusters].sort((a, b) => {
+    const priorityOrder = { 'critical': 4, 'high': 3, 'medium': 2, 'low': 1 };
+    return (priorityOrder[b.priority] || 1) - (priorityOrder[a.priority] || 1);
+  });
 
-  const sortedClusters = [...clusters].sort((a, b) => 
-    priorityOrder[b.priority] - priorityOrder[a.priority]
-  );
-
-  // Generate routes (max 5 clusters per route for efficiency)
   const routes = [];
-  const clustersPerRoute = 5;
-  
-  for (let i = 0; i < sortedClusters.length; i += clustersPerRoute) {
-    const routeClusters = sortedClusters.slice(i, i + clustersPerRoute);
-    
-    // Calculate optimal path using nearest neighbor algorithm
-    const optimalPath = calculateOptimalPath(routeClusters);
+  const maxClustersPerRoute = 3;
+
+  for (let i = 0; i < sortedClusters.length; i += maxClustersPerRoute) {
+    const routeClusters = sortedClusters.slice(i, i + maxClustersPerRoute);
+    const optimalPath = calculateOptimalPath([depot, ...routeClusters, depot]);
     
     routes.push({
       id: `route-${routes.length + 1}`,
-      name: `Collection Route ${routes.length + 1}`,
-      clusters: optimalPath,
-      totalStops: optimalPath.length,
-      estimatedTime: calculateEstimatedTime(optimalPath),
-      distance: calculateRouteDistance(optimalPath),
-      priority: routeClusters[0]?.priority || 'Medium'
+      name: `Optimized Route ${routes.length + 1}`,
+      clusters: optimalPath.slice(1, -1),
+      path: optimalPath,
+      totalStops: routeClusters.length,
+      estimatedTime: Math.round(routeClusters.length * 25 + calculateRouteDistance(optimalPath) / 1000 * 20),
+      distance: (calculateRouteDistance(optimalPath) / 1000).toFixed(2),
+      priority: routeClusters[0]?.priority || 'medium'
     });
   }
 
   return routes;
 };
 
-// NEW: Optimal path calculation (Traveling Salesman Problem - simplified)
-const calculateOptimalPath = (clusters) => {
-  if (clusters.length <= 1) return clusters;
+const calculateOptimalPath = (points) => {
+  if (points.length <= 3) return points;
 
-  const path = [clusters[0]]; // Start with first cluster
-  const unvisited = new Set(clusters.slice(1));
-  
+  const path = [points[0]];
+  const unvisited = new Set(points.slice(1, -1));
+  const endPoint = points[points.length - 1];
+
   while (unvisited.size > 0) {
-    const lastCluster = path[path.length - 1];
-    let nearestCluster = null;
+    const lastPoint = path[path.length - 1];
+    let nearestPoint = null;
     let minDistance = Infinity;
 
-    // Find nearest unvisited cluster
-    unvisited.forEach(cluster => {
+    unvisited.forEach(point => {
       const distance = calculateDistance(
-        lastCluster.center[0], lastCluster.center[1],
-        cluster.center[0], cluster.center[1]
+        lastPoint.center ? lastPoint.center[0] : lastPoint[0],
+        lastPoint.center ? lastPoint.center[1] : lastPoint[1],
+        point.center ? point.center[0] : point[0],
+        point.center ? point.center[1] : point[1]
       );
       
       if (distance < minDistance) {
         minDistance = distance;
-        nearestCluster = cluster;
+        nearestPoint = point;
       }
     });
 
-    if (nearestCluster) {
-      path.push(nearestCluster);
-      unvisited.delete(nearestCluster);
+    if (nearestPoint) {
+      path.push(nearestPoint);
+      unvisited.delete(nearestPoint);
     }
   }
 
+  path.push(endPoint);
   return path;
 };
 
-// NEW: Helper functions
-const calculateRouteDistance = (clusters) => {
+const calculateRouteDistance = (path) => {
   let totalDistance = 0;
-  for (let i = 0; i < clusters.length - 1; i++) {
+  for (let i = 0; i < path.length - 1; i++) {
+    const pointA = path[i];
+    const pointB = path[i + 1];
     totalDistance += calculateDistance(
-      clusters[i].center[0], clusters[i].center[1],
-      clusters[i + 1].center[0], clusters[i + 1].center[1]
+      pointA.center ? pointA.center[0] : pointA[0],
+      pointA.center ? pointA.center[1] : pointA[1],
+      pointB.center ? pointB.center[0] : pointB[0],
+      pointB.center ? pointB.center[1] : pointB[1]
     );
   }
-  return (totalDistance / 1000).toFixed(2); // Convert to kilometers
+  return totalDistance;
 };
 
-const calculateEstimatedTime = (clusters) => {
-  const baseTimePerStop = 15; // minutes per stop
-  const travelSpeed = 30; // km/h
-  const distance = parseFloat(calculateRouteDistance(clusters));
-  
-  const travelTime = (distance / travelSpeed) * 60; // minutes
-  const serviceTime = clusters.length * baseTimePerStop;
-  
-  return Math.round(travelTime + serviceTime);
-};
-
-// Reuse your existing helper functions
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
   const R = 6371000;
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -211,11 +133,86 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
   return R * c;
 };
 
-const getPriorityFromClusterSize = (clusterSize) => {
-  if (clusterSize >= 20) return { name: "Critical Priority Zone", color: "#8B0000" };
-  if (clusterSize >= 5) return { name: "High Priority Zone", color: "#FF0000" };
-  if (clusterSize >= 3) return { name: "Medium Priority Area", color: "#FFA500" };
-  return { name: "Low Priority Zone", color: "#008000" };
+const calculateEfficiency = (originalClusters, optimizedRoutes) => {
+  const originalDistance = originalClusters.length * 2000;
+  const optimizedDistance = optimizedRoutes.reduce((sum, route) => 
+    sum + parseFloat(route.distance) * 1000, 0
+  );
+  
+  const improvement = ((originalDistance - optimizedDistance) / originalDistance * 100).toFixed(1);
+  return {
+    improvement: improvement + '%',
+    distanceSaved: ((originalDistance - optimizedDistance) / 1000).toFixed(1) + 'km',
+    timeSaved: '~' + Math.round((originalDistance - optimizedDistance) / 1000 * 3) + ' minutes'
+  };
+};
+
+const createSmartClusters = (reports) => {
+  const reportsWithLocation = reports.filter(report => 
+    (report.latitude && report.longitude) || 
+    (report.location?.latitude && report.location?.longitude)
+  );
+
+  const clusters = [];
+  const usedReports = new Set();
+  const maxDistance = 0.001;
+
+  reportsWithLocation.forEach((report, index) => {
+    if (usedReports.has(index)) return;
+
+    const lat1 = report.latitude || report.location?.latitude;
+    const lon1 = report.longitude || report.location?.longitude;
+    
+    const cluster = {
+      id: `cluster-${clusters.length + 1}`,
+      name: `Zone ${clusters.length + 1}`,
+      reports: [report],
+      center: [lat1, lon1],
+      reportCount: 1,
+      priority: 'medium'
+    };
+
+    usedReports.add(index);
+
+    reportsWithLocation.forEach((otherReport, otherIndex) => {
+      if (!usedReports.has(otherIndex) && index !== otherIndex) {
+        const lat2 = otherReport.latitude || otherReport.location?.latitude;
+        const lon2 = otherReport.longitude || otherReport.location?.longitude;
+        
+        const distance = Math.sqrt(Math.pow(lat2 - lat1, 2) + Math.pow(lon2 - lon1, 2));
+        
+        if (distance <= maxDistance) {
+          cluster.reports.push(otherReport);
+          usedReports.add(otherIndex);
+          
+          cluster.center = [
+            cluster.reports.reduce((sum, r) => sum + (r.latitude || r.location?.latitude), 0) / cluster.reports.length,
+            cluster.reports.reduce((sum, r) => sum + (r.longitude || r.location?.longitude), 0) / cluster.reports.length
+          ];
+        }
+      }
+    });
+
+    cluster.reportCount = cluster.reports.length;
+    
+    if (cluster.reportCount >= 5) cluster.priority = 'critical';
+    else if (cluster.reportCount >= 3) cluster.priority = 'high';
+    else if (cluster.reportCount >= 2) cluster.priority = 'medium';
+    else cluster.priority = 'low';
+
+    const firstReport = cluster.reports[0];
+    const address = firstReport.address || firstReport.location?.address;
+    if (address && address !== 'Nairobi') {
+      const areaName = address.split(',')[0]?.trim();
+      if (areaName && areaName !== 'Nairobi') {
+        cluster.name = `${areaName} Area`;
+      }
+    }
+
+    clusters.push(cluster);
+  });
+
+  return clusters;
 };
 
 module.exports = router;

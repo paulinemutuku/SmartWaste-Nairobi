@@ -11,7 +11,6 @@ import {
 import { RiMapPinFill } from "react-icons/ri";
 import { useAuthContext } from "../../hooks/useAuthContext";
 import { useLogout } from "../../hooks/useLogout";
-import { BsGeoAlt } from "react-icons/bs";
 
 const Sidebar = ({ openSidebarToggle, OpenSidebar }) => {
   const { user } = useAuthContext();
@@ -72,11 +71,6 @@ const Sidebar = ({ openSidebarToggle, OpenSidebar }) => {
         <a href="/schedule">
           <li className="sidebar-list-item">
             <BsCalendar3 className="icon" /> Schedule
-          </li>
-        </a>
-        <a href="/optimized-routes">
-          <li className="sidebar-list-item">
-            <BsGeoAlt className="icon" /> Optimized Routes
           </li>
         </a>
         
