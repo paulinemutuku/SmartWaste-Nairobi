@@ -8,7 +8,15 @@ const JWT_SECRET = 'smartwaste_nairobi_secret_key_2024';
 
 router.post('/register', async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, role = 'resident' } = req.body;
+
+    // Validate role
+    if (!['resident', 'collector', 'admin'].includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid role specified'
+      });
+    }
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -23,13 +31,14 @@ router.post('/register', async (req, res) => {
     const newUser = new User({
       name,
       email,
-      password: hashedPassword
+      password: hashedPassword,
+      role: role
     });
 
     const savedUser = await newUser.save();
 
     const token = jwt.sign(
-      { userId: savedUser._id, email: savedUser.email },
+      { userId: savedUser._id, email: savedUser.email, role: savedUser.role },
       JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -57,13 +66,21 @@ router.post('/register', async (req, res) => {
 
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, userType } = req.body;
 
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(400).json({
         success: false,
         message: 'Invalid email or password'
+      });
+    }
+
+    // Optional: Verify user type if specified
+    if (userType && user.role !== userType) {
+      return res.status(400).json({
+        success: false,
+        message: `Account is not a ${userType} account`
       });
     }
 
@@ -76,7 +93,7 @@ router.post('/login', async (req, res) => {
     }
 
     const token = jwt.sign(
-      { userId: user._id, email: user.email },
+      { userId: user._id, email: user.email, role: user.role },
       JWT_SECRET,
       { expiresIn: '7d' }
     );

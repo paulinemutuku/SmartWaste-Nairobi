@@ -21,6 +21,22 @@ const CollectorSchema = new mongoose.Schema({
   assignedClusters: [{ 
     type: String 
   }],
+  assignedRoutes: [{
+    routeId: String,
+    clusterId: String,
+    clusterName: String,
+    assignedDate: Date,
+    scheduledDate: Date,
+    status: {
+      type: String,
+      enum: ['scheduled', 'in-progress', 'completed', 'cancelled'],
+      default: 'scheduled'
+    },
+    completedAt: Date,
+    reportCount: Number,
+    verifiedPhotos: [String],
+    notes: String
+  }],
   activeAccount: { 
     type: Boolean, 
     default: true 
@@ -37,6 +53,14 @@ const CollectorSchema = new mongoose.Schema({
     rating: { 
       type: Number, 
       default: 0 
+    },
+    routesCompleted: {
+      type: Number,
+      default: 0
+    },
+    completionRate: {
+      type: Number,
+      default: 0
     }
   }
 }, { timestamps: true });

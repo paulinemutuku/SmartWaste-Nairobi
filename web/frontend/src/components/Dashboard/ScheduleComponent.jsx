@@ -170,51 +170,71 @@ function ScheduleComponent() {
     }
   };
 
-  const createSchedule = async () => {
-    if (!selectedCluster || !selectedCollector || !scheduleDate) {
-      alert("Please select cluster, collector, and date");
-      return;
-    }
+const createSchedule = async () => {
+  if (!selectedCluster || !selectedCollector || !scheduleDate) {
+    alert("Please select cluster, collector, and date");
+    return;
+  }
 
-    try {
-      const cluster = clusters.find(c => c.id === selectedCluster);
-      const collector = collectors.find(c => c._id === selectedCollector);
+  try {
+    const cluster = clusters.find(c => c.id === selectedCluster);
+    const collector = collectors.find(c => c._id === selectedCollector);
 
-      const scheduleData = {
+    const scheduleData = {
+      clusterId: selectedCluster,
+      clusterName: cluster.name,
+      collectorId: selectedCollector,
+      collectorName: collector.name,
+      date: scheduleDate,
+      reportCount: cluster.reportCount,
+      status: 'scheduled'
+    };
+
+    // 1. Create the schedule
+    const response = await fetch("https://smart-waste-nairobi-chi.vercel.app/api/schedules", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(scheduleData)
+    });
+
+    const result = await response.json();
+    
+    if (result.success) {
+      // 2. ALSO assign route to collector
+      const routeAssignment = {
+        routeId: `route-${Date.now()}`,
         clusterId: selectedCluster,
         clusterName: cluster.name,
-        collectorId: selectedCollector,
-        collectorName: collector.name,
-        date: scheduleDate,
+        assignedDate: new Date(),
+        scheduledDate: scheduleDate,
+        status: 'scheduled',
         reportCount: cluster.reportCount,
-        status: 'scheduled'
+        notes: `Scheduled collection for ${cluster.name}`
       };
 
-      const response = await fetch("https://smart-waste-nairobi-chi.vercel.app/api/schedules", {
+      await fetch(`https://smart-waste-nairobi-chi.vercel.app/api/collectors/${selectedCollector}/assign-route`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(scheduleData)
+        body: JSON.stringify(routeAssignment)
       });
 
-      const result = await response.json();
+      alert("✅ Schedule created and assigned to collector!");
       
-      if (result.success) {
-        alert("✅ Schedule created successfully!");
-        
-        setClusters(prev => prev.filter(cluster => cluster.id !== selectedCluster));
-        
-        setSelectedCluster("");
-        setSelectedCollector("");
-        setScheduleDate("");
-        loadSchedules();
-      }
-    } catch (error) {
-      console.error("Error creating schedule:", error);
-      alert("❌ Error creating schedule");
+      setClusters(prev => prev.filter(cluster => cluster.id !== selectedCluster));
+      setSelectedCluster("");
+      setSelectedCollector("");
+      setScheduleDate("");
+      loadSchedules();
     }
-  };
+  } catch (error) {
+    console.error("Error creating schedule:", error);
+    alert("❌ Error creating schedule");
+  }
+};
 
   const completeSchedule = async (scheduleId) => {
     try {

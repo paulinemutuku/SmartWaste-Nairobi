@@ -82,4 +82,129 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+router.get('/:id/routes', async (req, res) => {
+  try {
+    const collector = await Collector.findById(req.params.id);
+    if (!collector) {
+      return res.status(404).json({
+        success: false,
+        message: 'Collector not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      routes: collector.assignedRoutes || []
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching collector routes',
+      error: error.message
+    });
+  }
+});
+
+router.put('/:collectorId/routes/:routeId/status', async (req, res) => {
+  try {
+    const { status } = req.body;
+    const collector = await Collector.findById(req.params.collectorId);
+    
+    if (!collector) {
+      return res.status(404).json({
+        success: false,
+        message: 'Collector not found'
+      });
+    }
+
+    const route = collector.assignedRoutes.id(req.params.routeId);
+    if (!route) {
+      return res.status(404).json({
+        success: false,
+        message: 'Route not found'
+      });
+    }
+
+    route.status = status;
+    if (status === 'completed') {
+      route.completedAt = new Date();
+    }
+
+    await collector.save();
+
+    res.json({
+      success: true,
+      message: 'Route status updated successfully',
+      route: route
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error updating route status',
+      error: error.message
+    });
+  }
+});
+
+router.get('/:id/performance', async (req, res) => {
+  try {
+    const collector = await Collector.findById(req.params.id);
+    if (!collector) {
+      return res.status(404).json({
+        success: false,
+        message: 'Collector not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      performance: collector.performance
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching collector performance',
+      error: error.message
+    });
+  }
+});
+
+router.post('/:id/assign-route', async (req, res) => {
+  try {
+    const collector = await Collector.findById(req.params.id);
+    if (!collector) {
+      return res.status(404).json({
+        success: false,
+        message: 'Collector not found'
+      });
+    }
+
+    const routeData = {
+      routeId: req.body.routeId,
+      clusterId: req.body.clusterId,
+      clusterName: req.body.clusterName,
+      assignedDate: req.body.assignedDate,
+      scheduledDate: req.body.scheduledDate,
+      status: req.body.status || 'scheduled',
+      reportCount: req.body.reportCount,
+      notes: req.body.notes
+    };
+
+    collector.assignedRoutes.push(routeData);
+    await collector.save();
+
+    res.json({
+      success: true,
+      message: 'Route assigned to collector successfully',
+      route: routeData
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error assigning route to collector',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;
