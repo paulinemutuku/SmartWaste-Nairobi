@@ -134,18 +134,55 @@ export default function TodayTasksScreen() {
     }
   };
 
-  const openNavigation = (coordinates: [number, number]) => {
-    const [lat, lng] = coordinates;
+const openNavigation = (coordinates: any) => {
+  console.log('Raw coordinates received:', coordinates);
+  
+  if (!coordinates) {
+    Alert.alert('Navigation Error', 'No GPS coordinates available for this route');
+    return;
+  }
+
+  try {
+    let lat: number;
+    let lng: number;
+    
+    if (Array.isArray(coordinates) && coordinates.length >= 2) {
+      [lat, lng] = coordinates;
+    } else if (coordinates.lat !== undefined && coordinates.lng !== undefined) {
+      lat = coordinates.lat;
+      lng = coordinates.lng;
+    } else if (coordinates.latitude !== undefined && coordinates.longitude !== undefined) {
+      lat = coordinates.latitude;
+      lng = coordinates.longitude;
+    } else {
+      Alert.alert('Navigation Error', 'Invalid GPS coordinates format');
+      return;
+    }
+
+    lat = Number(lat);
+    lng = Number(lng);
+
+    if (isNaN(lat) || isNaN(lng)) {
+      Alert.alert('Navigation Error', 'Invalid GPS coordinate values');
+      return;
+    }
+
+    console.log('Parsed coordinates:', { lat, lng });
     
     const url = Platform.select({
       ios: `maps://app?daddr=${lat},${lng}&dirflg=d`,
       android: `google.navigation:q=${lat},${lng}`,
     });
 
-    Linking.openURL(url!).catch(() => {
+    Linking.openURL(url!).catch((error) => {
+      console.log('Navigation app error:', error);
       Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`);
     });
-  };
+  } catch (error) {
+    console.error('Navigation error:', error);
+    Alert.alert('Navigation Error', 'Failed to open navigation');
+  }
+};
 
   const getStatusColor = (status: string) => {
     switch (status) {
