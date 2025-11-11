@@ -77,10 +77,6 @@ export default function CollectorLoginScreen() {
     }
   };
 
-  const useDemoAccount = (demoEmail: string) => {
-    setEmail(demoEmail);
-  };
-
   return (
     <KeyboardAvoidingView 
       style={styles.container}
@@ -149,32 +145,6 @@ export default function CollectorLoginScreen() {
               </View>
             )}
           </TouchableOpacity>
-
-          <View style={styles.demoSection}>
-            <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>Quick Test</Text>
-              <View style={styles.dividerLine} />
-            </View>
-            
-            <Text style={styles.demoText}>
-              Enter any collector email from your database
-            </Text>
-            
-            <TouchableOpacity 
-              style={styles.demoButton}
-              onPress={() => useDemoAccount('john@smartwaste.com')}
-            >
-              <Text style={styles.demoButtonText}>Use: john@smartwaste.com</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.demoButton}
-              onPress={() => useDemoAccount('mary@smartwaste.com')}
-            >
-              <Text style={styles.demoButtonText}>Use: mary@smartwaste.com</Text>
-            </TouchableOpacity>
-          </View>
         </View>
 
         <View style={styles.footer}>
@@ -329,49 +299,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     marginRight: 8,
-  },
-  demoSection: {
-    marginTop: 35,
-  },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#E2E8F0',
-  },
-  dividerText: {
-    color: '#64748B',
-    fontSize: 14,
-    fontWeight: '600',
-    marginHorizontal: 15,
-  },
-  demoText: {
-    fontSize: 14,
-    color: '#64748B',
-    textAlign: 'center',
-    lineHeight: 20,
-    backgroundColor: '#F1F5F9',
-    padding: 15,
-    borderRadius: 12,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-  },
-  demoButton: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  demoButtonText: {
-    color: '#374151',
-    fontSize: 14,
-    fontWeight: '500',
-    textAlign: 'center',
   },
   footer: {
     paddingHorizontal: 30,
