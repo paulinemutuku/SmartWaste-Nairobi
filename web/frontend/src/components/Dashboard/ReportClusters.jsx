@@ -45,7 +45,7 @@ function ReportClusters() {
       
       if (response.ok && result.success) {
         const reports = result.reports;
-        const clusterGroups = createClusters(reports);
+        const clusterGroups = createGeographicClusters(reports);
         setClusters(clusterGroups);
         
         const totalClusters = clusterGroups.length;
@@ -73,33 +73,69 @@ function ReportClusters() {
     }
   };
 
-  const createClusters = (reports) => {
-    const locationGroups = {};
-    
-    reports.forEach(report => {
-      if (report.status !== 'completed') {
-        const locationKey = report.location?.address?.split(',')[0] || 'Unknown Location';
-        
-        if (!locationGroups[locationKey]) {
-          locationGroups[locationKey] = {
-            reports: [],
-            location: locationKey,
-            totalReports: 0,
-            urgentCount: 0
-          };
-        }
-        
-        locationGroups[locationKey].reports.push(report);
-        locationGroups[locationKey].totalReports++;
-        
-        const urgency = getUrgencyFromDescription(report.description);
-        if (urgency === 'critical' || urgency === 'high') {
-          locationGroups[locationKey].urgentCount++;
-        }
-      }
-    });
+  const createGeographicClusters = (reports, maxDistanceKm = 0.1) => {
+    const activeReports = reports.filter(report => 
+      report.status !== 'completed' && 
+      (report.latitude && report.longitude)
+    );
 
-    return Object.values(locationGroups).map((cluster, index) => {
+    if (activeReports.length === 0) {
+      return [];
+    }
+
+    const clusters = [];
+    const visited = new Set();
+
+    activeReports.forEach((report, index) => {
+      if (visited.has(index)) return;
+
+      const cluster = {
+        reports: [report],
+        center: [report.latitude, report.longitude],
+        totalReports: 1,
+        urgentCount: 0
+      };
+
+      visited.add(index);
+
+      // Calculate urgency for the first report
+      const urgency = getUrgencyFromDescription(report.description);
+      if (urgency === 'critical' || urgency === 'high') {
+        cluster.urgentCount++;
+      }
+
+      // Find nearby reports
+      activeReports.forEach((otherReport, otherIndex) => {
+        if (!visited.has(otherIndex) && index !== otherIndex) {
+          const distance = calculateDistance(
+            report.latitude, report.longitude,
+            otherReport.latitude, otherReport.longitude
+          );
+
+          if (distance <= maxDistanceKm) {
+            cluster.reports.push(otherReport);
+            visited.add(otherIndex);
+            cluster.totalReports++;
+            
+            // Update center
+            cluster.center = [
+              cluster.reports.reduce((sum, r) => sum + r.latitude, 0) / cluster.reports.length,
+              cluster.reports.reduce((sum, r) => sum + r.longitude, 0) / cluster.reports.length
+            ];
+
+            // Update urgency count
+            const otherUrgency = getUrgencyFromDescription(otherReport.description);
+            if (otherUrgency === 'critical' || otherUrgency === 'high') {
+              cluster.urgentCount++;
+            }
+          }
+        }
+      });
+
+      // Determine location name
+      const locationName = getLocationName(cluster.reports);
+      
+      // Determine priority and status
       const priority = cluster.urgentCount > 2 ? 'critical' : 
                       cluster.urgentCount > 0 ? 'high' : 
                       cluster.totalReports > 3 ? 'medium' : 'low';
@@ -107,20 +143,65 @@ function ReportClusters() {
       const status = priority === 'critical' ? 'needs_attention' : 
                     cluster.totalReports > 2 ? 'needs_attention' : 'monitoring';
 
-      return {
-        id: `CLUSTER-${index + 1}`,
-        location: cluster.location,
+      clusters.push({
+        id: `CLUSTER-${clusters.length + 1}`,
+        location: locationName,
         reportCount: cluster.totalReports,
         urgentCount: cluster.urgentCount,
         priority: priority,
         status: status,
         lastReport: cluster.reports[0]?.createdAt,
-        reports: cluster.reports
-      };
+        reports: cluster.reports,
+        center: cluster.center
+      });
     });
+
+    return clusters;
+  };
+
+  const getLocationName = (reports) => {
+    // Try to find a meaningful location name from reports
+    const reportWithAddress = reports.find(report => 
+      report.location?.address && 
+      report.location.address !== 'Nairobi' && 
+      !report.location.address.includes('Unknown')
+    );
+
+    if (reportWithAddress?.location?.address) {
+      const address = reportWithAddress.location.address;
+      // Extract area name (first part before comma)
+      const area = address.split(',')[0]?.trim();
+      return area || 'Nairobi Area';
+    }
+
+    // If no good address, use geographic naming
+    const centerLat = reports.reduce((sum, r) => sum + r.latitude, 0) / reports.length;
+    const centerLng = reports.reduce((sum, r) => sum + r.longitude, 0) / reports.length;
+    
+    // Simple geographic naming based on coordinates
+    if (centerLat < -1.28) return 'South Nairobi Area';
+    if (centerLat > -1.26) return 'North Nairobi Area';
+    if (centerLng < 36.81) return 'West Nairobi Area';
+    if (centerLng > 36.85) return 'East Nairobi Area';
+    
+    return 'Central Nairobi Area';
+  };
+
+  const calculateDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371; // Earth's radius in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c; // Distance in km
   };
 
   const getUrgencyFromDescription = (description) => {
+    if (!description) return 'medium';
+    
     const lowerDesc = description.toLowerCase();
     if (lowerDesc.includes('overflow') || lowerDesc.includes('block') || lowerDesc.includes('emergency')) {
       return 'critical';
@@ -191,9 +272,6 @@ function ReportClusters() {
       setRouteLoading(true);
       const selectedDepotObj = depots.find(d => d.id === selectedDepot);
 
-      console.log('Selected clusters:', selectedClusters);
-      console.log('Available clusters:', clusters);
-      
       const response = await fetch("https://smart-waste-nairobi-chi.vercel.app/api/optimization/optimize-routes", {
         method: "POST",
         headers: {
@@ -206,7 +284,6 @@ function ReportClusters() {
       });
 
       const result = await response.json();
-      console.log('Optimization result:', result);
       
       if (result.success) {
         setOptimizedRoutes(result.optimizedRoutes);
@@ -226,7 +303,7 @@ function ReportClusters() {
   };
 
   const handleViewDetails = (cluster) => {
-    alert(`Cluster Details:\nLocation: ${cluster.location}\nReports: ${cluster.reportCount}\nUrgent: ${cluster.urgentCount}\nPriority: ${cluster.priority}`);
+    alert(`Cluster Details:\nLocation: ${cluster.location}\nReports: ${cluster.reportCount}\nUrgent: ${cluster.urgentCount}\nPriority: ${cluster.priority}\nCoordinates: ${cluster.center[0].toFixed(6)}, ${cluster.center[1].toFixed(6)}`);
   };
 
   if (loading) {
