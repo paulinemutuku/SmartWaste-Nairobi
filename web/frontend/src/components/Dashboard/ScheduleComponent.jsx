@@ -187,10 +187,26 @@ function ScheduleComponent() {
       const cluster = clusters.find(c => c.id === selectedCluster);
       const collector = collectors.find(c => c._id === selectedCollector);
 
-      if (!cluster || !cluster.center) {
-        alert("❌ Error: Selected cluster has no GPS coordinates");
+      if (!cluster) {
+        alert("❌ Error: Selected cluster not found");
         return;
       }
+
+      // Ensure we have valid GPS coordinates
+      let gpsCoordinates = cluster.center;
+      
+      // If cluster center is not available, use the first report's coordinates
+      if (!gpsCoordinates || gpsCoordinates.length < 2) {
+        if (cluster.reports && cluster.reports.length > 0) {
+          const firstReport = cluster.reports[0];
+          gpsCoordinates = [firstReport.latitude, firstReport.longitude];
+        } else {
+          alert("❌ Error: No GPS coordinates available for this cluster");
+          return;
+        }
+      }
+
+      console.log("📍 Using GPS coordinates:", gpsCoordinates);
 
       // 1. Create schedule
       const scheduleData = {
@@ -218,14 +234,14 @@ function ScheduleComponent() {
           clusterId: selectedCluster,
           clusterName: cluster.name,
           clusterLocation: cluster.location,
-          gpsCoordinates: cluster.center, // Use actual cluster coordinates
+          gpsCoordinates: gpsCoordinates, // Use validated coordinates
           assignedDate: new Date().toISOString(),
           scheduledDate: scheduleDate,
           status: 'scheduled',
           reportCount: cluster.reportCount,
           notes: `Scheduled collection for ${cluster.name} - ${cluster.reportCount} reports`,
           pickupLocation: cluster.location,
-          destinationCoordinates: cluster.center, // Same coordinates for destination
+          destinationCoordinates: gpsCoordinates, // Same coordinates for destination
           estimatedTime: "30-45 min",
           distance: "2-5 km"
         };
@@ -243,11 +259,11 @@ function ScheduleComponent() {
         if (routeResult.success) {
           alert(`✅ Schedule created! ${collector.name} can now see this route in their mobile app with GPS navigation.`);
           
-          // Refresh data
+          // Refresh ALL data including clusters
           setSelectedCluster("");
           setSelectedCollector("");
           setScheduleDate("");
-          loadAllData();
+          await loadAllData(); // Wait for data refresh
         } else {
           alert("❌ Error assigning route to collector");
         }
@@ -267,7 +283,7 @@ function ScheduleComponent() {
     if (!routeToDelete) return;
 
     try {
-      const { routeId, collectorId } = routeToDelete;
+      const { routeId, collectorId, clusterId } = routeToDelete;
 
       // Delete from collector's assigned routes
       if (collectorId && routeId) {
@@ -279,7 +295,18 @@ function ScheduleComponent() {
         
         if (deleteResult.success) {
           alert("✅ Schedule deleted successfully!");
-          loadAllData();
+          
+          // Also delete from schedules if it exists there
+          try {
+            await fetch(`https://smart-waste-nairobi-chi.vercel.app/api/schedules/cluster/${clusterId}`, {
+              method: "DELETE"
+            });
+          } catch (scheduleError) {
+            console.log("No schedule found to delete, continuing...");
+          }
+          
+          // Refresh ALL data including clusters
+          await loadAllData();
         } else {
           alert("❌ Error deleting schedule from collector");
         }
@@ -328,9 +355,14 @@ function ScheduleComponent() {
     return tomorrow.toISOString().split('T')[0];
   };
 
-  const activeClusters = clusters.filter(cluster => 
-    !schedules.some(schedule => schedule.clusterId === cluster.id && schedule.status !== 'completed')
-  );
+  // Get active clusters (not assigned to any scheduled route)
+  const activeClusters = clusters.filter(cluster => {
+    const isAssigned = assignedRoutes.some(route => 
+      route.clusterId === cluster.id && 
+      route.status !== 'completed'
+    );
+    return !isAssigned;
+  });
 
   const openGoogleMaps = (coordinates) => {
     if (!coordinates || !Array.isArray(coordinates) || coordinates.length < 2) {
@@ -423,6 +455,7 @@ function ScheduleComponent() {
                   {activeClusters.map((cluster) => (
                     <option key={cluster.id} value={cluster.id}>
                       {cluster.name} ({cluster.reportCount} reports)
+                      {cluster.center && ` - GPS: ${cluster.center[0].toFixed(4)}, ${cluster.center[1].toFixed(4)}`}
                     </option>
                   ))}
                 </select>
@@ -511,6 +544,7 @@ function ScheduleComponent() {
                         <th>Reports</th>
                         <th>Status</th>
                         <th>Schedule Date</th>
+                        <th>GPS Coordinates</th>
                         <th>Navigation</th>
                         <th>Actions</th>
                       </tr>
@@ -538,6 +572,14 @@ function ScheduleComponent() {
                           </td>
                           <td>
                             {new Date(route.scheduledDate).toLocaleDateString('en-KE')}
+                          </td>
+                          <td>
+                            <small>
+                              {route.gpsCoordinates ? 
+                                `${route.gpsCoordinates[0]?.toFixed(4)}, ${route.gpsCoordinates[1]?.toFixed(4)}` : 
+                                'No GPS'
+                              }
+                            </small>
                           </td>
                           <td>
                             <button
