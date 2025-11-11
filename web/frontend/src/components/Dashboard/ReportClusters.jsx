@@ -163,26 +163,42 @@ function ReportClusters() {
     return clusters;
   };
 
-  const getBestLocationName = (reports) => {
-    // Use the exact same location logic as MapView
-    // Try report.location.address first (most common)
-    const address = reports[0]?.location?.address;
+const getBestLocationName = (reports) => {
+  // Try to get actual location names from reports
+  for (let report of reports) {
+    // Try report.location.address first
+    const address = report?.location?.address;
     if (address && address !== 'Nairobi' && !address.includes('Unknown')) {
-      return address.split(',')[0]?.trim();
+      const cleanAddress = address.split(',')[0]?.trim();
+      if (cleanAddress && cleanAddress.length > 3) {
+        return cleanAddress;
+      }
     }
     
     // Try report.address as fallback
-    const directAddress = reports[0]?.address;
+    const directAddress = report?.address;
     if (directAddress && directAddress !== 'Nairobi' && !directAddress.includes('Unknown')) {
-      return directAddress.split(',')[0]?.trim();
+      const cleanAddress = directAddress.split(',')[0]?.trim();
+      if (cleanAddress && cleanAddress.length > 3) {
+        return cleanAddress;
+      }
     }
-    
-    // Final fallback to area-based naming
-    const centerLat = reports.reduce((sum, r) => sum + r.latitude, 0) / reports.length;
-    if (centerLat < -1.28) return 'South Nairobi';
-    if (centerLat > -1.25) return 'North Nairobi';
-    return 'Central Nairobi';
-  };
+  }
+  
+  // If no good addresses found, use Nairobi neighborhoods based on coordinates
+  const centerLat = reports.reduce((sum, r) => sum + r.latitude, 0) / reports.length;
+  const centerLng = reports.reduce((sum, r) => sum + r.longitude, 0) / reports.length;
+  
+  // More accurate Nairobi area detection
+  if (centerLat > -1.20 && centerLng > 36.90) return 'Eastlands Area';
+  if (centerLat > -1.25 && centerLng < 36.80) return 'Westlands Area';
+  if (centerLat < -1.30) return 'South C / South B Area';
+  if (centerLng > 36.85) return 'East Nairobi';
+  if (centerLng < 36.80) return 'West Nairobi';
+  if (centerLat > -1.26) return 'Upper Nairobi';
+  
+  return 'Central Nairobi Area';
+};
 
   const getUrgencyFromDescription = (description) => {
     if (!description) return 'medium';
