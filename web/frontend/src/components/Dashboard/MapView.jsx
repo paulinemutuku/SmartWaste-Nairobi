@@ -16,49 +16,6 @@ const MapView = () => {
   const [loading, setLoading] = useState(true);
   const [dataSource, setDataSource] = useState("");
 
-  const additionalReports = [
-    { 
-      _id: 'report-dandora-1', 
-      description: "Full bins near Dandora Market", 
-      latitude: -1.2600, 
-      longitude: 36.8900,
-      address: "Dandora Market, Nairobi",
-      createdAt: new Date()
-    },
-    { 
-      _id: 'report-dandora-2', 
-      description: "Illegal dumping behind market", 
-      latitude: -1.2601, 
-      longitude: 36.8902,
-      address: "Dandora Market Backside",
-      createdAt: new Date()
-    },
-    { 
-      _id: 'report-dandora-3', 
-      description: "Overflowing containers", 
-      latitude: -1.2599, 
-      longitude: 36.8898,
-      address: "Market Entrance",
-      createdAt: new Date()
-    },
-    { 
-      _id: 'report-kayole-1', 
-      description: "Full bins in Kayole Estate", 
-      latitude: -1.2750, 
-      longitude: 36.9100,
-      address: "Kayole Estate, Nairobi",
-      createdAt: new Date()
-    },
-    { 
-      _id: 'report-kayole-2', 
-      description: "Illegal dumping near shopping center", 
-      latitude: -1.2751, 
-      longitude: 36.9101,
-      address: "Kayole Shopping Center",
-      createdAt: new Date()
-    }
-  ];
-
   useEffect(() => {
     loadAllReports();
   }, []);
@@ -70,29 +27,27 @@ const MapView = () => {
       const response = await fetch("https://smart-waste-nairobi-chi.vercel.app/api/reports/all");
       const result = await response.json();
       
-      let allReports = [];
-      
       if (response.ok && result.success) {
         const realReportsWithLocation = result.reports.filter(report => 
           report.latitude && report.longitude
         );
         
-        allReports = [...realReportsWithLocation, ...additionalReports];
-        setDataSource(`${realReportsWithLocation.length + additionalReports.length} Reports`);
+        setReports(realReportsWithLocation);
+        setDataSource(`${realReportsWithLocation.length} Real Reports`);
+        
+        const clustered = createClusters(realReportsWithLocation);
+        setClusters(clustered);
       } else {
-        allReports = additionalReports;
-        setDataSource(`${additionalReports.length} Reports`);
+        setReports([]);
+        setClusters([]);
+        setDataSource("No reports available");
       }
       
-      setReports(allReports);
-      
-      const clustered = createClusters(allReports);
-      setClusters(clustered);
-
     } catch (error) {
-      setReports(additionalReports);
-      setClusters(createClusters(additionalReports));
-      setDataSource(`${additionalReports.length} Reports`);
+      console.error("Error loading reports:", error);
+      setReports([]);
+      setClusters([]);
+      setDataSource("Error loading data");
     } finally {
       setLoading(false);
     }
@@ -222,7 +177,7 @@ const MapView = () => {
       </div>
 
       <MapContainer
-        center={clusters.length > 0 ? clusters[0].center : [-0.4170, 36.9510]}
+        center={clusters.length > 0 ? clusters[0].center : [-1.286389, 36.817223]}
         zoom={10}
         style={{ width: "100%", height: "100%", marginTop: "50px" }}
       >
@@ -262,44 +217,46 @@ const MapView = () => {
         ))}
       </MapContainer>
 
-      <div style={{
-        position: 'absolute',
-        top: '60px',
-        right: '10px',
-        background: 'white',
-        padding: '10px',
-        borderRadius: '8px',
-        boxShadow: '0 2px 10px rgba(0,0,0,0.3)',
-        zIndex: 1000,
-        maxWidth: '200px'
-      }}>
-        <h6 style={{ marginBottom: '8px', color: '#2d5a3c', fontSize: '14px' }}>🗺️ Priority Clusters</h6>
-        {clusters.map((cluster, index) => (
-          <div key={cluster.id} style={{ display: 'flex', alignItems: 'center', marginBottom: '5px' }}>
-            <div style={{ 
-              width: '20px', 
-              height: '20px', 
-              backgroundColor: cluster.color, 
-              borderRadius: '50%', 
-              marginRight: '8px', 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              color: 'white', 
-              fontSize: '10px', 
-              fontWeight: 'bold' 
-            }}>
-              {cluster.reports.length}
+      {clusters.length > 0 && (
+        <div style={{
+          position: 'absolute',
+          top: '60px',
+          right: '10px',
+          background: 'white',
+          padding: '10px',
+          borderRadius: '8px',
+          boxShadow: '0 2px 10px rgba(0,0,0,0.3)',
+          zIndex: 1000,
+          maxWidth: '200px'
+        }}>
+          <h6 style={{ marginBottom: '8px', color: '#2d5a3c', fontSize: '14px' }}>🗺️ Priority Clusters</h6>
+          {clusters.map((cluster, index) => (
+            <div key={cluster.id} style={{ display: 'flex', alignItems: 'center', marginBottom: '5px' }}>
+              <div style={{ 
+                width: '20px', 
+                height: '20px', 
+                backgroundColor: cluster.color, 
+                borderRadius: '50%', 
+                marginRight: '8px', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                color: 'white', 
+                fontSize: '10px', 
+                fontWeight: 'bold' 
+              }}>
+                {cluster.reports.length}
+              </div>
+              <span style={{ fontSize: '12px' }}>
+                {cluster.areaName}
+              </span>
             </div>
-            <span style={{ fontSize: '12px' }}>
-              {cluster.areaName}
-            </span>
-          </div>
-        ))}
-        <p style={{ fontSize: '11px', color: '#666', margin: 0, marginTop: '5px' }}>
-          {clusters.length} priority areas
-        </p>
-      </div>
+          ))}
+          <p style={{ fontSize: '11px', color: '#666', margin: 0, marginTop: '5px' }}>
+            {clusters.length} priority areas
+          </p>
+        </div>
+      )}
 
       <div style={{
         position: 'absolute',
