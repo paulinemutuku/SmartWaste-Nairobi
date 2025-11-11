@@ -73,10 +73,11 @@ function ReportClusters() {
     }
   };
 
-  const createGeographicClusters = (reports, maxDistanceKm = 0.1) => {
+  const createGeographicClusters = (reports, maxDistanceMeters = 200) => {
     const activeReports = reports.filter(report => 
       report.status !== 'completed' && 
-      (report.latitude && report.longitude)
+      report.latitude && 
+      report.longitude
     );
 
     if (activeReports.length === 0) {
@@ -85,6 +86,9 @@ function ReportClusters() {
 
     const clusters = [];
     const visited = new Set();
+    
+    // Convert meters to degrees (approximate)
+    const maxDistanceDegrees = maxDistanceMeters / 111000;
 
     activeReports.forEach((report, index) => {
       if (visited.has(index)) return;
@@ -104,20 +108,20 @@ function ReportClusters() {
         cluster.urgentCount++;
       }
 
-      // Find nearby reports
+      // Find nearby reports using the same logic as MapView
       activeReports.forEach((otherReport, otherIndex) => {
         if (!visited.has(otherIndex) && index !== otherIndex) {
-          const distance = calculateDistance(
-            report.latitude, report.longitude,
-            otherReport.latitude, otherReport.longitude
+          const distance = Math.sqrt(
+            Math.pow(otherReport.latitude - report.latitude, 2) + 
+            Math.pow(otherReport.longitude - report.longitude, 2)
           );
 
-          if (distance <= maxDistanceKm) {
+          if (distance <= maxDistanceDegrees) {
             cluster.reports.push(otherReport);
             visited.add(otherIndex);
             cluster.totalReports++;
             
-            // Update center
+            // Update center to average of all reports
             cluster.center = [
               cluster.reports.reduce((sum, r) => sum + r.latitude, 0) / cluster.reports.length,
               cluster.reports.reduce((sum, r) => sum + r.longitude, 0) / cluster.reports.length
@@ -132,8 +136,8 @@ function ReportClusters() {
         }
       });
 
-      // Determine location name
-      const locationName = getLocationName(cluster.reports);
+      // Use the same location detection as your other components
+      const locationName = getBestLocationName(cluster.reports);
       
       // Determine priority and status
       const priority = cluster.urgentCount > 2 ? 'critical' : 
@@ -159,44 +163,25 @@ function ReportClusters() {
     return clusters;
   };
 
-  const getLocationName = (reports) => {
-    // Try to find a meaningful location name from reports
-    const reportWithAddress = reports.find(report => 
-      report.location?.address && 
-      report.location.address !== 'Nairobi' && 
-      !report.location.address.includes('Unknown')
-    );
-
-    if (reportWithAddress?.location?.address) {
-      const address = reportWithAddress.location.address;
-      // Extract area name (first part before comma)
-      const area = address.split(',')[0]?.trim();
-      return area || 'Nairobi Area';
+  const getBestLocationName = (reports) => {
+    // Use the exact same location logic as MapView
+    // Try report.location.address first (most common)
+    const address = reports[0]?.location?.address;
+    if (address && address !== 'Nairobi' && !address.includes('Unknown')) {
+      return address.split(',')[0]?.trim();
     }
-
-    // If no good address, use geographic naming
+    
+    // Try report.address as fallback
+    const directAddress = reports[0]?.address;
+    if (directAddress && directAddress !== 'Nairobi' && !directAddress.includes('Unknown')) {
+      return directAddress.split(',')[0]?.trim();
+    }
+    
+    // Final fallback to area-based naming
     const centerLat = reports.reduce((sum, r) => sum + r.latitude, 0) / reports.length;
-    const centerLng = reports.reduce((sum, r) => sum + r.longitude, 0) / reports.length;
-    
-    // Simple geographic naming based on coordinates
-    if (centerLat < -1.28) return 'South Nairobi Area';
-    if (centerLat > -1.26) return 'North Nairobi Area';
-    if (centerLng < 36.81) return 'West Nairobi Area';
-    if (centerLng > 36.85) return 'East Nairobi Area';
-    
-    return 'Central Nairobi Area';
-  };
-
-  const calculateDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 6371; // Earth's radius in km
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = 
-      Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-      Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c; // Distance in km
+    if (centerLat < -1.28) return 'South Nairobi';
+    if (centerLat > -1.25) return 'North Nairobi';
+    return 'Central Nairobi';
   };
 
   const getUrgencyFromDescription = (description) => {
