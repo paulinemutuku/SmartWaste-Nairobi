@@ -20,6 +20,8 @@ function ScheduleComponent() {
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [assignedRoutes, setAssignedRoutes] = useState([]);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [routeToDelete, setRouteToDelete] = useState(null);
 
   useEffect(() => {
     loadAllData();
@@ -256,12 +258,17 @@ function ScheduleComponent() {
     }
   };
 
-  const deleteSchedule = async (routeId, collectorId, clusterId) => {
-    if (!confirm("Are you sure you want to delete this schedule? This will remove it from the collector's mobile app.")) {
-      return;
-    }
+  const confirmDelete = (routeId, collectorId, clusterId) => {
+    setRouteToDelete({ routeId, collectorId, clusterId });
+    setShowDeleteModal(true);
+  };
+
+  const deleteSchedule = async () => {
+    if (!routeToDelete) return;
 
     try {
+      const { routeId, collectorId } = routeToDelete;
+
       // Delete from collector's assigned routes
       if (collectorId && routeId) {
         const deleteResponse = await fetch(`https://smart-waste-nairobi-chi.vercel.app/api/collectors/${collectorId}/routes/${routeId}`, {
@@ -282,6 +289,9 @@ function ScheduleComponent() {
     } catch (error) {
       console.error("Error deleting schedule:", error);
       alert("❌ Error deleting schedule");
+    } finally {
+      setShowDeleteModal(false);
+      setRouteToDelete(null);
     }
   };
 
@@ -345,6 +355,43 @@ function ScheduleComponent() {
 
   return (
     <div className="container-fluid">
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="modal fade show" style={{display: 'block', backgroundColor: 'rgba(0,0,0,0.5)'}}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Confirm Delete</h5>
+                <button 
+                  type="button" 
+                  className="btn-close" 
+                  onClick={() => setShowDeleteModal(false)}
+                ></button>
+              </div>
+              <div className="modal-body">
+                <p>Are you sure you want to delete this schedule? This will remove it from the collector's mobile app.</p>
+              </div>
+              <div className="modal-footer">
+                <button 
+                  type="button" 
+                  className="btn btn-secondary" 
+                  onClick={() => setShowDeleteModal(false)}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="button" 
+                  className="btn btn-danger" 
+                  onClick={deleteSchedule}
+                >
+                  Delete Schedule
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="card shadow-sm mb-4 border-0">
         <div className="card-header bg-success text-white py-3">
           <h4 className="mb-0 fw-bold">
@@ -504,7 +551,7 @@ function ScheduleComponent() {
                           </td>
                           <td>
                             <button
-                              onClick={() => deleteSchedule(route._id, route.collectorId, route.clusterId)}
+                              onClick={() => confirmDelete(route._id, route.collectorId, route.clusterId)}
                               className="btn btn-sm btn-outline-danger"
                               title="Delete Schedule"
                             >
