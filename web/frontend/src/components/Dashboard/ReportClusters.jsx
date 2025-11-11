@@ -25,6 +25,7 @@ function ReportClusters() {
   const [showRouteModal, setShowRouteModal] = useState(false);
   const [optimizedRoutes, setOptimizedRoutes] = useState([]);
   const [routeLoading, setRouteLoading] = useState(false);
+  const [collectors, setCollectors] = useState([]);
 
   const depots = [
     { id: 'depot-east', name: 'East Nairobi Depot', location: [-1.2800, 36.8700] },
@@ -35,6 +36,7 @@ function ReportClusters() {
 
   useEffect(() => {
     loadReportClusters();
+    loadCollectors();
   }, []);
 
   const loadReportClusters = async () => {
@@ -73,6 +75,18 @@ function ReportClusters() {
     }
   };
 
+  const loadCollectors = async () => {
+    try {
+      const response = await fetch("https://smart-waste-nairobi-chi.vercel.app/api/collectors");
+      const result = await response.json();
+      if (result.success) {
+        setCollectors(result.collectors);
+      }
+    } catch (error) {
+      console.error("Error loading collectors:", error);
+    }
+  };
+
   const createGeographicClusters = (reports, maxDistanceMeters = 200) => {
     const activeReports = reports.filter(report => 
       report.status !== 'completed' && 
@@ -87,7 +101,6 @@ function ReportClusters() {
     const clusters = [];
     const visited = new Set();
     
-    // Convert meters to degrees (approximate)
     const maxDistanceDegrees = maxDistanceMeters / 111000;
 
     activeReports.forEach((report, index) => {
@@ -102,13 +115,11 @@ function ReportClusters() {
 
       visited.add(index);
 
-      // Calculate urgency for the first report
       const urgency = getUrgencyFromDescription(report.description);
       if (urgency === 'critical' || urgency === 'high') {
         cluster.urgentCount++;
       }
 
-      // Find nearby reports using the same logic as MapView
       activeReports.forEach((otherReport, otherIndex) => {
         if (!visited.has(otherIndex) && index !== otherIndex) {
           const distance = Math.sqrt(
@@ -121,13 +132,11 @@ function ReportClusters() {
             visited.add(otherIndex);
             cluster.totalReports++;
             
-            // Update center to average of all reports
             cluster.center = [
               cluster.reports.reduce((sum, r) => sum + r.latitude, 0) / cluster.reports.length,
               cluster.reports.reduce((sum, r) => sum + r.longitude, 0) / cluster.reports.length
             ];
 
-            // Update urgency count
             const otherUrgency = getUrgencyFromDescription(otherReport.description);
             if (otherUrgency === 'critical' || otherUrgency === 'high') {
               cluster.urgentCount++;
@@ -136,10 +145,8 @@ function ReportClusters() {
         }
       });
 
-      // Use the same location detection as your other components
       const locationName = getBestLocationName(cluster.reports);
       
-      // Determine priority and status
       const priority = cluster.urgentCount > 2 ? 'critical' : 
                       cluster.urgentCount > 0 ? 'high' : 
                       cluster.totalReports > 3 ? 'medium' : 'low';
@@ -163,42 +170,37 @@ function ReportClusters() {
     return clusters;
   };
 
-const getBestLocationName = (reports) => {
-  // Try to get actual location names from reports
-  for (let report of reports) {
-    // Try report.location.address first
-    const address = report?.location?.address;
-    if (address && address !== 'Nairobi' && !address.includes('Unknown')) {
-      const cleanAddress = address.split(',')[0]?.trim();
-      if (cleanAddress && cleanAddress.length > 3) {
-        return cleanAddress;
+  const getBestLocationName = (reports) => {
+    for (let report of reports) {
+      const address = report?.location?.address;
+      if (address && address !== 'Nairobi' && !address.includes('Unknown')) {
+        const cleanAddress = address.split(',')[0]?.trim();
+        if (cleanAddress && cleanAddress.length > 3) {
+          return cleanAddress;
+        }
+      }
+      
+      const directAddress = report?.address;
+      if (directAddress && directAddress !== 'Nairobi' && !directAddress.includes('Unknown')) {
+        const cleanAddress = directAddress.split(',')[0]?.trim();
+        if (cleanAddress && cleanAddress.length > 3) {
+          return cleanAddress;
+        }
       }
     }
     
-    // Try report.address as fallback
-    const directAddress = report?.address;
-    if (directAddress && directAddress !== 'Nairobi' && !directAddress.includes('Unknown')) {
-      const cleanAddress = directAddress.split(',')[0]?.trim();
-      if (cleanAddress && cleanAddress.length > 3) {
-        return cleanAddress;
-      }
-    }
-  }
-  
-  // If no good addresses found, use Nairobi neighborhoods based on coordinates
-  const centerLat = reports.reduce((sum, r) => sum + r.latitude, 0) / reports.length;
-  const centerLng = reports.reduce((sum, r) => sum + r.longitude, 0) / reports.length;
-  
-  // More accurate Nairobi area detection
-  if (centerLat > -1.20 && centerLng > 36.90) return 'Eastlands Area';
-  if (centerLat > -1.25 && centerLng < 36.80) return 'Westlands Area';
-  if (centerLat < -1.30) return 'South C / South B Area';
-  if (centerLng > 36.85) return 'East Nairobi';
-  if (centerLng < 36.80) return 'West Nairobi';
-  if (centerLat > -1.26) return 'Upper Nairobi';
-  
-  return 'Central Nairobi Area';
-};
+    const centerLat = reports.reduce((sum, r) => sum + r.latitude, 0) / reports.length;
+    const centerLng = reports.reduce((sum, r) => sum + r.longitude, 0) / reports.length;
+    
+    if (centerLat > -1.20 && centerLng > 36.90) return 'Eastlands Area';
+    if (centerLat > -1.25 && centerLng < 36.80) return 'Westlands Area';
+    if (centerLat < -1.30) return 'South C / South B Area';
+    if (centerLng > 36.85) return 'East Nairobi';
+    if (centerLng < 36.80) return 'West Nairobi';
+    if (centerLat > -1.26) return 'Upper Nairobi';
+    
+    return 'Central Nairobi Area';
+  };
 
   const getUrgencyFromDescription = (description) => {
     if (!description) return 'medium';
@@ -301,6 +303,61 @@ const getBestLocationName = (reports) => {
   const handleAssignRoute = (clusterId) => {
     setSelectedClusters([clusterId]);
     handleOptimizeRoutes();
+  };
+
+  const handleAssignToCollector = async (route) => {
+    try {
+      const activeCollectors = collectors.filter(c => c.activeAccount);
+      
+      if (activeCollectors.length === 0) {
+        alert("No active collectors available. Please add collectors first.");
+        return;
+      }
+
+      const collectorList = activeCollectors
+        .map((c, index) => `${index + 1}. ${c.name} - ${c.zone}`)
+        .join('\n');
+
+      const selected = prompt(`Assign route "${route.name}" to which collector?\n\nAvailable collectors:\n${collectorList}\n\nEnter collector number (1, 2, 3, etc.):`);
+
+      if (selected) {
+        const collectorIndex = parseInt(selected) - 1;
+        const collector = activeCollectors[collectorIndex];
+
+        if (collector) {
+          const assignResponse = await fetch(`https://smart-waste-nairobi-chi.vercel.app/api/collectors/${collector._id}/assign-route`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              routeId: `route-${Date.now()}`,
+              clusterId: route.id,
+              clusterName: route.name,
+              assignedDate: new Date(),
+              scheduledDate: new Date(),
+              status: 'scheduled',
+              reportCount: route.totalStops,
+              notes: `Optimized route with ${route.totalStops} stops - ${route.distance}km`
+            })
+          });
+
+          const assignResult = await assignResponse.json();
+          
+          if (assignResult.success) {
+            alert(`✅ Route assigned to ${collector.name}! They can now see it in their mobile app.`);
+            setShowRouteModal(false);
+          } else {
+            alert("Failed to assign route. Please try again.");
+          }
+        } else {
+          alert("Invalid collector selection.");
+        }
+      }
+    } catch (error) {
+      console.error('Error assigning route:', error);
+      alert('Error assigning route to collector');
+    }
   };
 
   const handleViewDetails = (cluster) => {
@@ -548,8 +605,11 @@ const getBestLocationName = (reports) => {
                                 ))}
                               </div>
                             </div>
-                            <button className="btn btn-success btn-sm mt-2 w-100">
-                              Assign to Collector
+                            <button 
+                              className="btn btn-success btn-sm mt-2 w-100"
+                              onClick={() => handleAssignToCollector(route)}
+                            >
+                              📋 Assign to Collector
                             </button>
                           </div>
                         </div>
