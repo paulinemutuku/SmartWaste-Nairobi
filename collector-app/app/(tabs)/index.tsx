@@ -281,18 +281,38 @@ const openNavigation = (coordinates: any) => {
             </View>
 
             <View style={styles.navigationSection}>
-              <Text style={styles.navigationTitle}>📍 Collection Site</Text>
-              <TouchableOpacity 
-                style={styles.navigationButton}
-                onPress={() => openNavigation(route.gpsCoordinates || route.destinationCoordinates)}
-              >
-                <Ionicons name="navigate" size={20} color="#FFFFFF" />
-                <Text style={styles.navigationButtonText}>Start Navigation</Text>
-              </TouchableOpacity>
-              <Text style={styles.navigationHint}>
-                Opens in Maps • {route.distance} away
-              </Text>
-            </View>
+  <Text style={styles.navigationTitle}>📍 Collection Site</Text>
+  <TouchableOpacity 
+    style={styles.navigationButton}
+    onPress={() => openNavigation(route.gpsCoordinates || route.destinationCoordinates)}
+  >
+    <Ionicons name="navigate" size={20} color="#FFFFFF" />
+    <Text style={styles.navigationButtonText}>Start Navigation</Text>
+  </TouchableOpacity>
+  
+  {/* DEBUG BUTTON - REMOVE AFTER TESTING */}
+  <TouchableOpacity 
+    style={[styles.navigationButton, {backgroundColor: '#6B7280', marginTop: 8}]}
+    onPress={() => {
+      console.log('=== ROUTE DEBUG DATA ===');
+      console.log('Full route:', route);
+      console.log('GPS coordinates:', route.gpsCoordinates);
+      console.log('Destination coordinates:', route.destinationCoordinates);
+      console.log('Cluster center:', route.clusterLocation);
+      Alert.alert(
+        'Debug Info',
+        `GPS: ${JSON.stringify(route.gpsCoordinates)}\nDest: ${JSON.stringify(route.destinationCoordinates)}`
+      );
+    }}
+  >
+    <Ionicons name="bug" size={20} color="#FFFFFF" />
+    <Text style={styles.navigationButtonText}>Debug Coordinates</Text>
+  </TouchableOpacity>
+  
+  <Text style={styles.navigationHint}>
+    Opens in Maps • {route.distance} away
+  </Text>
+</View>
 
             {route.notes && (
               <View style={styles.notesContainer}>

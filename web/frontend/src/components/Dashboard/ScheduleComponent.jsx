@@ -206,22 +206,21 @@ function ScheduleComponent() {
       if (scheduleResult.success) {
         // 2. Assign route to collector with GPS data
         const routeAssignment = {
-          routeId: `route-${Date.now()}`,
-          clusterId: selectedCluster,
-          clusterName: cluster.name,
-          clusterLocation: cluster.location,
-          gpsCoordinates: cluster.center, // [lat, lng] for mobile app navigation
-          assignedDate: new Date(),
-          scheduledDate: scheduleDate,
-          status: 'scheduled',
-          reportCount: cluster.reportCount,
-          notes: `Scheduled collection for ${cluster.name} - ${cluster.reportCount} reports`,
-          // Mobile app will use these for Uber-like navigation:
-          pickupLocation: cluster.location,
-          destinationCoordinates: cluster.center,
-          estimatedTime: "30-45 min", // Could be calculated based on distance
-          distance: "2-5 km" // Could be calculated
-        };
+  routeId: `route-${Date.now()}`,
+  clusterId: selectedCluster,
+  clusterName: cluster.name,
+  clusterLocation: cluster.location,
+  gpsCoordinates: cluster.center || [-1.286389, 36.817223],
+  assignedDate: new Date(),
+  scheduledDate: scheduleDate,
+  status: 'scheduled',
+  reportCount: cluster.reportCount,
+  notes: `Scheduled collection for ${cluster.name} - ${cluster.reportCount} reports`,
+  pickupLocation: cluster.location,
+  destinationCoordinates: cluster.center || [-1.286389, 36.817223],
+  estimatedTime: "30-45 min",
+  distance: "2-5 km"
+};
 
         const routeResponse = await fetch(`https://smart-waste-nairobi-chi.vercel.app/api/collectors/${selectedCollector}/assign-route`, {
           method: "POST",
