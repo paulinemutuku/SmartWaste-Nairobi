@@ -454,7 +454,7 @@ function ScheduleComponent() {
                               className="btn btn-sm btn-outline-primary"
                               title="Open in Google Maps"
                             >
-                              <FontAwesomeIcon icon={faNavigation} />
+                              <FontAwesomeIcon icon={faRoute} />
                             </button>
                           </td>
                         </tr>
