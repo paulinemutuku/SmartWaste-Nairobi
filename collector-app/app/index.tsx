@@ -14,14 +14,15 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '../contexts/AuthContext';
 
 const { width, height } = Dimensions.get('window');
 
 export default function CollectorLoginScreen() {
   const [email, setEmail] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [isFocused, setIsFocused] = useState({ email: false });
   const router = useRouter();
+  const { login, isLoading } = useAuth();
 
   const handleLogin = async () => {
     if (!email) {
@@ -34,46 +35,19 @@ export default function CollectorLoginScreen() {
       return;
     }
 
-    setIsLoading(true);
-
-    try {
-      const response = await fetch('https://smart-waste-nairobi-chi.vercel.app/api/auth/collector-login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: email.toLowerCase()
-        }),
-      });
-
-      const result = await response.json();
-      
-      if (result.success) {
-        const collectorData = {
-          id: result.collector._id,
-          name: result.collector.name,
-          email: result.collector.email,
-          token: result.token
-        };
-        
-        console.log('Collector logged in:', collectorData);
-        
-        Alert.alert(
-          'Welcome Back! 🎉', 
-          `Ready to make Nairobi cleaner, ${result.collector?.name || 'Collector'}!`,
-          [{ 
-            text: 'View Routes', 
-            onPress: () => router.replace('/(tabs)') 
-          }]
-        );
-      } else {
-        Alert.alert('Sign In Failed', result.message || 'Collector not found. Please check your email.');
-      }
-    } catch (error) {
-      Alert.alert('Network Error', 'Please check your internet connection');
-    } finally {
-      setIsLoading(false);
+    const success = await login(email);
+    
+    if (success) {
+      Alert.alert(
+        'Welcome Back! 🎉', 
+        'Ready to make Nairobi cleaner!',
+        [{ 
+          text: 'View Routes', 
+          onPress: () => router.replace('/(tabs)') 
+        }]
+      );
+    } else {
+      Alert.alert('Sign In Failed', 'Collector not found. Please check your email.');
     }
   };
 
@@ -155,6 +129,7 @@ export default function CollectorLoginScreen() {
   );
 }
 
+// Your existing styles here...
 const styles = StyleSheet.create({
   container: {
     flex: 1,

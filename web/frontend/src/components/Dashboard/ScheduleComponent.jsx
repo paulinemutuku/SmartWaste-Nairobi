@@ -1,46 +1,24 @@
 import React, { useState, useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faMapMarkerAlt,
+  faNavigation,
+  faCalendar,
+  faUser,
+  faCheckCircle,
+  faClock
+} from "@fortawesome/free-solid-svg-icons";
 
 function ScheduleComponent() {
   const [clusters, setClusters] = useState([]);
   const [collectors, setCollectors] = useState([]);
-  const [reports, setReports] = useState([]);
   const [selectedCluster, setSelectedCluster] = useState("");
   const [selectedCollector, setSelectedCollector] = useState("");
   const [scheduleDate, setScheduleDate] = useState("");
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  const mockClusters = [
-    {
-      id: "dandora-cluster",
-      name: "Dandora Area",
-      reports: [
-        { _id: "mock-1", description: "Full bins near Dandora Market", address: "Dandora Market, Nairobi" },
-        { _id: "mock-2", description: "Illegal dumping site", address: "Dandora Market Backside" }
-      ],
-      center: [-1.2600, 36.8900],
-      reportCount: 2,
-      urgency: "high"
-    },
-    {
-      id: "kayole-cluster", 
-      name: "Kayole Area",
-      reports: [
-        { _id: "mock-3", description: "Full bins in Kayole Estate", address: "Kayole Estate, Nairobi" },
-        { _id: "mock-4", description: "Illegal dumping near shopping center", address: "Kayole Shopping Center" }
-      ],
-      center: [-1.2750, 36.9100],
-      reportCount: 2,
-      urgency: "medium"
-    }
-  ];
-
-  const mockCollectors = [
-    { _id: "collector-1", name: "John Kamau", zone: "East Nairobi", activeAccount: true },
-    { _id: "collector-2", name: "Mary Wanjiku", zone: "Central Nairobi", activeAccount: true },
-    { _id: "collector-3", name: "James Omondi", zone: "West Nairobi", activeAccount: true }
-  ];
+  const [assignedRoutes, setAssignedRoutes] = useState([]);
 
   useEffect(() => {
     loadAllData();
@@ -50,191 +28,224 @@ function ScheduleComponent() {
     try {
       setLoading(true);
       
-      let realClusters = [];
-      let realCollectors = [];
-      
-      try {
-        const [reportsRes, collectorsRes] = await Promise.all([
-          fetch("https://smart-waste-nairobi-chi.vercel.app/api/reports/all"),
-          fetch("https://smart-waste-nairobi-chi.vercel.app/api/collectors")
-        ]);
+      // Load REAL clusters from ReportClusters API
+      const [clustersRes, collectorsRes, schedulesRes] = await Promise.all([
+        fetch("https://smart-waste-nairobi-chi.vercel.app/api/reports/all"),
+        fetch("https://smart-waste-nairobi-chi.vercel.app/api/collectors"),
+        fetch("https://smart-waste-nairobi-chi.vercel.app/api/schedules")
+      ]);
 
-        const reportsData = await reportsRes.json();
-        const collectorsData = await collectorsRes.json();
+      const clustersData = await clustersRes.json();
+      const collectorsData = await collectorsRes.json();
+      const schedulesData = await schedulesRes.json();
 
-        if (reportsData.success && reportsData.reports.length > 0) {
-          setReports(reportsData.reports);
-          realClusters = createSmartClusters(reportsData.reports);
-        }
-
-        if (collectorsData.success && collectorsData.collectors.length > 0) {
-          realCollectors = collectorsData.collectors;
-        }
-      } catch (error) {
-        console.log("Using mock data for demonstration");
+      if (clustersData.success) {
+        // Use the same clustering logic as ReportClusters
+        const realClusters = createGeographicClusters(clustersData.reports);
+        setClusters(realClusters);
       }
 
-      const finalClusters = realClusters.length > 0 ? realClusters : mockClusters;
-      const finalCollectors = realCollectors.length > 0 ? realCollectors : mockCollectors;
+      if (collectorsData.success) {
+        setCollectors(collectorsData.collectors);
+        
+        // Load assigned routes from all collectors
+        loadAllAssignedRoutes(collectorsData.collectors);
+      }
 
-      setClusters(finalClusters);
-      setCollectors(finalCollectors);
-      
-      loadSchedules();
+      if (schedulesData.success) {
+        setSchedules(schedulesData.schedules);
+      }
+
     } catch (error) {
       console.error("Error loading data:", error);
-      setClusters(mockClusters);
-      setCollectors(mockCollectors);
     } finally {
       setLoading(false);
     }
   };
 
-  const createSmartClusters = (reports) => {
-    const reportsWithLocation = reports.filter(report => 
-      (report.latitude && report.longitude) || 
-      (report.location?.latitude && report.location?.longitude)
+  const loadAllAssignedRoutes = async (collectorsList) => {
+    try {
+      const routes = [];
+      
+      for (const collector of collectorsList) {
+        const response = await fetch(`https://smart-waste-nairobi-chi.vercel.app/api/collectors/${collector._id}/routes`);
+        const result = await response.json();
+        
+        if (result.success && result.routes) {
+          result.routes.forEach(route => {
+            routes.push({
+              ...route,
+              collectorName: collector.name,
+              collectorId: collector._id
+            });
+          });
+        }
+      }
+      
+      setAssignedRoutes(routes);
+    } catch (error) {
+      console.error("Error loading assigned routes:", error);
+    }
+  };
+
+  const createGeographicClusters = (reports, maxDistanceMeters = 200) => {
+    const activeReports = reports.filter(report => 
+      report.status !== 'completed' && 
+      report.latitude && 
+      report.longitude
     );
 
-    if (reportsWithLocation.length === 0) {
-      return mockClusters; 
-    }
+    if (activeReports.length === 0) return [];
 
     const clusters = [];
-    const usedReports = new Set();
-    
-    const maxDistance = 0.001;
+    const visited = new Set();
+    const maxDistanceDegrees = maxDistanceMeters / 111000;
 
-    reportsWithLocation.forEach((report, index) => {
-      if (usedReports.has(index)) return;
+    activeReports.forEach((report, index) => {
+      if (visited.has(index)) return;
 
-      const lat1 = report.latitude || report.location?.latitude;
-      const lon1 = report.longitude || report.location?.longitude;
-      
       const cluster = {
-        id: `cluster-${clusters.length + 1}`,
-        name: `Collection Zone ${clusters.length + 1}`,
         reports: [report],
-        center: [lat1, lon1],
-        reportCount: 1,
-        urgency: 'pending'
+        center: [report.latitude, report.longitude],
+        totalReports: 1,
+        urgentCount: 0
       };
 
-      usedReports.add(index);
+      visited.add(index);
 
-      reportsWithLocation.forEach((otherReport, otherIndex) => {
-        if (!usedReports.has(otherIndex) && index !== otherIndex) {
-          const lat2 = otherReport.latitude || otherReport.location?.latitude;
-          const lon2 = otherReport.longitude || otherReport.location?.longitude;
-          
-          const distance = Math.sqrt(Math.pow(lat2 - lat1, 2) + Math.pow(lon2 - lon1, 2));
-          
-          if (distance <= maxDistance) {
+      const urgency = getUrgencyFromDescription(report.description);
+      if (urgency === 'critical' || urgency === 'high') cluster.urgentCount++;
+
+      activeReports.forEach((otherReport, otherIndex) => {
+        if (!visited.has(otherIndex) && index !== otherIndex) {
+          const distance = Math.sqrt(
+            Math.pow(otherReport.latitude - report.latitude, 2) + 
+            Math.pow(otherReport.longitude - report.longitude, 2)
+          );
+
+          if (distance <= maxDistanceDegrees) {
             cluster.reports.push(otherReport);
-            usedReports.add(otherIndex);
+            visited.add(otherIndex);
+            cluster.totalReports++;
             
             cluster.center = [
-              cluster.reports.reduce((sum, r) => sum + (r.latitude || r.location?.latitude), 0) / cluster.reports.length,
-              cluster.reports.reduce((sum, r) => sum + (r.longitude || r.location?.longitude), 0) / cluster.reports.length
+              cluster.reports.reduce((sum, r) => sum + r.latitude, 0) / cluster.reports.length,
+              cluster.reports.reduce((sum, r) => sum + r.longitude, 0) / cluster.reports.length
             ];
+
+            const otherUrgency = getUrgencyFromDescription(otherReport.description);
+            if (otherUrgency === 'critical' || otherUrgency === 'high') cluster.urgentCount++;
           }
         }
       });
 
-      cluster.reportCount = cluster.reports.length;
+      const locationName = getBestLocationName(cluster.reports);
       
-      const firstReport = cluster.reports[0];
-      const address = firstReport.address || firstReport.location?.address;
-      if (address && address !== 'Nairobi') {
-        const areaName = address.split(',')[0]?.trim();
-        if (areaName && areaName !== 'Nairobi') {
-          cluster.name = `${areaName} Area`;
-        }
-      }
-
-      clusters.push(cluster);
+      clusters.push({
+        id: `CLUSTER-${clusters.length + 1}`,
+        name: locationName,
+        location: locationName,
+        reports: cluster.reports,
+        center: cluster.center,
+        reportCount: cluster.totalReports,
+        urgentCount: cluster.urgentCount
+      });
     });
 
-    return clusters.length > 0 ? clusters : mockClusters;
+    return clusters;
   };
 
-  const loadSchedules = async () => {
-    try {
-      const response = await fetch("https://smart-waste-nairobi-chi.vercel.app/api/schedules");
-      const result = await response.json();
-      if (result.success) {
-        setSchedules(result.schedules);
+  const getBestLocationName = (reports) => {
+    for (let report of reports) {
+      const address = report?.location?.address;
+      if (address && address !== 'Nairobi' && !address.includes('Unknown')) {
+        const cleanAddress = address.split(',')[0]?.trim();
+        if (cleanAddress && cleanAddress.length > 3) return cleanAddress;
       }
-    } catch (error) {
-      console.error("Error loading schedules:", error);
     }
+    return `Collection Zone ${Math.floor(Math.random() * 100) + 1}`;
   };
 
-const createSchedule = async () => {
-  if (!selectedCluster || !selectedCollector || !scheduleDate) {
-    alert("Please select cluster, collector, and date");
-    return;
-  }
+  const getUrgencyFromDescription = (description) => {
+    if (!description) return 'medium';
+    const lowerDesc = description.toLowerCase();
+    if (lowerDesc.includes('overflow') || lowerDesc.includes('block') || lowerDesc.includes('emergency')) return 'critical';
+    if (lowerDesc.includes('full') || lowerDesc.includes('urgent')) return 'high';
+    return 'medium';
+  };
 
-  try {
-    const cluster = clusters.find(c => c.id === selectedCluster);
-    const collector = collectors.find(c => c._id === selectedCollector);
+  const createSchedule = async () => {
+    if (!selectedCluster || !selectedCollector || !scheduleDate) {
+      alert("Please select cluster, collector, and date");
+      return;
+    }
 
-    const scheduleData = {
-      clusterId: selectedCluster,
-      clusterName: cluster.name,
-      collectorId: selectedCollector,
-      collectorName: collector.name,
-      date: scheduleDate,
-      reportCount: cluster.reportCount,
-      status: 'scheduled'
-    };
+    try {
+      const cluster = clusters.find(c => c.id === selectedCluster);
+      const collector = collectors.find(c => c._id === selectedCollector);
 
-    // 1. Create the schedule
-    const response = await fetch("https://smart-waste-nairobi-chi.vercel.app/api/schedules", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(scheduleData)
-    });
-
-    const result = await response.json();
-    
-    if (result.success) {
-      // 2. ALSO assign route to collector
-      const routeAssignment = {
-        routeId: `route-${Date.now()}`,
+      // 1. Create schedule
+      const scheduleData = {
         clusterId: selectedCluster,
         clusterName: cluster.name,
-        assignedDate: new Date(),
-        scheduledDate: scheduleDate,
-        status: 'scheduled',
+        collectorId: selectedCollector,
+        collectorName: collector.name,
+        date: scheduleDate,
         reportCount: cluster.reportCount,
-        notes: `Scheduled collection for ${cluster.name}`
+        status: 'scheduled'
       };
 
-      await fetch(`https://smart-waste-nairobi-chi.vercel.app/api/collectors/${selectedCollector}/assign-route`, {
+      const scheduleResponse = await fetch("https://smart-waste-nairobi-chi.vercel.app/api/schedules", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(routeAssignment)
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(scheduleData)
       });
 
-      alert("✅ Schedule created and assigned to collector!");
+      const scheduleResult = await scheduleResponse.json();
       
-      setClusters(prev => prev.filter(cluster => cluster.id !== selectedCluster));
-      setSelectedCluster("");
-      setSelectedCollector("");
-      setScheduleDate("");
-      loadSchedules();
+      if (scheduleResult.success) {
+        // 2. Assign route to collector with GPS data
+        const routeAssignment = {
+          routeId: `route-${Date.now()}`,
+          clusterId: selectedCluster,
+          clusterName: cluster.name,
+          clusterLocation: cluster.location,
+          gpsCoordinates: cluster.center, // [lat, lng] for mobile app navigation
+          assignedDate: new Date(),
+          scheduledDate: scheduleDate,
+          status: 'scheduled',
+          reportCount: cluster.reportCount,
+          notes: `Scheduled collection for ${cluster.name} - ${cluster.reportCount} reports`,
+          // Mobile app will use these for Uber-like navigation:
+          pickupLocation: cluster.location,
+          destinationCoordinates: cluster.center,
+          estimatedTime: "30-45 min", // Could be calculated based on distance
+          distance: "2-5 km" // Could be calculated
+        };
+
+        const routeResponse = await fetch(`https://smart-waste-nairobi-chi.vercel.app/api/collectors/${selectedCollector}/assign-route`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(routeAssignment)
+        });
+
+        const routeResult = await routeResponse.json();
+        
+        if (routeResult.success) {
+          alert(`✅ Schedule created! ${collector.name} can now see this route in their mobile app with GPS navigation.`);
+          
+          // Refresh data
+          setSelectedCluster("");
+          setSelectedCollector("");
+          setScheduleDate("");
+          loadAllData();
+        }
+      }
+    } catch (error) {
+      console.error("Error creating schedule:", error);
+      alert("❌ Error creating schedule");
     }
-  } catch (error) {
-    console.error("Error creating schedule:", error);
-    alert("❌ Error creating schedule");
-  }
-};
+  };
 
   const completeSchedule = async (scheduleId) => {
     try {
@@ -245,9 +256,18 @@ const createSchedule = async () => {
       const result = await response.json();
       
       if (result.success) {
-        alert("✅ Schedule marked as completed!");
-        loadSchedules();
+        // Also update the route status in collector
+        const schedule = schedules.find(s => s._id === scheduleId);
+        if (schedule) {
+          await fetch(`https://smart-waste-nairobi-chi.vercel.app/api/collectors/${schedule.collectorId}/routes/${scheduleId}/status`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status: 'completed' })
+          });
+        }
         
+        alert("✅ Schedule marked as completed!");
+        loadAllData();
       }
     } catch (error) {
       console.error("Error completing schedule:", error);
@@ -264,11 +284,16 @@ const createSchedule = async () => {
     !schedules.some(schedule => schedule.clusterId === cluster.id && schedule.status !== 'completed')
   );
 
+  const openGoogleMaps = (coordinates) => {
+    const [lat, lng] = coordinates;
+    window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`, '_blank');
+  };
+
   if (loading) {
     return (
       <div className="d-flex justify-content-center align-items-center" style={{height: "50vh"}}>
         <div className="spinner-border text-success" role="status">
-          <span className="visually-hidden">Loading smart schedule...</span>
+          <span className="visually-hidden">Loading...</span>
         </div>
         <p className="ms-3">Loading smart scheduling system...</p>
       </div>
@@ -277,10 +302,12 @@ const createSchedule = async () => {
 
   return (
     <div className="container-fluid">
-      {/* Simplified Header */}
       <div className="card shadow-sm mb-4 border-0">
         <div className="card-header bg-success text-white py-3">
-          <h4 className="mb-0 fw-bold">Smart Collection Schedule</h4>
+          <h4 className="mb-0 fw-bold">
+            <FontAwesomeIcon icon={faCalendar} className="me-2" />
+            Smart Collection Schedule & Assignment Hub
+          </h4>
         </div>
       </div>
 
@@ -289,12 +316,14 @@ const createSchedule = async () => {
         <div className="col-lg-4 mb-4">
           <div className="card shadow-sm h-100 border-0">
             <div className="card-header bg-success text-white py-3">
-              <h5 className="mb-0">📋 Create New Schedule</h5>
+              <h5 className="mb-0">📋 Assign Collection Route</h5>
             </div>
             <div className="card-body">
-              {/* Cluster Selection */}
               <div className="mb-3">
-                <label className="form-label fw-bold">Select Report Cluster:</label>
+                <label className="form-label fw-bold">
+                  <FontAwesomeIcon icon={faMapMarkerAlt} className="me-2" />
+                  Select Cluster:
+                </label>
                 <select
                   value={selectedCluster}
                   onChange={(e) => setSelectedCluster(e.target.value)}
@@ -309,14 +338,16 @@ const createSchedule = async () => {
                 </select>
                 {activeClusters.length === 0 && (
                   <div className="alert alert-info mt-2">
-                    <small>✅ All clusters have been scheduled! New reports will create new clusters.</small>
+                    <small>✅ All clusters assigned! New reports will create new clusters.</small>
                   </div>
                 )}
               </div>
 
-              {/* Collector Selection */}
               <div className="mb-3">
-                <label className="form-label fw-bold">Assign Collector:</label>
+                <label className="form-label fw-bold">
+                  <FontAwesomeIcon icon={faUser} className="me-2" />
+                  Assign to Collector:
+                </label>
                 <select
                   value={selectedCollector}
                   onChange={(e) => setSelectedCollector(e.target.value)}
@@ -331,9 +362,11 @@ const createSchedule = async () => {
                 </select>
               </div>
 
-              {/* Date Selection */}
               <div className="mb-4">
-                <label className="form-label fw-bold">Schedule Date:</label>
+                <label className="form-label fw-bold">
+                  <FontAwesomeIcon icon={faCalendar} className="me-2" />
+                  Collection Date:
+                </label>
                 <input
                   type="date"
                   value={scheduleDate}
@@ -344,66 +377,85 @@ const createSchedule = async () => {
                 <small className="text-muted">Recommended: {calculateOptimalDate()}</small>
               </div>
 
-              {/* Create Schedule Button */}
               <button
                 onClick={createSchedule}
                 disabled={!selectedCluster || !selectedCollector || !scheduleDate || activeClusters.length === 0}
                 className="btn btn-success w-100 btn-lg"
               >
-                🚀 Create Smart Schedule
+                🚀 Assign Route to Collector
               </button>
+
+              {selectedCluster && (
+                <div className="mt-3 p-3 bg-light rounded">
+                  <small className="text-muted">
+                    <strong>Mobile App Features:</strong><br/>
+                    • 📍 GPS navigation to collection site<br/>
+                    • 🗺️ Google Maps integration<br/>
+                    • ⏱️ Estimated time & distance<br/>
+                    • 📋 Collection instructions
+                  </small>
+                </div>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Active Schedules */}
+        {/* Assigned Routes & Schedules */}
         <div className="col-lg-8">
-          <div className="card shadow-sm border-0">
-            <div className="card-header bg-success text-white py-3">
-              <h5 className="mb-0">📊 Active Collection Schedules</h5>
+          {/* Assigned Routes */}
+          <div className="card shadow-sm border-0 mb-4">
+            <div className="card-header bg-primary text-white py-3">
+              <h5 className="mb-0">
+                <FontAwesomeIcon icon={faNavigation} className="me-2" />
+                Active Routes in Mobile App ({assignedRoutes.length})
+              </h5>
             </div>
             <div className="card-body">
-              {schedules.length > 0 ? (
+              {assignedRoutes.length > 0 ? (
                 <div className="table-responsive">
                   <table className="table table-striped table-hover">
                     <thead>
                       <tr>
-                        <th>Date</th>
                         <th>Collector</th>
-                        <th>Area</th>
+                        <th>Location</th>
                         <th>Reports</th>
                         <th>Status</th>
-                        <th>Actions</th>
+                        <th>Schedule Date</th>
+                        <th>Navigation</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {schedules.map((schedule) => (
-                        <tr key={schedule._id}>
+                      {assignedRoutes.map((route) => (
+                        <tr key={route._id}>
                           <td>
-                            <strong>{new Date(schedule.date).toLocaleDateString('en-KE')}</strong>
+                            <strong>{route.collectorName}</strong>
                           </td>
-                          <td>{schedule.collectorName}</td>
-                          <td>{schedule.clusterName}</td>
                           <td>
-                            <span className="badge bg-primary">{schedule.reportCount}</span>
+                            <FontAwesomeIcon icon={faMapMarkerAlt} className="text-danger me-1" />
+                            {route.clusterName}
+                          </td>
+                          <td>
+                            <span className="badge bg-primary">{route.reportCount}</span>
                           </td>
                           <td>
                             <span className={`badge ${
-                              schedule.status === 'completed' ? 'bg-success' : 
-                              schedule.status === 'in-progress' ? 'bg-warning' : 'bg-info'
+                              route.status === 'completed' ? 'bg-success' : 
+                              route.status === 'in-progress' ? 'bg-warning' : 'bg-info'
                             }`}>
-                              {schedule.status}
+                              {route.status}
                             </span>
                           </td>
                           <td>
-                            {schedule.status === 'scheduled' && (
-                              <button
-                                onClick={() => completeSchedule(schedule._id)}
-                                className="btn btn-success btn-sm"
-                              >
-                                Mark Complete
-                              </button>
-                            )}
+                            {new Date(route.scheduledDate).toLocaleDateString('en-KE')}
+                          </td>
+                          <td>
+                            <button
+                              onClick={() => openGoogleMaps(route.gpsCoordinates || route.destinationCoordinates)}
+                              className="btn btn-sm btn-outline-primary"
+                              title="Open in Google Maps"
+                            >
+                              <FontAwesomeIcon icon={faNavigation} />
+                            </button>
                           </td>
                         </tr>
                       ))}
@@ -412,39 +464,40 @@ const createSchedule = async () => {
                 </div>
               ) : (
                 <div className="text-center text-muted py-4">
-                  <h5>No active schedules</h5>
-                  <p>Create your first smart schedule above</p>
+                  <FontAwesomeIcon icon={faMapMarkerAlt} size="3x" className="mb-3" />
+                  <h5>No routes assigned yet</h5>
+                  <p>Assign routes to collectors using the form on the left</p>
                 </div>
               )}
             </div>
           </div>
 
           {/* Statistics */}
-          <div className="row mt-4">
-            <div className="col-md-4">
+          <div className="row">
+            <div className="col-md-4 mb-3">
               <div className="card text-white bg-primary border-0">
                 <div className="card-body text-center">
-                  <h5>Active Clusters</h5>
+                  <h5>Available Clusters</h5>
                   <h2>{activeClusters.length}</h2>
-                  <small>Ready for scheduling</small>
+                  <small>Ready for assignment</small>
                 </div>
               </div>
             </div>
-            <div className="col-md-4">
+            <div className="col-md-4 mb-3">
               <div className="card text-white bg-warning border-0">
                 <div className="card-body text-center">
-                  <h5>Scheduled</h5>
-                  <h2>{schedules.filter(s => s.status === 'scheduled').length}</h2>
-                  <small>Pending collection</small>
+                  <h5>Active Routes</h5>
+                  <h2>{assignedRoutes.filter(r => r.status === 'scheduled').length}</h2>
+                  <small>In mobile app</small>
                 </div>
               </div>
             </div>
-            <div className="col-md-4">
+            <div className="col-md-4 mb-3">
               <div className="card text-white bg-success border-0">
                 <div className="card-body text-center">
                   <h5>Completed</h5>
-                  <h2>{schedules.filter(s => s.status === 'completed').length}</h2>
-                  <small>Successfully collected</small>
+                  <h2>{assignedRoutes.filter(r => r.status === 'completed').length}</h2>
+                  <small>Collections done</small>
                 </div>
               </div>
             </div>

@@ -21,22 +21,9 @@ function ReportClusters() {
     needsAttention: 0,
     activeReports: 0
   });
-  const [selectedClusters, setSelectedClusters] = useState([]);
-  const [showRouteModal, setShowRouteModal] = useState(false);
-  const [optimizedRoutes, setOptimizedRoutes] = useState([]);
-  const [routeLoading, setRouteLoading] = useState(false);
-  const [collectors, setCollectors] = useState([]);
-
-  const depots = [
-    { id: 'depot-east', name: 'East Nairobi Depot', location: [-1.2800, 36.8700] },
-    { id: 'depot-central', name: 'Central Depot', location: [-1.286389, 36.817223] },
-    { id: 'depot-west', name: 'West Nairobi Depot', location: [-1.2700, 36.8000] }
-  ];
-  const [selectedDepot, setSelectedDepot] = useState(depots[0].id);
 
   useEffect(() => {
     loadReportClusters();
-    loadCollectors();
   }, []);
 
   const loadReportClusters = async () => {
@@ -72,18 +59,6 @@ function ReportClusters() {
       console.error("Error loading report clusters:", error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const loadCollectors = async () => {
-    try {
-      const response = await fetch("https://smart-waste-nairobi-chi.vercel.app/api/collectors");
-      const result = await response.json();
-      if (result.success) {
-        setCollectors(result.collectors);
-      }
-    } catch (error) {
-      console.error("Error loading collectors:", error);
     }
   };
 
@@ -255,111 +230,6 @@ function ReportClusters() {
     }
   };
 
-  const handleClusterSelect = (clusterId) => {
-    setSelectedClusters(prev => {
-      if (prev.includes(clusterId)) {
-        return prev.filter(id => id !== clusterId);
-      } else {
-        return [...prev, clusterId];
-      }
-    });
-  };
-
-  const handleOptimizeRoutes = async () => {
-    if (selectedClusters.length === 0) {
-      alert("Please select at least one cluster");
-      return;
-    }
-
-    try {
-      setRouteLoading(true);
-      const selectedDepotObj = depots.find(d => d.id === selectedDepot);
-
-      const response = await fetch("https://smart-waste-nairobi-chi.vercel.app/api/optimization/optimize-routes", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          clusterIds: selectedClusters,
-          depotLocation: selectedDepotObj.location
-        })
-      });
-
-      const result = await response.json();
-      
-      if (result.success) {
-        setOptimizedRoutes(result.optimizedRoutes);
-        setShowRouteModal(true);
-      }
-    } catch (error) {
-      console.error("Error optimizing routes:", error);
-      alert("Error optimizing routes");
-    } finally {
-      setRouteLoading(false);
-    }
-  };
-
-  const handleAssignRoute = (clusterId) => {
-    setSelectedClusters([clusterId]);
-    handleOptimizeRoutes();
-  };
-
-  const handleAssignToCollector = async (route) => {
-    try {
-      const activeCollectors = collectors.filter(c => c.activeAccount);
-      
-      if (activeCollectors.length === 0) {
-        alert("No active collectors available. Please add collectors first.");
-        return;
-      }
-
-      const collectorList = activeCollectors
-        .map((c, index) => `${index + 1}. ${c.name} - ${c.zone}`)
-        .join('\n');
-
-      const selected = prompt(`Assign route "${route.name}" to which collector?\n\nAvailable collectors:\n${collectorList}\n\nEnter collector number (1, 2, 3, etc.):`);
-
-      if (selected) {
-        const collectorIndex = parseInt(selected) - 1;
-        const collector = activeCollectors[collectorIndex];
-
-        if (collector) {
-          const assignResponse = await fetch(`https://smart-waste-nairobi-chi.vercel.app/api/collectors/${collector._id}/assign-route`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              routeId: `route-${Date.now()}`,
-              clusterId: route.id,
-              clusterName: route.name,
-              assignedDate: new Date(),
-              scheduledDate: new Date(),
-              status: 'scheduled',
-              reportCount: route.totalStops,
-              notes: `Optimized route with ${route.totalStops} stops - ${route.distance}km`
-            })
-          });
-
-          const assignResult = await assignResponse.json();
-          
-          if (assignResult.success) {
-            alert(`✅ Route assigned to ${collector.name}! They can now see it in their mobile app.`);
-            setShowRouteModal(false);
-          } else {
-            alert("Failed to assign route. Please try again.");
-          }
-        } else {
-          alert("Invalid collector selection.");
-        }
-      }
-    } catch (error) {
-      console.error('Error assigning route:', error);
-      alert('Error assigning route to collector');
-    }
-  };
-
   const handleViewDetails = (cluster) => {
     alert(`Cluster Details:\nLocation: ${cluster.location}\nReports: ${cluster.reportCount}\nUrgent: ${cluster.urgentCount}\nPriority: ${cluster.priority}\nCoordinates: ${cluster.center[0].toFixed(6)}, ${cluster.center[1].toFixed(6)}`);
   };
@@ -381,7 +251,7 @@ function ReportClusters() {
     <div className="container-fluid">
       <h3 style={style.header}>Report Clusters</h3>
       <p className="text-muted text-center mb-4">
-        Dynamic clusters based on citizen reports
+        Dynamic clusters based on citizen reports - Use Schedule page for assignments
       </p>
       
       <div className="row justify-content-center mb-4">
@@ -426,42 +296,9 @@ function ReportClusters() {
         </div>
       </div>
 
-      {selectedClusters.length > 0 && (
-        <div className="alert alert-info d-flex justify-content-between align-items-center">
-          <div>
-            <strong>{selectedClusters.length} clusters selected</strong>
-            <div className="mt-2">
-              <select 
-                value={selectedDepot}
-                onChange={(e) => setSelectedDepot(e.target.value)}
-                className="form-select form-select-sm"
-                style={{width: '200px'}}
-              >
-                {depots.map(depot => (
-                  <option key={depot.id} value={depot.id}>
-                    {depot.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <div>
-            <button 
-              className="btn btn-success me-2"
-              onClick={handleOptimizeRoutes}
-              disabled={routeLoading}
-            >
-              {routeLoading ? 'Optimizing...' : '🚀 Optimize Routes'}
-            </button>
-            <button 
-              className="btn btn-secondary"
-              onClick={() => setSelectedClusters([])}
-            >
-              Clear
-            </button>
-          </div>
-        </div>
-      )}
+      <div className="alert alert-info mb-4">
+        <strong>📋 Assignment Instructions:</strong> Go to the <strong>Schedule page</strong> to assign these clusters to collectors. This page is for cluster analysis only.
+      </div>
 
       <div className="row">
         <div className="col-md-12">
@@ -471,26 +308,13 @@ function ReportClusters() {
                 <FontAwesomeIcon icon={faMapMarkerAlt} className="me-2" />
                 Citizen Report Clusters
               </h5>
-              <small>Select multiple clusters for route optimization</small>
+              <small>Cluster analysis - Use Schedule page for assignments</small>
             </div>
             <div className="card-body">
               <div className="table-responsive">
                 <table className="table table-striped table-hover">
                   <thead>
                     <tr>
-                      <th>
-                        <input 
-                          type="checkbox"
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedClusters(clusters.map(c => c.id));
-                            } else {
-                              setSelectedClusters([]);
-                            }
-                          }}
-                          checked={selectedClusters.length === clusters.length}
-                        />
-                      </th>
                       <th>Cluster ID</th>
                       <th>Location</th>
                       <th>Total Reports</th>
@@ -504,13 +328,6 @@ function ReportClusters() {
                   <tbody>
                     {clusters.map((cluster) => (
                       <tr key={cluster.id} style={style.tableRow}>
-                        <td>
-                          <input 
-                            type="checkbox"
-                            checked={selectedClusters.includes(cluster.id)}
-                            onChange={() => handleClusterSelect(cluster.id)}
-                          />
-                        </td>
                         <td>
                           <strong>{cluster.id}</strong>
                         </td>
@@ -533,16 +350,10 @@ function ReportClusters() {
                         <td>{cluster.lastReport ? formatTimeAgo(cluster.lastReport) : 'N/A'}</td>
                         <td>
                           <button 
-                            className="btn btn-sm btn-outline-primary me-1"
-                            onClick={() => handleAssignRoute(cluster.id)}
-                          >
-                            <FontAwesomeIcon icon={faRoute} className="me-1" />
-                            Assign Route
-                          </button>
-                          <button 
                             className="btn btn-sm btn-outline-info"
                             onClick={() => handleViewDetails(cluster)}
                           >
+                            <FontAwesomeIcon icon={faInfoCircle} className="me-1" />
                             Details
                           </button>
                         </td>
@@ -562,93 +373,6 @@ function ReportClusters() {
           </div>
         </div>
       </div>
-
-      {showRouteModal && (
-        <div className="modal show d-block" style={{backgroundColor: 'rgba(0,0,0,0.5)'}}>
-          <div className="modal-dialog modal-xl">
-            <div className="modal-content">
-              <div className="modal-header bg-success text-white">
-                <h5 className="modal-title">🚛 Optimized Collection Routes</h5>
-                <button 
-                  type="button" 
-                  className="btn-close btn-close-white"
-                  onClick={() => setShowRouteModal(false)}
-                ></button>
-              </div>
-              <div className="modal-body">
-                {optimizedRoutes.length > 0 ? (
-                  <div className="row">
-                    <div className="col-md-6">
-                      <h6>Optimized Routes ({optimizedRoutes.length})</h6>
-                      {optimizedRoutes.map((route, index) => (
-                        <div key={route.id} className="card mb-3">
-                          <div className="card-header d-flex justify-content-between align-items-center">
-                            <strong>{route.name}</strong>
-                            <span className="badge bg-primary">{route.totalStops} stops</span>
-                          </div>
-                          <div className="card-body">
-                            <div className="row">
-                              <div className="col-6">
-                                <small>Distance: {route.distance}km</small>
-                              </div>
-                              <div className="col-6">
-                                <small>Time: {route.estimatedTime}min</small>
-                              </div>
-                            </div>
-                            <div className="mt-2">
-                              <small><strong>Stops:</strong></small>
-                              <div>
-                                {route.clusters.map((cluster, idx) => (
-                                  <span key={idx} className="badge bg-secondary me-1">
-                                    {idx + 1}. {cluster.name}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                            <button 
-                              className="btn btn-success btn-sm mt-2 w-100"
-                              onClick={() => handleAssignToCollector(route)}
-                            >
-                              📋 Assign to Collector
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="col-md-6">
-                      <div className="card">
-                        <div className="card-header">
-                          <strong>Route Visualization</strong>
-                        </div>
-                        <div className="card-body">
-                          <div style={{
-                            height: '300px',
-                            background: '#f8f9fa',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            borderRadius: '8px'
-                          }}>
-                            <div className="text-center text-muted">
-                              <FontAwesomeIcon icon={faMapMarkerAlt} size="3x" />
-                              <p className="mt-2">Map visualization would appear here</p>
-                              <small>Showing {optimizedRoutes.reduce((sum, r) => sum + r.totalStops, 0)} total stops</small>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-4">
-                    <p>No optimized routes generated</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

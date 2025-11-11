@@ -1,35 +1,36 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '../../contexts/AuthContext';
 
-export default function CollectorTabLayout() {
+export default function TabLayout() {
+  const { collector } = useAuth();
+
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#2d5a3c',
-        tabBarInactiveTintColor: '#666',
-        tabBarStyle: {
-          backgroundColor: 'white',
-          borderTopWidth: 1,
-          borderTopColor: '#e5e5e5',
-          height: 60,
-          paddingBottom: 8,
-          paddingTop: 8,
-        },
+        headerShown: true,
         headerStyle: {
-          backgroundColor: '#2d5a3c',
+          backgroundColor: '#059669',
         },
-        headerTintColor: 'white',
+        headerTintColor: '#fff',
         headerTitleStyle: {
           fontWeight: 'bold',
         },
+        tabBarStyle: {
+          backgroundColor: '#ffffff',
+          borderTopColor: '#E5E7EB',
+        },
+        tabBarActiveTintColor: '#059669',
+        tabBarInactiveTintColor: '#6B7280',
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Today',
+          title: 'Today\'s Tasks',
+          headerTitle: `Collections - ${collector?.name || 'Collector'}`,
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="calendar-outline" size={size} color={color} />
+            <Ionicons name="list" size={size} color={color} />
           ),
         }}
       />
@@ -37,8 +38,9 @@ export default function CollectorTabLayout() {
         name="routes"
         options={{
           title: 'My Routes',
+          headerTitle: 'My Collection Routes',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="map-outline" size={size} color={color} />
+            <Ionicons name="map" size={size} color={color} />
           ),
         }}
       />
@@ -46,8 +48,9 @@ export default function CollectorTabLayout() {
         name="stats"
         options={{
           title: 'Performance',
+          headerTitle: 'My Performance',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="bar-chart-outline" size={size} color={color} />
+            <Ionicons name="stats-chart" size={size} color={color} />
           ),
         }}
       />
@@ -55,8 +58,9 @@ export default function CollectorTabLayout() {
         name="profile"
         options={{
           title: 'Profile',
+          headerTitle: 'My Profile',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person-outline" size={size} color={color} />
+            <Ionicons name="person" size={size} color={color} />
           ),
         }}
       />
