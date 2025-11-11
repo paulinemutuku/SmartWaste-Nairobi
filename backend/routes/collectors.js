@@ -179,15 +179,20 @@ router.post('/:id/assign-route', async (req, res) => {
       });
     }
 
-    // Check for duplicate route assignment
+    // More flexible duplicate check - only prevent exact duplicates
     const existingRoute = collector.assignedRoutes.find(
-      route => route.clusterId === req.body.clusterId && route.status === 'scheduled'
+      route => 
+        route.routeId === req.body.routeId || // Same route ID
+        (route.clusterId === req.body.clusterId && 
+         route.scheduledDate === req.body.scheduledDate &&
+         route.status === 'scheduled') // Same cluster, same date, still scheduled
     );
 
     if (existingRoute) {
       return res.status(400).json({
         success: false,
-        message: 'This cluster is already assigned to this collector'
+        message: 'This route is already assigned to this collector',
+        existingRoute: existingRoute
       });
     }
 
@@ -196,7 +201,7 @@ router.post('/:id/assign-route', async (req, res) => {
       clusterId: req.body.clusterId,
       clusterName: req.body.clusterName,
       clusterLocation: req.body.clusterLocation,
-      gpsCoordinates: req.body.gpsCoordinates, // Make sure this is included
+      gpsCoordinates: req.body.gpsCoordinates,
       assignedDate: req.body.assignedDate,
       scheduledDate: req.body.scheduledDate,
       status: req.body.status || 'scheduled',
@@ -208,6 +213,13 @@ router.post('/:id/assign-route', async (req, res) => {
       distance: req.body.distance
     };
 
+    console.log("📦 Saving route data:", {
+      routeId: routeData.routeId,
+      clusterId: routeData.clusterId,
+      coordinates: routeData.gpsCoordinates,
+      date: routeData.scheduledDate
+    });
+
     collector.assignedRoutes.push(routeData);
     await collector.save();
 
@@ -217,6 +229,7 @@ router.post('/:id/assign-route', async (req, res) => {
       route: routeData
     });
   } catch (error) {
+    console.error("❌ Error in assign-route:", error);
     res.status(500).json({
       success: false,
       message: 'Error assigning route to collector',
