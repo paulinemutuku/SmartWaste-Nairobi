@@ -19,15 +19,13 @@ const { width, height } = Dimensions.get('window');
 
 export default function CollectorLoginScreen() {
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isFocused, setIsFocused] = useState({ email: false, password: false });
+  const [isFocused, setIsFocused] = useState({ email: false });
   const router = useRouter();
 
   const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert('Missing Information', 'Please enter your email and password');
+    if (!email) {
+      Alert.alert('Missing Information', 'Please enter your email');
       return;
     }
 
@@ -39,34 +37,48 @@ export default function CollectorLoginScreen() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('https://smart-waste-nairobi-chi.vercel.app/api/auth/login', {
+      const response = await fetch('https://smart-waste-nairobi-chi.vercel.app/api/auth/collector-login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: email.toLowerCase(),
-          password: password,
-          userType: 'collector'
+          email: email.toLowerCase()
         }),
       });
 
       const result = await response.json();
       
       if (result.success) {
+        const collectorData = {
+          id: result.collector._id,
+          name: result.collector.name,
+          email: result.collector.email,
+          token: result.token
+        };
+        
+        console.log('Collector logged in:', collectorData);
+        
         Alert.alert(
           'Welcome Back! 🎉', 
-          `Ready to make Nairobi cleaner, ${result.user?.name || 'Collector'}!`,
-          [{ text: 'Start Working', onPress: () => router.replace('/(tabs)') }]
+          `Ready to make Nairobi cleaner, ${result.collector?.name || 'Collector'}!`,
+          [{ 
+            text: 'View Routes', 
+            onPress: () => router.replace('/(tabs)') 
+          }]
         );
       } else {
-        Alert.alert('Sign In Failed', result.message || 'Please check your credentials');
+        Alert.alert('Sign In Failed', result.message || 'Collector not found. Please check your email.');
       }
     } catch (error) {
       Alert.alert('Network Error', 'Please check your internet connection');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const useDemoAccount = (demoEmail: string) => {
+    setEmail(demoEmail);
   };
 
   return (
@@ -81,7 +93,7 @@ export default function CollectorLoginScreen() {
         <View style={styles.header}>
           <View style={styles.logoContainer}>
             <View style={styles.logoCircle}>
-              <Ionicons name="car" size={42} color="#FFFFFF" />
+              <Ionicons name="trash" size={42} color="#FFFFFF" />
             </View>
           </View>
           <Text style={styles.title}>SmartWaste Collector</Text>
@@ -90,23 +102,23 @@ export default function CollectorLoginScreen() {
         </View>
 
         <View style={styles.formContainer}>
-          <Text style={styles.formTitle}>Collector Account</Text>
+          <Text style={styles.formTitle}>Collector Login</Text>
           
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Email Address</Text>
+            <Text style={styles.inputLabel}>Your Email</Text>
             <View style={[
               styles.inputContainer, 
               isFocused.email && styles.inputContainerFocused
             ]}>
               <Ionicons 
-                name="mail-outline" 
+                name="person-outline" 
                 size={22} 
                 color={isFocused.email ? '#2E8B57' : '#94A3B8'} 
                 style={styles.inputIcon} 
               />
               <TextInput
                 style={styles.input}
-                placeholder="collector@smartwaste.com"
+                placeholder="your.email@smartwaste.com"
                 placeholderTextColor="#94A3B8"
                 value={email}
                 onChangeText={setEmail}
@@ -119,60 +131,20 @@ export default function CollectorLoginScreen() {
             </View>
           </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Password</Text>
-            <View style={[
-              styles.inputContainer, 
-              isFocused.password && styles.inputContainerFocused
-            ]}>
-              <Ionicons 
-                name="lock-closed-outline" 
-                size={22} 
-                color={isFocused.password ? '#2E8B57' : '#94A3B8'} 
-                style={styles.inputIcon} 
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your password"
-                placeholderTextColor="#94A3B8"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-                autoCapitalize="none"
-                autoComplete="password"
-                onFocus={() => setIsFocused({...isFocused, password: true})}
-                onBlur={() => setIsFocused({...isFocused, password: false})}
-              />
-              <TouchableOpacity 
-                style={styles.visibilityToggle}
-                onPress={() => setShowPassword(!showPassword)}
-              >
-                <Ionicons 
-                  name={showPassword ? "eye-off-outline" : "eye-outline"} 
-                  size={22} 
-                  color={isFocused.password ? '#2E8B57' : '#94A3B8'} 
-                />
-              </TouchableOpacity>
-            </View>
-            <Text style={styles.passwordHint}>
-              {showPassword ? 'Password is visible' : 'Tap eye icon to show password'}
-            </Text>
-          </View>
-
           <TouchableOpacity 
             style={[
               styles.loginButton, 
               isLoading && styles.loginButtonDisabled,
-              (!email || !password) && styles.loginButtonInactive
+              (!email) && styles.loginButtonInactive
             ]} 
             onPress={handleLogin}
-            disabled={isLoading || !email || !password}
+            disabled={isLoading || !email}
           >
             {isLoading ? (
               <ActivityIndicator color="white" size="small" />
             ) : (
               <View style={styles.buttonContent}>
-                <Text style={styles.loginButtonText}>Sign In to Dashboard</Text>
+                <Text style={styles.loginButtonText}>Access My Routes</Text>
                 <Ionicons name="arrow-forward" size={20} color="white" />
               </View>
             )}
@@ -181,14 +153,27 @@ export default function CollectorLoginScreen() {
           <View style={styles.demoSection}>
             <View style={styles.divider}>
               <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>Demo Access</Text>
+              <Text style={styles.dividerText}>Quick Test</Text>
               <View style={styles.dividerLine} />
             </View>
             
             <Text style={styles.demoText}>
-              Email: collector@smartwaste.com{'\n'}
-              Password: collector123
+              Enter any collector email from your database
             </Text>
+            
+            <TouchableOpacity 
+              style={styles.demoButton}
+              onPress={() => useDemoAccount('john@smartwaste.com')}
+            >
+              <Text style={styles.demoButtonText}>Use: john@smartwaste.com</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.demoButton}
+              onPress={() => useDemoAccount('mary@smartwaste.com')}
+            >
+              <Text style={styles.demoButtonText}>Use: mary@smartwaste.com</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -316,16 +301,6 @@ const styles = StyleSheet.create({
     color: '#1E293B',
     fontWeight: '500',
   },
-  visibilityToggle: {
-    padding: 4,
-  },
-  passwordHint: {
-    fontSize: 13,
-    color: '#94A3B8',
-    marginTop: 6,
-    paddingLeft: 4,
-    fontStyle: 'italic',
-  },
   loginButton: {
     backgroundColor: '#2E8B57',
     borderRadius: 16,
@@ -383,6 +358,20 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 12,
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+  },
+  demoButton: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  demoButtonText: {
+    color: '#374151',
+    fontSize: 14,
+    fontWeight: '500',
+    textAlign: 'center',
   },
   footer: {
     paddingHorizontal: 30,

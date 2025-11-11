@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Collector = require('../models/Collector');
 const router = express.Router();
 
 const JWT_SECRET = 'smartwaste_nairobi_secret_key_2024';
@@ -117,6 +118,77 @@ router.post('/login', async (req, res) => {
       error: error.message
     });
   }
+});
+
+// Collector-specific login for mobile app
+router.post('/collector-login', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    // Find collector by email (no password for simplicity)
+    const collector = await Collector.findOne({ email });
+    
+    if (!collector) {
+      return res.status(401).json({
+        success: false,
+        message: 'Collector not found'
+      });
+    }
+
+    if (!collector.activeAccount) {
+      return res.status(401).json({
+        success: false,
+        message: 'Collector account is deactivated'
+      });
+    }
+
+    // Create token for collector
+    const token = jwt.sign(
+      { 
+        collectorId: collector._id, 
+        email: collector.email, 
+        role: 'collector',
+        name: collector.name 
+      },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    // Return collector data including ID for mobile app
+    res.json({
+      success: true,
+      message: 'Collector login successful',
+      token,
+      collector: {
+        _id: collector._id,
+        name: collector.name,
+        email: collector.email,
+        phone: collector.phone,
+        zone: collector.zone,
+        performance: collector.performance
+      }
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Collector login failed',
+      error: error.message
+    });
+  }
+});
+
+// Health check endpoint
+router.get('/health', async (req, res) => {
+  const dbStatus = require('mongoose').connection.readyState;
+  const statusText = dbStatus === 1 ? 'connected' : 'disconnected';
+  
+  res.json({ 
+    status: 'ok', 
+    database: statusText,
+    timestamp: new Date().toISOString(),
+    service: 'SmartWaste Nairobi Auth API'
+  });
 });
 
 module.exports = router;
