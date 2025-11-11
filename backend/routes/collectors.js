@@ -179,15 +179,33 @@ router.post('/:id/assign-route', async (req, res) => {
       });
     }
 
+    // Check for duplicate route assignment
+    const existingRoute = collector.assignedRoutes.find(
+      route => route.clusterId === req.body.clusterId && route.status === 'scheduled'
+    );
+
+    if (existingRoute) {
+      return res.status(400).json({
+        success: false,
+        message: 'This cluster is already assigned to this collector'
+      });
+    }
+
     const routeData = {
       routeId: req.body.routeId,
       clusterId: req.body.clusterId,
       clusterName: req.body.clusterName,
+      clusterLocation: req.body.clusterLocation,
+      gpsCoordinates: req.body.gpsCoordinates, // Make sure this is included
       assignedDate: req.body.assignedDate,
       scheduledDate: req.body.scheduledDate,
       status: req.body.status || 'scheduled',
       reportCount: req.body.reportCount,
-      notes: req.body.notes
+      notes: req.body.notes,
+      pickupLocation: req.body.pickupLocation,
+      destinationCoordinates: req.body.destinationCoordinates,
+      estimatedTime: req.body.estimatedTime,
+      distance: req.body.distance
     };
 
     collector.assignedRoutes.push(routeData);
@@ -202,6 +220,45 @@ router.post('/:id/assign-route', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error assigning route to collector',
+      error: error.message
+    });
+  }
+});
+
+router.delete('/:collectorId/routes/:routeId', async (req, res) => {
+  try {
+    const collector = await Collector.findById(req.params.collectorId);
+    
+    if (!collector) {
+      return res.status(404).json({
+        success: false,
+        message: 'Collector not found'
+      });
+    }
+
+    // Find and remove the route
+    const routeIndex = collector.assignedRoutes.findIndex(
+      route => route._id.toString() === req.params.routeId
+    );
+
+    if (routeIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: 'Route not found'
+      });
+    }
+
+    collector.assignedRoutes.splice(routeIndex, 1);
+    await collector.save();
+
+    res.json({
+      success: true,
+      message: 'Route deleted successfully'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error deleting route',
       error: error.message
     });
   }

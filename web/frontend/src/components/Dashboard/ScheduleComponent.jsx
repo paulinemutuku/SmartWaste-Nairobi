@@ -7,7 +7,8 @@ import {
   faCalendar,
   faUser,
   faCheckCircle,
-  faClock
+  faClock,
+  faTrash
 } from "@fortawesome/free-solid-svg-icons";
 
 function ScheduleComponent() {
@@ -184,6 +185,11 @@ function ScheduleComponent() {
       const cluster = clusters.find(c => c.id === selectedCluster);
       const collector = collectors.find(c => c._id === selectedCollector);
 
+      if (!cluster || !cluster.center) {
+        alert("❌ Error: Selected cluster has no GPS coordinates");
+        return;
+      }
+
       // 1. Create schedule
       const scheduleData = {
         clusterId: selectedCluster,
@@ -204,23 +210,25 @@ function ScheduleComponent() {
       const scheduleResult = await scheduleResponse.json();
       
       if (scheduleResult.success) {
-        // 2. Assign route to collector with GPS data
+        // 2. Assign route to collector with PROPER GPS data
         const routeAssignment = {
-  routeId: `route-${Date.now()}`,
-  clusterId: selectedCluster,
-  clusterName: cluster.name,
-  clusterLocation: cluster.location,
-  gpsCoordinates: cluster.center || [-1.286389, 36.817223],
-  assignedDate: new Date(),
-  scheduledDate: scheduleDate,
-  status: 'scheduled',
-  reportCount: cluster.reportCount,
-  notes: `Scheduled collection for ${cluster.name} - ${cluster.reportCount} reports`,
-  pickupLocation: cluster.location,
-  destinationCoordinates: cluster.center || [-1.286389, 36.817223],
-  estimatedTime: "30-45 min",
-  distance: "2-5 km"
-};
+          routeId: `route-${Date.now()}`,
+          clusterId: selectedCluster,
+          clusterName: cluster.name,
+          clusterLocation: cluster.location,
+          gpsCoordinates: cluster.center, // Use actual cluster coordinates
+          assignedDate: new Date().toISOString(),
+          scheduledDate: scheduleDate,
+          status: 'scheduled',
+          reportCount: cluster.reportCount,
+          notes: `Scheduled collection for ${cluster.name} - ${cluster.reportCount} reports`,
+          pickupLocation: cluster.location,
+          destinationCoordinates: cluster.center, // Same coordinates for destination
+          estimatedTime: "30-45 min",
+          distance: "2-5 km"
+        };
+
+        console.log("🚀 Assigning route with coordinates:", routeAssignment.gpsCoordinates);
 
         const routeResponse = await fetch(`https://smart-waste-nairobi-chi.vercel.app/api/collectors/${selectedCollector}/assign-route`, {
           method: "POST",
@@ -238,11 +246,42 @@ function ScheduleComponent() {
           setSelectedCollector("");
           setScheduleDate("");
           loadAllData();
+        } else {
+          alert("❌ Error assigning route to collector");
         }
       }
     } catch (error) {
       console.error("Error creating schedule:", error);
       alert("❌ Error creating schedule");
+    }
+  };
+
+  const deleteSchedule = async (routeId, collectorId, clusterId) => {
+    if (!confirm("Are you sure you want to delete this schedule? This will remove it from the collector's mobile app.")) {
+      return;
+    }
+
+    try {
+      // Delete from collector's assigned routes
+      if (collectorId && routeId) {
+        const deleteResponse = await fetch(`https://smart-waste-nairobi-chi.vercel.app/api/collectors/${collectorId}/routes/${routeId}`, {
+          method: "DELETE"
+        });
+
+        const deleteResult = await deleteResponse.json();
+        
+        if (deleteResult.success) {
+          alert("✅ Schedule deleted successfully!");
+          loadAllData();
+        } else {
+          alert("❌ Error deleting schedule from collector");
+        }
+      } else {
+        alert("❌ Cannot delete: Missing route information");
+      }
+    } catch (error) {
+      console.error("Error deleting schedule:", error);
+      alert("❌ Error deleting schedule");
     }
   };
 
@@ -284,6 +323,11 @@ function ScheduleComponent() {
   );
 
   const openGoogleMaps = (coordinates) => {
+    if (!coordinates || !Array.isArray(coordinates) || coordinates.length < 2) {
+      alert("No valid GPS coordinates available for this route");
+      return;
+    }
+    
     const [lat, lng] = coordinates;
     window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`, '_blank');
   };
@@ -421,6 +465,7 @@ function ScheduleComponent() {
                         <th>Status</th>
                         <th>Schedule Date</th>
                         <th>Navigation</th>
+                        <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -452,8 +497,18 @@ function ScheduleComponent() {
                               onClick={() => openGoogleMaps(route.gpsCoordinates || route.destinationCoordinates)}
                               className="btn btn-sm btn-outline-primary"
                               title="Open in Google Maps"
+                              disabled={!route.gpsCoordinates && !route.destinationCoordinates}
                             >
                               <FontAwesomeIcon icon={faRoute} />
+                            </button>
+                          </td>
+                          <td>
+                            <button
+                              onClick={() => deleteSchedule(route._id, route.collectorId, route.clusterId)}
+                              className="btn btn-sm btn-outline-danger"
+                              title="Delete Schedule"
+                            >
+                              <FontAwesomeIcon icon={faTrash} />
                             </button>
                           </td>
                         </tr>
