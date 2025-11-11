@@ -3,7 +3,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faMapMarkerAlt,
-  faNavigation,
+  faRoute, 
   faCalendar,
   faUser,
   faCheckCircle,
@@ -406,7 +406,7 @@ function ScheduleComponent() {
           <div className="card shadow-sm border-0 mb-4">
             <div className="card-header bg-primary text-white py-3">
               <h5 className="mb-0">
-                <FontAwesomeIcon icon={faNavigation} className="me-2" />
+                <FontAwesomeIcon icon={faRoute} className="me-2" />
                 Active Routes in Mobile App ({assignedRoutes.length})
               </h5>
             </div>
