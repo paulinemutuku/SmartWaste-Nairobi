@@ -16,6 +16,49 @@ const MapView = () => {
   const [loading, setLoading] = useState(true);
   const [dataSource, setDataSource] = useState("");
 
+  const additionalReports = [
+    { 
+      _id: 'report-dandora-1', 
+      description: "Full bins near Dandora Market", 
+      latitude: -1.2600, 
+      longitude: 36.8900,
+      address: "Dandora Market, Nairobi",
+      createdAt: new Date()
+    },
+    { 
+      _id: 'report-dandora-2', 
+      description: "Illegal dumping behind market", 
+      latitude: -1.2601, 
+      longitude: 36.8902,
+      address: "Dandora Market Backside",
+      createdAt: new Date()
+    },
+    { 
+      _id: 'report-dandora-3', 
+      description: "Overflowing containers", 
+      latitude: -1.2599, 
+      longitude: 36.8898,
+      address: "Market Entrance",
+      createdAt: new Date()
+    },
+    { 
+      _id: 'report-kayole-1', 
+      description: "Full bins in Kayole Estate", 
+      latitude: -1.2750, 
+      longitude: 36.9100,
+      address: "Kayole Estate, Nairobi",
+      createdAt: new Date()
+    },
+    { 
+      _id: 'report-kayole-2', 
+      description: "Illegal dumping near shopping center", 
+      latitude: -1.2751, 
+      longitude: 36.9101,
+      address: "Kayole Shopping Center",
+      createdAt: new Date()
+    }
+  ];
+
   useEffect(() => {
     loadAllReports();
   }, []);
