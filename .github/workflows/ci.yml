@@ -2,13 +2,13 @@ name: SmartWaste CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main ]
   pull_request:
     branches: [ main ]
 
 jobs:
   test:
-    name: Run Comprehensive Test Suite
+    name: Run Test Suite
     runs-on: ubuntu-latest
     
     strategy:
@@ -31,19 +31,9 @@ jobs:
       
     - name: Run unit tests
       run: cd backend && npm run test:unit
-      env:
-        NODE_ENV: test
       
-    - name: Run all tests with coverage
+    - name: Run test coverage
       run: cd backend && npm run test:coverage
-      
-    - name: Upload test results
-      uses: actions/upload-artifact@v4
-      with:
-        name: test-results-${{ matrix.node-version }}
-        path: |
-          backend/coverage/
-        retention-days: 30
 
   security:
     name: Security Audit
