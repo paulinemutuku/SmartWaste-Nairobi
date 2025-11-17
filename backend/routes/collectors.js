@@ -2,6 +2,103 @@ const express = require('express');
 const Collector = require('../models/Collector');
 const router = express.Router();
 
+// 🗺️ Fixed Starting Points for Nairobi
+const NAIROBI_DEPOTS = {
+  CENTRAL: {
+    name: "Central Depot - City Centre",
+    coordinates: [-1.2921, 36.8219],
+    zone: "Central Nairobi"
+  },
+  EASTERN: {
+    name: "Eastern Depot - Dandora",
+    coordinates: [-1.2833, 36.8667], 
+    zone: "Eastern Nairobi"
+  },
+  WESTERN: {
+    name: "Western Depot - Westlands",
+    coordinates: [-1.2584, 36.7925],
+    zone: "Western Nairobi"
+  }
+};
+
+// 🧮 Utility function to calculate distance between coordinates (Haversine formula)
+function calculateDistance(coord1, coord2) {
+  const [lat1, lon1] = coord1;
+  const [lat2, lon2] = coord2;
+  
+  const R = 6371; // Earth's radius in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const distance = R * c;
+  
+  return distance;
+}
+
+// 🧭 Find nearest depot to waste cluster
+function findNearestDepot(clusterCoordinates) {
+  let nearestDepot = null;
+  let shortestDistance = Infinity;
+  
+  for (const [key, depot] of Object.entries(NAIROBI_DEPOTS)) {
+    const distance = calculateDistance(clusterCoordinates, depot.coordinates);
+    if (distance < shortestDistance) {
+      shortestDistance = distance;
+      nearestDepot = { ...depot, key };
+    }
+  }
+  
+  return {
+    ...nearestDepot,
+    distanceToCluster: shortestDistance
+  };
+}
+
+// 🚗 Calculate optimized route with traffic considerations
+function calculateOptimizedRoute(clusterCoordinates, depot) {
+  const baseTimePerKm = 4; // minutes per km in Nairobi traffic
+  const collectionTime = 30; // fixed time for waste collection
+  
+  const travelDistance = depot.distanceToCluster * 2; // round trip
+  const travelTime = travelDistance * baseTimePerKm;
+  const totalTime = travelTime + collectionTime;
+  
+  return {
+    startPoint: depot.coordinates,
+    collectionPoint: clusterCoordinates,
+    endPoint: depot.coordinates, // return to depot
+    totalDistance: Math.round(travelDistance * 10) / 10, // 1 decimal place
+    estimatedTime: Math.round(totalTime),
+    travelTime: Math.round(travelTime),
+    collectionTime: collectionTime
+  };
+}
+
+// 📍 Validate and normalize GPS coordinates
+function validateCoordinates(coordinates) {
+  if (!coordinates || !Array.isArray(coordinates) || coordinates.length < 2) {
+    throw new Error('Invalid coordinates format');
+  }
+  
+  const [lat, lng] = coordinates.map(coord => parseFloat(coord));
+  
+  if (isNaN(lat) || isNaN(lng)) {
+    throw new Error('Coordinates must be valid numbers');
+  }
+  
+  // Validate Nairobi area coordinates
+  if (lat < -1.5 || lat > -1.1 || lng < 36.6 || lng > 37.0) {
+    console.warn('⚠️ Coordinates outside typical Nairobi area:', { lat, lng });
+  }
+  
+  return [lat, lng];
+}
+
+// Existing routes remain the same until we modify the assign-route endpoint
 router.get('/', async (req, res) => {
   try {
     const collectors = await Collector.find().sort({ createdAt: -1 });
@@ -128,6 +225,10 @@ router.put('/:collectorId/routes/:routeId/status', async (req, res) => {
     route.status = status;
     if (status === 'completed') {
       route.completedAt = new Date();
+      
+      // Update performance metrics
+      collector.performance.routesCompleted += 1;
+      collector.performance.reportsCompleted += (route.reportCount || 0);
     }
 
     await collector.save();
@@ -169,6 +270,7 @@ router.get('/:id/performance', async (req, res) => {
   }
 });
 
+// 🚀 ENHANCED: Route assignment with optimization
 router.post('/:id/assign-route', async (req, res) => {
   try {
     const collector = await Collector.findById(req.params.id);
@@ -179,13 +281,24 @@ router.post('/:id/assign-route', async (req, res) => {
       });
     }
 
-    // More flexible duplicate check - only prevent exact duplicates
+    // Validate and normalize GPS coordinates
+    let validatedCoordinates;
+    try {
+      validatedCoordinates = validateCoordinates(req.body.gpsCoordinates);
+    } catch (error) {
+      return res.status(400).json({
+        success: false,
+        message: error.message
+      });
+    }
+
+    // Check for duplicate routes
     const existingRoute = collector.assignedRoutes.find(
       route => 
-        route.routeId === req.body.routeId || // Same route ID
+        route.routeId === req.body.routeId ||
         (route.clusterId === req.body.clusterId && 
          route.scheduledDate === req.body.scheduledDate &&
-         route.status === 'scheduled') // Same cluster, same date, still scheduled
+         route.status === 'scheduled')
     );
 
     if (existingRoute) {
@@ -196,28 +309,50 @@ router.post('/:id/assign-route', async (req, res) => {
       });
     }
 
+    // 🗺️ ROUTE OPTIMIZATION: Find nearest depot and calculate optimal route
+    const nearestDepot = findNearestDepot(validatedCoordinates);
+    const optimizedRoute = calculateOptimizedRoute(validatedCoordinates, nearestDepot);
+
+    console.log("🚀 Route Optimization Results:", {
+      cluster: req.body.clusterName,
+      coordinates: validatedCoordinates,
+      nearestDepot: nearestDepot.name,
+      totalDistance: `${optimizedRoute.totalDistance} km`,
+      estimatedTime: `${optimizedRoute.estimatedTime} min`
+    });
+
     const routeData = {
       routeId: req.body.routeId,
       clusterId: req.body.clusterId,
       clusterName: req.body.clusterName,
       clusterLocation: req.body.clusterLocation,
-      gpsCoordinates: req.body.gpsCoordinates,
+      gpsCoordinates: validatedCoordinates, // Use validated coordinates
       assignedDate: req.body.assignedDate,
       scheduledDate: req.body.scheduledDate,
       status: req.body.status || 'scheduled',
       reportCount: req.body.reportCount,
       notes: req.body.notes,
-      pickupLocation: req.body.pickupLocation,
-      destinationCoordinates: req.body.destinationCoordinates,
-      estimatedTime: req.body.estimatedTime,
-      distance: req.body.distance
+      
+      // 🆕 OPTIMIZED ROUTE DATA
+      pickupLocation: nearestDepot.name,
+      pickupCoordinates: nearestDepot.coordinates,
+      destinationCoordinates: validatedCoordinates,
+      optimizedRoute: optimizedRoute,
+      
+      // 🆕 CALCULATED METRICS
+      estimatedTime: `${optimizedRoute.estimatedTime} minutes`,
+      distance: `${optimizedRoute.totalDistance} km`,
+      travelTime: `${optimizedRoute.travelTime} minutes`,
+      collectionTime: `${optimizedRoute.collectionTime} minutes`
     };
 
-    console.log("📦 Saving route data:", {
+    console.log("📦 Saving optimized route data:", {
       routeId: routeData.routeId,
-      clusterId: routeData.clusterId,
+      cluster: routeData.clusterName,
+      pickup: routeData.pickupLocation,
       coordinates: routeData.gpsCoordinates,
-      date: routeData.scheduledDate
+      distance: routeData.distance,
+      time: routeData.estimatedTime
     });
 
     collector.assignedRoutes.push(routeData);
@@ -225,14 +360,64 @@ router.post('/:id/assign-route', async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Route assigned to collector successfully',
-      route: routeData
+      message: 'Optimized route assigned to collector successfully',
+      route: routeData,
+      optimization: {
+        depot: nearestDepot.name,
+        totalDistance: optimizedRoute.totalDistance,
+        estimatedTime: optimizedRoute.estimatedTime
+      }
     });
   } catch (error) {
     console.error("❌ Error in assign-route:", error);
     res.status(500).json({
       success: false,
       message: 'Error assigning route to collector',
+      error: error.message
+    });
+  }
+});
+
+// 🆕 NEW: Get optimized navigation URL
+router.get('/:collectorId/routes/:routeId/navigation', async (req, res) => {
+  try {
+    const collector = await Collector.findById(req.params.collectorId);
+    
+    if (!collector) {
+      return res.status(404).json({
+        success: false,
+        message: 'Collector not found'
+      });
+    }
+
+    const route = collector.assignedRoutes.id(req.params.routeId);
+    if (!route) {
+      return res.status(404).json({
+        success: false,
+        message: 'Route not found'
+      });
+    }
+
+    // Generate navigation URLs for different platforms
+    const [lat, lng] = route.gpsCoordinates;
+    
+    const navigationData = {
+      android: `google.navigation:q=${lat},${lng}`,
+      ios: `maps://app?daddr=${lat},${lng}&dirflg=d`,
+      web: `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`,
+      coordinates: { lat, lng },
+      pickupLocation: route.pickupLocation,
+      destination: route.clusterLocation
+    };
+
+    res.json({
+      success: true,
+      navigation: navigationData
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error generating navigation',
       error: error.message
     });
   }
@@ -249,7 +434,6 @@ router.delete('/:collectorId/routes/:routeId', async (req, res) => {
       });
     }
 
-    // Find and remove the route
     const routeIndex = collector.assignedRoutes.findIndex(
       route => route._id.toString() === req.params.routeId
     );

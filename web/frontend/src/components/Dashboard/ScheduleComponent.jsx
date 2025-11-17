@@ -177,102 +177,129 @@ function ScheduleComponent() {
     return 'medium';
   };
 
-  const createSchedule = async () => {
-    if (!selectedCluster || !selectedCollector || !scheduleDate) {
-      alert("Please select cluster, collector, and date");
+const createSchedule = async () => {
+  if (!selectedCluster || !selectedCollector || !scheduleDate) {
+    alert("Please select cluster, collector, and date");
+    return;
+  }
+
+  try {
+    const cluster = clusters.find(c => c.id === selectedCluster);
+    const collector = collectors.find(c => c._id === selectedCollector);
+
+    if (!cluster) {
+      alert("❌ Error: Selected cluster not found");
       return;
     }
 
-    try {
-      const cluster = clusters.find(c => c.id === selectedCluster);
-      const collector = collectors.find(c => c._id === selectedCollector);
-
-      if (!cluster) {
-        alert("❌ Error: Selected cluster not found");
-        return;
-      }
-
-      // Ensure we have valid GPS coordinates
-      let gpsCoordinates = cluster.center;
+    // 🚀 IMPROVED: Better GPS coordinate validation
+    let gpsCoordinates = cluster.center;
+    
+    console.log("🔍 Raw cluster data:", cluster);
+    console.log("🔍 Cluster center:", cluster.center);
+    
+    // If cluster center is not available, use the first report's coordinates
+    if (!gpsCoordinates || gpsCoordinates.length < 2 || 
+        !gpsCoordinates[0] || !gpsCoordinates[1] ||
+        isNaN(gpsCoordinates[0]) || isNaN(gpsCoordinates[1])) {
       
-      // If cluster center is not available, use the first report's coordinates
-      if (!gpsCoordinates || gpsCoordinates.length < 2) {
-        if (cluster.reports && cluster.reports.length > 0) {
-          const firstReport = cluster.reports[0];
+      console.log("⚠️ Cluster center invalid, checking reports...");
+      
+      if (cluster.reports && cluster.reports.length > 0) {
+        const firstReport = cluster.reports[0];
+        if (firstReport.latitude && firstReport.longitude) {
           gpsCoordinates = [firstReport.latitude, firstReport.longitude];
+          console.log("✅ Using first report coordinates:", gpsCoordinates);
         } else {
-          alert("❌ Error: No GPS coordinates available for this cluster");
-          return;
+          console.log("❌ First report also missing coordinates");
+          // Fallback to Nairobi center coordinates
+          gpsCoordinates = [-1.2921, 36.8219]; // Nairobi center
+          console.log("🔄 Using fallback Nairobi coordinates:", gpsCoordinates);
         }
+      } else {
+        // Final fallback
+        gpsCoordinates = [-1.2921, 36.8219]; // Nairobi center
+        console.log("🔄 Using default Nairobi coordinates:", gpsCoordinates);
       }
+    }
 
-      console.log("📍 Using GPS coordinates:", gpsCoordinates);
+    // Ensure coordinates are numbers
+    gpsCoordinates = [
+      parseFloat(gpsCoordinates[0]).toFixed(6),
+      parseFloat(gpsCoordinates[1]).toFixed(6)
+    ];
 
-      // 1. Create schedule
-      const scheduleData = {
+    console.log("📍 Final GPS coordinates being used:", gpsCoordinates);
+
+    // 1. Create schedule
+    const scheduleData = {
+      clusterId: selectedCluster,
+      clusterName: cluster.name,
+      collectorId: selectedCollector,
+      collectorName: collector.name,
+      date: scheduleDate,
+      reportCount: cluster.reportCount,
+      status: 'scheduled'
+    };
+
+    const scheduleResponse = await fetch("https://smart-waste-nairobi-chi.vercel.app/api/schedules", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(scheduleData)
+    });
+
+    const scheduleResult = await scheduleResponse.json();
+    
+    if (scheduleResult.success) {
+      // 2. Assign route to collector with PROPER GPS data
+      const routeAssignment = {
+        routeId: `route-${Date.now()}`,
         clusterId: selectedCluster,
         clusterName: cluster.name,
-        collectorId: selectedCollector,
-        collectorName: collector.name,
-        date: scheduleDate,
+        clusterLocation: cluster.location,
+        gpsCoordinates: gpsCoordinates, // Use validated coordinates
+        assignedDate: new Date().toISOString(),
+        scheduledDate: scheduleDate,
+        status: 'scheduled',
         reportCount: cluster.reportCount,
-        status: 'scheduled'
+        notes: `Scheduled collection for ${cluster.name} - ${cluster.reportCount} reports`,
+        pickupLocation: "Nairobi Central Depot", // Temporary - we'll fix this
+        destinationCoordinates: gpsCoordinates, // Same coordinates for destination
+        estimatedTime: "30-45 min",
+        distance: "2-5 km"
       };
 
-      const scheduleResponse = await fetch("https://smart-waste-nairobi-chi.vercel.app/api/schedules", {
+      console.log("🚀 Assigning route with validated coordinates:", routeAssignment.gpsCoordinates);
+
+      const routeResponse = await fetch(`https://smart-waste-nairobi-chi.vercel.app/api/collectors/${selectedCollector}/assign-route`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(scheduleData)
+        body: JSON.stringify(routeAssignment)
       });
 
-      const scheduleResult = await scheduleResponse.json();
+      const routeResult = await routeResponse.json();
       
-      if (scheduleResult.success) {
-        // 2. Assign route to collector with PROPER GPS data
-        const routeAssignment = {
-          routeId: `route-${Date.now()}`,
-          clusterId: selectedCluster,
-          clusterName: cluster.name,
-          clusterLocation: cluster.location,
-          gpsCoordinates: gpsCoordinates, // Use validated coordinates
-          assignedDate: new Date().toISOString(),
-          scheduledDate: scheduleDate,
-          status: 'scheduled',
-          reportCount: cluster.reportCount,
-          notes: `Scheduled collection for ${cluster.name} - ${cluster.reportCount} reports`,
-          pickupLocation: cluster.location,
-          destinationCoordinates: gpsCoordinates, // Same coordinates for destination
-          estimatedTime: "30-45 min",
-          distance: "2-5 km"
-        };
-
-        console.log("🚀 Assigning route with coordinates:", routeAssignment.gpsCoordinates);
-
-        const routeResponse = await fetch(`https://smart-waste-nairobi-chi.vercel.app/api/collectors/${selectedCollector}/assign-route`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(routeAssignment)
-        });
-
-        const routeResult = await routeResponse.json();
+      console.log("Route assignment response:", routeResult);
+      
+      if (routeResult.success) {
+        alert(`✅ Schedule created! ${collector.name} can now see this route in their mobile app with GPS navigation.`);
         
-        if (routeResult.success) {
-          alert(`✅ Schedule created! ${collector.name} can now see this route in their mobile app with GPS navigation.`);
-          
-          // Refresh ALL data including clusters
-          setSelectedCluster("");
-          setSelectedCollector("");
-          setScheduleDate("");
-          await loadAllData(); // Wait for data refresh
-        } else {
-          alert("❌ Error assigning route to collector");
-        }
+        // Refresh ALL data including clusters
+        setSelectedCluster("");
+        setSelectedCollector("");
+        setScheduleDate("");
+        await loadAllData(); 
+      } else {
+        alert(`❌ Error assigning route to collector: ${routeResult.message}`);
       }
-    } catch (error) {
-      console.error("Error creating schedule:", error);
+    } else {
       alert("❌ Error creating schedule");
     }
-  };
+  } catch (error) {
+    console.error("Error creating schedule:", error);
+    alert("❌ Error creating schedule: " + error.message);
+  }
+};
 
   const confirmDelete = (routeId, collectorId, clusterId) => {
     setRouteToDelete({ routeId, collectorId, clusterId });

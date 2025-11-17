@@ -30,6 +30,7 @@ interface AssignedRoute {
   destinationCoordinates: [number, number];
   estimatedTime: string;
   distance: string;
+  optimizedRoute?: any;
 }
 
 export default function TodayTasksScreen() {
@@ -134,55 +135,119 @@ export default function TodayTasksScreen() {
     }
   };
 
-const openNavigation = (coordinates: any) => {
-  console.log('Raw coordinates received:', coordinates);
-  
-  if (!coordinates) {
-    Alert.alert('Navigation Error', 'No GPS coordinates available for this route');
-    return;
-  }
-
-  try {
-    let lat: number;
-    let lng: number;
+  // 🧭 Enhanced navigation with better error handling
+  const openNavigation = (coordinates: any) => {
+    console.log('🔍 Raw coordinates received:', coordinates);
+    console.log('🔍 Coordinates type:', typeof coordinates);
     
-    if (Array.isArray(coordinates) && coordinates.length >= 2) {
-      [lat, lng] = coordinates;
-    } else if (coordinates.lat !== undefined && coordinates.lng !== undefined) {
-      lat = coordinates.lat;
-      lng = coordinates.lng;
-    } else if (coordinates.latitude !== undefined && coordinates.longitude !== undefined) {
-      lat = coordinates.latitude;
-      lng = coordinates.longitude;
-    } else {
-      Alert.alert('Navigation Error', 'Invalid GPS coordinates format');
+    if (!coordinates) {
+      Alert.alert('Navigation Error', 'No GPS coordinates available for this route');
       return;
     }
 
-    lat = Number(lat);
-    lng = Number(lng);
+    try {
+      let lat: number;
+      let lng: number;
+      
+      // Multiple coordinate format support
+      if (Array.isArray(coordinates) && coordinates.length >= 2) {
+        lat = parseFloat(coordinates[0]);
+        lng = parseFloat(coordinates[1]);
+      } else if (coordinates.lat !== undefined && coordinates.lng !== undefined) {
+        lat = parseFloat(coordinates.lat);
+        lng = parseFloat(coordinates.lng);
+      } else if (coordinates.latitude !== undefined && coordinates.longitude !== undefined) {
+        lat = parseFloat(coordinates.latitude);
+        lng = parseFloat(coordinates.longitude);
+      } else if (coordinates[0] && coordinates[1]) {
+        lat = parseFloat(coordinates[0]);
+        lng = parseFloat(coordinates[1]);
+      } else {
+        Alert.alert('Navigation Error', 'Invalid GPS coordinates format: ' + JSON.stringify(coordinates));
+        return;
+      }
 
-    if (isNaN(lat) || isNaN(lng)) {
-      Alert.alert('Navigation Error', 'Invalid GPS coordinate values');
+      // Validate coordinates
+      if (isNaN(lat) || isNaN(lng)) {
+        Alert.alert('Navigation Error', `Invalid GPS coordinate values: lat=${lat}, lng=${lng}`);
+        return;
+      }
+
+      // Check if coordinates are reasonable (within Kenya bounds)
+      if (lat < -4.9 || lat > 5.0 || lng < 33.5 || lng > 42.0) {
+        Alert.alert('Navigation Warning', 'Coordinates appear to be outside Nairobi area, but opening navigation anyway.');
+      }
+
+      console.log('✅ Parsed coordinates for navigation:', { lat, lng });
+      
+      const url = Platform.select({
+        ios: `maps://app?daddr=${lat},${lng}&dirflg=d`,
+        android: `google.navigation:q=${lat},${lng}`,
+      });
+
+      console.log('🌐 Opening navigation URL:', url);
+      
+      Linking.openURL(url!).catch((error) => {
+        console.log('❌ Navigation app error:', error);
+        // Fallback to Google Maps web
+        const fallbackUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
+        console.log('🔄 Using fallback URL:', fallbackUrl);
+        Linking.openURL(fallbackUrl);
+      });
+    } catch (error) {
+      console.error('❌ Navigation error:', error);
+      Alert.alert('Navigation Error', 'Failed to open navigation: ' + (error instanceof Error ? error.message : String(error)));
+    }
+  };
+
+  // 🚀 OPTIMIZED NAVIGATION WITH ROUTE PLANNING
+  const openOptimizedNavigation = async (route: AssignedRoute) => {
+    console.log('🚀 Starting optimized navigation for route:', route.routeId);
+    
+    if (!collector) {
+      Alert.alert('Error', 'Please login again');
       return;
     }
 
-    console.log('Parsed coordinates:', { lat, lng });
-    
-    const url = Platform.select({
-      ios: `maps://app?daddr=${lat},${lng}&dirflg=d`,
-      android: `google.navigation:q=${lat},${lng}`,
-    });
+    try {
+      // Get optimized navigation data from backend
+      const response = await fetch(
+        `https://smart-waste-nairobi-chi.vercel.app/api/collectors/${collector._id}/routes/${route._id}/navigation`
+      );
+      
+      if (response.ok) {
+        const navigationData = await response.json();
+        
+        if (navigationData.success) {
+          console.log('🗺️ Navigation data received:', navigationData.navigation);
+          
+          const url = Platform.select({
+            ios: navigationData.navigation.ios,
+            android: navigationData.navigation.android,
+          });
 
-    Linking.openURL(url!).catch((error) => {
-      console.log('Navigation app error:', error);
-      Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`);
-    });
-  } catch (error) {
-    console.error('Navigation error:', error);
-    Alert.alert('Navigation Error', 'Failed to open navigation');
-  }
-};
+          console.log('🌐 Opening optimized navigation:', url);
+          
+          Linking.openURL(url!).catch((error) => {
+            console.log('❌ Navigation app error:', error);
+            // Fallback to web navigation
+            Linking.openURL(navigationData.navigation.web);
+          });
+          
+          return;
+        }
+      }
+      
+      // Fallback to original navigation if optimized fails
+      console.log('🔄 Using fallback navigation');
+      openNavigation(route.gpsCoordinates || route.destinationCoordinates);
+      
+    } catch (error) {
+      console.error('❌ Optimized navigation error:', error);
+      // Fallback to original navigation
+      openNavigation(route.gpsCoordinates || route.destinationCoordinates);
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -198,6 +263,14 @@ const openNavigation = (coordinates: any) => {
       case 'in-progress': return 'time';
       default: return 'calendar';
     }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-KE', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric'
+    });
   };
 
   if (loading) {
@@ -231,6 +304,7 @@ const openNavigation = (coordinates: any) => {
           {routes.length} routes assigned • {routes.filter(r => r.status === 'completed').length} completed
         </Text>
         <Text style={styles.collectorName}>Welcome, {collector.name}!</Text>
+        <Text style={styles.collectorZone}>Zone: {collector.zone || 'Nairobi'}</Text>
       </View>
 
       {routes.length === 0 ? (
@@ -263,6 +337,9 @@ const openNavigation = (coordinates: any) => {
                   </Text>
                 </View>
               </View>
+              <Text style={styles.routeDate}>
+                {formatDate(route.scheduledDate)}
+              </Text>
             </View>
 
             <View style={styles.routeDetails}>
@@ -274,33 +351,61 @@ const openNavigation = (coordinates: any) => {
                 <Ionicons name="document" size={16} color="#6B7280" />
                 <Text style={styles.detailText}>{route.reportCount} reports</Text>
               </View>
-              <View style={styles.detailItem}>
-                <Ionicons name="time" size={16} color="#6B7280" />
-                <Text style={styles.detailText}>{route.estimatedTime}</Text>
-              </View>
+              {route.distance && (
+                <View style={styles.detailItem}>
+                  <Ionicons name="analytics" size={16} color="#6B7280" />
+                  <Text style={styles.detailText}>{route.distance}</Text>
+                </View>
+              )}
             </View>
 
+            {/* 🗺️ OPTIMIZED NAVIGATION SECTION */}
             <View style={styles.navigationSection}>
-  <Text style={styles.navigationTitle}>📍 Collection Site</Text>
-  <TouchableOpacity 
-    style={styles.navigationButton}
-    onPress={() => openNavigation(route.gpsCoordinates || route.destinationCoordinates)}
-  >
-    <Ionicons name="navigate" size={20} color="#FFFFFF" />
-    <Text style={styles.navigationButtonText}>Start Navigation</Text>
-  </TouchableOpacity>
-  
-  <Text style={styles.navigationHint}>
-    Opens in Maps • {route.distance} away
-  </Text>
-</View>
+              <Text style={styles.navigationTitle}>📍 Optimized Collection Route</Text>
+              
+              {/* Route optimization details */}
+              <View style={styles.optimizationDetails}>
+                <View style={styles.optimizationItem}>
+                  <Ionicons name="business" size={14} color="#059669" />
+                  <Text style={styles.optimizationText}>
+                    Start: {route.pickupLocation || 'Nairobi Depot'}
+                  </Text>
+                </View>
+                <View style={styles.optimizationItem}>
+                  <Ionicons name="navigate" size={14} color="#059669" />
+                  <Text style={styles.optimizationText}>
+                    Distance: {route.distance || 'Calculating...'}
+                  </Text>
+                </View>
+                <View style={styles.optimizationItem}>
+                  <Ionicons name="time" size={14} color="#059669" />
+                  <Text style={styles.optimizationText}>
+                    Time: {route.estimatedTime || 'Calculating...'}
+                  </Text>
+                </View>
+              </View>
+              
+              <TouchableOpacity 
+                style={styles.navigationButton}
+                onPress={() => openOptimizedNavigation(route)}
+              >
+                <Ionicons name="navigate" size={20} color="#FFFFFF" />
+                <Text style={styles.navigationButtonText}>Start Optimized Navigation</Text>
+              </TouchableOpacity>
+              
+              <Text style={styles.navigationHint}>
+                🚗 Route: Depot → Collection → Return to Depot
+              </Text>
+            </View>
 
             {route.notes && (
               <View style={styles.notesContainer}>
+                <Text style={styles.notesLabel}>Collection Notes:</Text>
                 <Text style={styles.notesText}>{route.notes}</Text>
               </View>
             )}
 
+            {/* Action Buttons */}
             {route.status === 'scheduled' && (
               <TouchableOpacity 
                 style={styles.startButton}
@@ -323,8 +428,10 @@ const openNavigation = (coordinates: any) => {
 
             {route.status === 'completed' && (
               <View style={styles.completedBadge}>
-                <Ionicons name="checkmark" size={16} color="#059669" />
-                <Text style={styles.completedText}>Completed</Text>
+                <Ionicons name="checkmark-done" size={16} color="#059669" />
+                <Text style={styles.completedText}>
+                  Completed • {route.completedAt ? formatDate(route.completedAt) : 'Today'}
+                </Text>
               </View>
             )}
           </View>
@@ -334,12 +441,39 @@ const openNavigation = (coordinates: any) => {
       <View style={styles.helpSection}>
         <Text style={styles.helpTitle}>Need Help?</Text>
         <Text style={styles.helpText}>
-          • Tap "Start Navigation" for GPS directions{'\n'}
+          • Tap "Start Optimized Navigation" for GPS directions{'\n'}
           • Start collection when you arrive at site{'\n'}
           • Mark complete when collection is done{'\n'}
           • Pull down to refresh for new assignments
         </Text>
       </View>
+
+      {/* Performance Stats */}
+      {routes.length > 0 && (
+        <View style={styles.statsSection}>
+          <Text style={styles.statsTitle}>Your Performance</Text>
+          <View style={styles.statsGrid}>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>
+                {routes.filter(r => r.status === 'completed').length}
+              </Text>
+              <Text style={styles.statLabel}>Completed</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>
+                {routes.filter(r => r.status === 'in-progress').length}
+              </Text>
+              <Text style={styles.statLabel}>In Progress</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>
+                {routes.reduce((sum, route) => sum + route.reportCount, 0)}
+              </Text>
+              <Text style={styles.statLabel}>Total Reports</Text>
+            </View>
+          </View>
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -354,15 +488,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#F8FAFC',
+    padding: 20,
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
     color: '#6B7280',
+    textAlign: 'center',
   },
   header: {
     padding: 24,
     paddingBottom: 16,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
   },
   title: {
     fontSize: 28,
@@ -375,10 +514,15 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   collectorName: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#059669',
     fontWeight: '600',
     marginTop: 8,
+  },
+  collectorZone: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginTop: 2,
   },
   emptyState: {
     alignItems: 'center',
@@ -405,7 +549,7 @@ const styles = StyleSheet.create({
   },
   routeCard: {
     backgroundColor: '#FFFFFF',
-    marginHorizontal: 24,
+    marginHorizontal: 16,
     marginBottom: 16,
     padding: 20,
     borderRadius: 16,
@@ -420,7 +564,7 @@ const styles = StyleSheet.create({
   routeHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 16,
   },
   routeInfo: {
@@ -441,9 +585,13 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginLeft: 4,
   },
+  routeDate: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
   routeDetails: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: 'column',
     marginBottom: 16,
     paddingBottom: 16,
     borderBottomWidth: 1,
@@ -452,11 +600,12 @@ const styles = StyleSheet.create({
   detailItem: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 6,
   },
   detailText: {
     fontSize: 12,
     color: '#6B7280',
-    marginLeft: 4,
+    marginLeft: 6,
   },
   navigationSection: {
     backgroundColor: '#F0FDF4',
@@ -470,7 +619,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#166534',
-    marginBottom: 8,
+    marginBottom: 12,
+  },
+  optimizationDetails: {
+    marginBottom: 12,
+  },
+  optimizationItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  optimizationText: {
+    fontSize: 12,
+    color: '#059669',
+    marginLeft: 6,
+    fontWeight: '500',
   },
   navigationButton: {
     backgroundColor: '#059669',
@@ -488,15 +651,22 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   navigationHint: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#059669',
     textAlign: 'center',
+    fontStyle: 'italic',
   },
   notesContainer: {
     backgroundColor: '#F3F4F6',
     padding: 12,
     borderRadius: 8,
     marginBottom: 16,
+  },
+  notesLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 4,
   },
   notesText: {
     fontSize: 12,
@@ -543,13 +713,13 @@ const styles = StyleSheet.create({
   },
   completedText: {
     color: '#059669',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     marginLeft: 8,
   },
   helpSection: {
     backgroundColor: '#FFFFFF',
-    margin: 24,
+    margin: 16,
     padding: 20,
     borderRadius: 16,
     borderWidth: 1,
@@ -565,5 +735,37 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#6B7280',
     lineHeight: 18,
+  },
+  statsSection: {
+    backgroundColor: '#FFFFFF',
+    margin: 16,
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  statsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  statItem: {
+    alignItems: 'center',
+  },
+  statNumber: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#059669',
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 4,
   },
 });
