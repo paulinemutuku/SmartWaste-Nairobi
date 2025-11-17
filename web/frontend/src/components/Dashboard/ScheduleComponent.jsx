@@ -192,7 +192,7 @@ const createSchedule = async () => {
       return;
     }
 
-    // 🚀 IMPROVED: Better GPS coordinate validation
+    // 🚀 FIXED: Better GPS coordinate validation
     let gpsCoordinates = cluster.center;
     
     console.log("🔍 Raw cluster data:", cluster);
@@ -210,6 +210,9 @@ const createSchedule = async () => {
         if (firstReport.latitude && firstReport.longitude) {
           gpsCoordinates = [firstReport.latitude, firstReport.longitude];
           console.log("✅ Using first report coordinates:", gpsCoordinates);
+        } else if (firstReport.location?.latitude && firstReport.location?.longitude) {
+          gpsCoordinates = [firstReport.location.latitude, firstReport.location.longitude];
+          console.log("✅ Using first report location coordinates:", gpsCoordinates);
         } else {
           console.log("❌ First report also missing coordinates");
           // Fallback to Nairobi center coordinates
@@ -223,13 +226,14 @@ const createSchedule = async () => {
       }
     }
 
-    // Ensure coordinates are numbers
+    // 🚀 FIXED: Ensure coordinates are NUMBERS, not strings
     gpsCoordinates = [
-      parseFloat(gpsCoordinates[0]).toFixed(6),
-      parseFloat(gpsCoordinates[1]).toFixed(6)
+      Number(gpsCoordinates[0]),
+      Number(gpsCoordinates[1])
     ];
 
-    console.log("📍 Final GPS coordinates being used:", gpsCoordinates);
+    console.log("📍 Final GPS coordinates (as numbers):", gpsCoordinates);
+    console.log("📍 Type check:", typeof gpsCoordinates[0], typeof gpsCoordinates[1]);
 
     // 1. Create schedule
     const scheduleData = {
@@ -256,20 +260,24 @@ const createSchedule = async () => {
         routeId: `route-${Date.now()}`,
         clusterId: selectedCluster,
         clusterName: cluster.name,
-        clusterLocation: cluster.location,
-        gpsCoordinates: gpsCoordinates, // Use validated coordinates
+        clusterLocation: cluster.location || cluster.name, // Fallback if location is undefined
+        gpsCoordinates: gpsCoordinates, // Use validated coordinates as NUMBERS
         assignedDate: new Date().toISOString(),
         scheduledDate: scheduleDate,
         status: 'scheduled',
         reportCount: cluster.reportCount,
         notes: `Scheduled collection for ${cluster.name} - ${cluster.reportCount} reports`,
-        pickupLocation: "Nairobi Central Depot", // Temporary - we'll fix this
+        pickupLocation: "Nairobi Central Depot", // Will be optimized by backend
         destinationCoordinates: gpsCoordinates, // Same coordinates for destination
         estimatedTime: "30-45 min",
         distance: "2-5 km"
       };
 
-      console.log("🚀 Assigning route with validated coordinates:", routeAssignment.gpsCoordinates);
+      console.log("🚀 Sending route assignment to backend:", {
+        routeId: routeAssignment.routeId,
+        coordinates: routeAssignment.gpsCoordinates,
+        coordinateTypes: typeof routeAssignment.gpsCoordinates[0] + ", " + typeof routeAssignment.gpsCoordinates[1]
+      });
 
       const routeResponse = await fetch(`https://smart-waste-nairobi-chi.vercel.app/api/collectors/${selectedCollector}/assign-route`, {
         method: "POST",
@@ -279,7 +287,7 @@ const createSchedule = async () => {
 
       const routeResult = await routeResponse.json();
       
-      console.log("Route assignment response:", routeResult);
+      console.log("📨 Backend response:", routeResult);
       
       if (routeResult.success) {
         alert(`✅ Schedule created! ${collector.name} can now see this route in their mobile app with GPS navigation.`);
