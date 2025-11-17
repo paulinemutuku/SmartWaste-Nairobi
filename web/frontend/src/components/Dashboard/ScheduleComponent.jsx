@@ -195,34 +195,34 @@ const createSchedule = async () => {
     // 🚀 FIXED: Better GPS coordinate validation
     let gpsCoordinates = cluster.center;
     
-    console.log("🔍 Raw cluster data:", cluster);
-    console.log("🔍 Cluster center:", cluster.center);
+    console.log("🔍 STEP 1 - Raw cluster data:", cluster);
+    console.log("🔍 STEP 1 - Cluster center:", cluster.center);
     
     // If cluster center is not available, use the first report's coordinates
     if (!gpsCoordinates || gpsCoordinates.length < 2 || 
         !gpsCoordinates[0] || !gpsCoordinates[1] ||
         isNaN(gpsCoordinates[0]) || isNaN(gpsCoordinates[1])) {
       
-      console.log("⚠️ Cluster center invalid, checking reports...");
+      console.log("⚠️ STEP 1 - Cluster center invalid, checking reports...");
       
       if (cluster.reports && cluster.reports.length > 0) {
         const firstReport = cluster.reports[0];
         if (firstReport.latitude && firstReport.longitude) {
           gpsCoordinates = [firstReport.latitude, firstReport.longitude];
-          console.log("✅ Using first report coordinates:", gpsCoordinates);
+          console.log("✅ STEP 1 - Using first report coordinates:", gpsCoordinates);
         } else if (firstReport.location?.latitude && firstReport.location?.longitude) {
           gpsCoordinates = [firstReport.location.latitude, firstReport.location.longitude];
-          console.log("✅ Using first report location coordinates:", gpsCoordinates);
+          console.log("✅ STEP 1 - Using first report location coordinates:", gpsCoordinates);
         } else {
-          console.log("❌ First report also missing coordinates");
+          console.log("❌ STEP 1 - First report also missing coordinates");
           // Fallback to Nairobi center coordinates
           gpsCoordinates = [-1.2921, 36.8219]; // Nairobi center
-          console.log("🔄 Using fallback Nairobi coordinates:", gpsCoordinates);
+          console.log("🔄 STEP 1 - Using fallback Nairobi coordinates:", gpsCoordinates);
         }
       } else {
         // Final fallback
         gpsCoordinates = [-1.2921, 36.8219]; // Nairobi center
-        console.log("🔄 Using default Nairobi coordinates:", gpsCoordinates);
+        console.log("🔄 STEP 1 - Using default Nairobi coordinates:", gpsCoordinates);
       }
     }
 
@@ -232,8 +232,8 @@ const createSchedule = async () => {
       Number(gpsCoordinates[1])
     ];
 
-    console.log("📍 Final GPS coordinates (as numbers):", gpsCoordinates);
-    console.log("📍 Type check:", typeof gpsCoordinates[0], typeof gpsCoordinates[1]);
+    console.log("📍 STEP 1 - Final GPS coordinates:", gpsCoordinates);
+    console.log("📍 STEP 1 - Type check:", typeof gpsCoordinates[0], typeof gpsCoordinates[1]);
 
     // 1. Create schedule
     const scheduleData = {
@@ -246,6 +246,8 @@ const createSchedule = async () => {
       status: 'scheduled'
     };
 
+    console.log("📋 STEP 2 - Creating schedule with data:", scheduleData);
+
     const scheduleResponse = await fetch("https://smart-waste-nairobi-chi.vercel.app/api/schedules", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -253,6 +255,7 @@ const createSchedule = async () => {
     });
 
     const scheduleResult = await scheduleResponse.json();
+    console.log("📋 STEP 2 - Schedule creation response:", scheduleResult);
     
     if (scheduleResult.success) {
       // 2. Assign route to collector with PROPER GPS data
@@ -260,23 +263,25 @@ const createSchedule = async () => {
         routeId: `route-${Date.now()}`,
         clusterId: selectedCluster,
         clusterName: cluster.name,
-        clusterLocation: cluster.location || cluster.name, // Fallback if location is undefined
-        gpsCoordinates: gpsCoordinates, // Use validated coordinates as NUMBERS
+        clusterLocation: cluster.location || cluster.name,
+        gpsCoordinates: gpsCoordinates,
         assignedDate: new Date().toISOString(),
         scheduledDate: scheduleDate,
         status: 'scheduled',
         reportCount: cluster.reportCount,
         notes: `Scheduled collection for ${cluster.name} - ${cluster.reportCount} reports`,
-        pickupLocation: "Nairobi Central Depot", // Will be optimized by backend
-        destinationCoordinates: gpsCoordinates, // Same coordinates for destination
+        pickupLocation: "Nairobi Central Depot",
+        destinationCoordinates: gpsCoordinates,
         estimatedTime: "30-45 min",
         distance: "2-5 km"
       };
 
-      console.log("🚀 Sending route assignment to backend:", {
+      console.log("🚀 STEP 3 - Sending route assignment to backend:", {
         routeId: routeAssignment.routeId,
+        collectorId: selectedCollector,
         coordinates: routeAssignment.gpsCoordinates,
-        coordinateTypes: typeof routeAssignment.gpsCoordinates[0] + ", " + typeof routeAssignment.gpsCoordinates[1]
+        coordinateTypes: typeof routeAssignment.gpsCoordinates[0] + ", " + typeof routeAssignment.gpsCoordinates[1],
+        fullPayload: routeAssignment
       });
 
       const routeResponse = await fetch(`https://smart-waste-nairobi-chi.vercel.app/api/collectors/${selectedCollector}/assign-route`, {
@@ -287,9 +292,27 @@ const createSchedule = async () => {
 
       const routeResult = await routeResponse.json();
       
-      console.log("📨 Backend response:", routeResult);
+      console.log("📨 STEP 3 - Backend assign-route response:", routeResult);
       
       if (routeResult.success) {
+        console.log("✅ STEP 3 - Route assignment successful!");
+        
+        // 🐛 DEBUG: Check what actually got saved to database
+        console.log("🐛 STEP 4 - Checking database for saved routes...");
+        const debugResponse = await fetch(`https://smart-waste-nairobi-chi.vercel.app/api/collectors/${selectedCollector}/routes`);
+        const debugData = await debugResponse.json();
+        
+        console.log("🐛 STEP 4 - Routes from database:", debugData);
+        if (debugData.routes && debugData.routes.length > 0) {
+          const latestRoute = debugData.routes[debugData.routes.length - 1];
+          console.log("🐛 STEP 4 - Latest route in database:", {
+            routeId: latestRoute.routeId,
+            gpsCoordinates: latestRoute.gpsCoordinates,
+            hasCoordinates: !!latestRoute.gpsCoordinates,
+            coordinateType: typeof latestRoute.gpsCoordinates?.[0] + ", " + typeof latestRoute.gpsCoordinates?.[1]
+          });
+        }
+        
         alert(`✅ Schedule created! ${collector.name} can now see this route in their mobile app with GPS navigation.`);
         
         // Refresh ALL data including clusters
@@ -298,14 +321,53 @@ const createSchedule = async () => {
         setScheduleDate("");
         await loadAllData(); 
       } else {
+        console.log("❌ STEP 3 - Route assignment failed:", routeResult);
         alert(`❌ Error assigning route to collector: ${routeResult.message}`);
       }
     } else {
+      console.log("❌ STEP 2 - Schedule creation failed:", scheduleResult);
       alert("❌ Error creating schedule");
     }
   } catch (error) {
-    console.error("Error creating schedule:", error);
+    console.error("💥 FINAL ERROR - Error creating schedule:", error);
     alert("❌ Error creating schedule: " + error.message);
+  }
+};
+
+// 🐛 DEBUG FUNCTION: Manually test the backend
+const testBackendManually = async () => {
+  console.log("🧪 MANUAL TEST: Testing backend directly...");
+  
+  const testPayload = {
+    "routeId": "test-route-manual-" + Date.now(),
+    "clusterId": "test-cluster",
+    "clusterName": "Test Cluster", 
+    "clusterLocation": "Test Location",
+    "gpsCoordinates": [-1.2921, 36.8219],
+    "assignedDate": new Date().toISOString(),
+    "scheduledDate": new Date().toISOString(),
+    "status": "scheduled",
+    "reportCount": 5,
+    "notes": "Manual test",
+    "pickupLocation": "Test Depot",
+    "destinationCoordinates": [-1.2921, 36.8219],
+    "estimatedTime": "30 min", 
+    "distance": "5 km"
+  };
+
+  console.log("🧪 MANUAL TEST - Sending:", testPayload);
+
+  try {
+    const response = await fetch(`https://smart-waste-nairobi-chi.vercel.app/api/collectors/690981d06314c0e75a6eefd3/assign-route`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(testPayload)
+    });
+    
+    const result = await response.json();
+    console.log("🧪 MANUAL TEST - Backend response:", result);
+  } catch (error) {
+    console.error("🧪 MANUAL TEST - Error:", error);
   }
 };
 
