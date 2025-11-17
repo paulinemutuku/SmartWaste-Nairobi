@@ -31,6 +31,9 @@ interface AssignedRoute {
   estimatedTime: string;
   distance: string;
   optimizedRoute?: any;
+  pickupCoordinates?: [number, number]; 
+  travelTime?: string; 
+  collectionTime?: string; 
 }
 
 export default function TodayTasksScreen() {
@@ -200,54 +203,80 @@ export default function TodayTasksScreen() {
     }
   };
 
-  // 🚀 OPTIMIZED NAVIGATION WITH ROUTE PLANNING
-  const openOptimizedNavigation = async (route: AssignedRoute) => {
-    console.log('🚀 Starting optimized navigation for route:', route.routeId);
+const openOptimizedNavigation = async (route: AssignedRoute) => {
+  console.log('🚀 Starting multi-stop navigation for route:', route.routeId);
+  
+  if (!collector) {
+    Alert.alert('Error', 'Please login again');
+    return;
+  }
+
+  try {
+    // Get optimized navigation data from backend
+    const response = await fetch(
+      `https://smart-waste-nairobi-chi.vercel.app/api/collectors/${collector._id}/routes/${route._id}/navigation`
+    );
     
-    if (!collector) {
-      Alert.alert('Error', 'Please login again');
-      return;
-    }
-
-    try {
-      // Get optimized navigation data from backend
-      const response = await fetch(
-        `https://smart-waste-nairobi-chi.vercel.app/api/collectors/${collector._id}/routes/${route._id}/navigation`
-      );
+    if (response.ok) {
+      const navigationData = await response.json();
       
-      if (response.ok) {
-        const navigationData = await response.json();
+      if (navigationData.success) {
+        console.log('🗺️ Navigation data received:', navigationData.navigation);
         
-        if (navigationData.success) {
-          console.log('🗺️ Navigation data received:', navigationData.navigation);
-          
-          const url = Platform.select({
-            ios: navigationData.navigation.ios,
-            android: navigationData.navigation.android,
-          });
-
-          console.log('🌐 Opening optimized navigation:', url);
-          
-          Linking.openURL(url!).catch((error) => {
-            console.log('❌ Navigation app error:', error);
-            // Fallback to web navigation
-            Linking.openURL(navigationData.navigation.web);
-          });
-          
+        const { coordinates } = navigationData.navigation;
+        
+        if (!coordinates) {
+          Alert.alert('Navigation Error', 'No coordinates available for navigation');
           return;
         }
+
+        // 🚀 MULTI-STOP NAVIGATION: Depot → Collection → Return to Depot
+        // Use safe access with optional chaining
+        const depotCoords = route.pickupCoordinates || [-1.2921, 36.8219]; // Fallback to Nairobi center
+        const collectionCoords = route.gpsCoordinates || route.destinationCoordinates;
+        
+        if (!collectionCoords) {
+          Alert.alert('Navigation Error', 'No collection coordinates available');
+          return;
+        }
+
+        console.log('📍 Multi-stop route:', {
+          depot: depotCoords,
+          collection: collectionCoords
+        });
+
+        // 🎯 Google Maps with waypoints for multi-stop routing
+        const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${depotCoords[0]},${depotCoords[1]}&destination=${depotCoords[0]},${depotCoords[1]}&waypoints=${collectionCoords[0]},${collectionCoords[1]}&travelmode=driving`;
+        
+        console.log('🗺️ Multi-stop Google Maps URL:', googleMapsUrl);
+        
+        Linking.openURL(googleMapsUrl).catch((error) => {
+          console.log('❌ Google Maps error:', error);
+          
+          // Fallback: Direct navigation to collection point
+          const fallbackUrl = Platform.select({
+            ios: `maps://app?daddr=${collectionCoords[0]},${collectionCoords[1]}&dirflg=d`,
+            android: `google.navigation:q=${collectionCoords[0]},${collectionCoords[1]}`,
+          });
+          
+          Linking.openURL(fallbackUrl!).catch((fallbackError) => {
+            console.log('❌ Fallback navigation error:', fallbackError);
+            Alert.alert('Navigation Error', 'Please install Google Maps for full navigation features');
+          });
+        });
+        
+        return;
       }
-      
-      // Fallback to original navigation if optimized fails
-      console.log('🔄 Using fallback navigation');
-      openNavigation(route.gpsCoordinates || route.destinationCoordinates);
-      
-    } catch (error) {
-      console.error('❌ Optimized navigation error:', error);
-      // Fallback to original navigation
-      openNavigation(route.gpsCoordinates || route.destinationCoordinates);
     }
-  };
+    
+    console.log('🔄 Using basic navigation fallback');
+    openNavigation(route.gpsCoordinates || route.destinationCoordinates);
+    
+  } catch (error) {
+    console.error('❌ Optimized navigation error:', error);
+    openNavigation(route.gpsCoordinates || route.destinationCoordinates);
+  }
+};
 
   const getStatusColor = (status: string) => {
     switch (status) {
