@@ -25,6 +25,8 @@ const CollectorSchema = new mongoose.Schema({
     routeId: String,
     clusterId: String,
     clusterName: String,
+    clusterLocation: String, 
+    gpsCoordinates: [Number], 
     assignedDate: Date,
     scheduledDate: Date,
     status: {
@@ -35,7 +37,11 @@ const CollectorSchema = new mongoose.Schema({
     completedAt: Date,
     reportCount: Number,
     verifiedPhotos: [String],
-    notes: String
+    notes: String,
+    pickupLocation: String, 
+    destinationCoordinates: [Number], 
+    estimatedTime: String, 
+    distance: String 
   }],
   activeAccount: { 
     type: Boolean, 
