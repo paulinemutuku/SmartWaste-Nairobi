@@ -214,31 +214,39 @@ const openOptimizedNavigation = async (route: AssignedRoute) => {
   try {
     Alert.alert('🤖 AI Route Optimization', 'Calculating most efficient route with real-time data...');
 
-    console.log('🔍 DEBUG: Making API call to:', `https://smart-waste-nairobi-chi.vercel.app/api/collectors/${collector._id}/routes/${route._id}/navigation`);
-    
     const response = await fetch(`https://smart-waste-nairobi-chi.vercel.app/api/collectors/${collector._id}/routes/${route._id}/navigation`);
-    
-    console.log('🔍 DEBUG: Response status:', response.status);
-    console.log('🔍 DEBUG: Response ok:', response.ok);
     
     if (response.ok) {
       const data = await response.json();
       console.log('🔍 DEBUG: Full API response:', data);
       
-      if (data.success) {
-        console.log('🔍 DEBUG: Navigation data:', data.navigation);
-        
+      if (data.success && data.navigation) {
         const { coordinates, optimizedRoute, routeInfo } = data.navigation;
         
+        // 🛡️ SAFE ACCESS with fallbacks
+        const safeRouteInfo = routeInfo || {
+          collectionPoint: route.clusterName || 'Collection Site',
+          reportCount: route.reportCount || 0,
+          priority: '✅ Normal'
+        };
+
+        const safeOptimizedRoute = optimizedRoute || {
+          estimatedDistance: route.distance || 'Unknown',
+          estimatedTime: route.estimatedTime || 'Unknown',
+          trafficLevel: 'Unknown',
+          fuelEstimate: 'Unknown',
+          carbonFootprint: 'Unknown',
+          efficiencyScore: 'Unknown'
+        };
+
         if (!coordinates) {
-          console.log('🔍 DEBUG: No coordinates found');
           Alert.alert('Navigation Error', 'No coordinates available');
           return;
         }
 
         Alert.alert(
           '🎯 ULTIMATE OPTIMIZED ROUTE READY',
-          `📍 ${routeInfo.collectionPoint}\n📏 ${optimizedRoute.estimatedDistance}\n⏱️ ${optimizedRoute.estimatedTime}\n🚦 ${optimizedRoute.trafficLevel} Traffic\n⛽ ${optimizedRoute.fuelEstimate} Fuel\n🌱 ${optimizedRoute.carbonFootprint} CO2\n📊 ${routeInfo.reportCount} Reports\n${routeInfo.priority}\n⭐ Efficiency: ${optimizedRoute.efficiencyScore}`,
+          `📍 ${safeRouteInfo.collectionPoint}\n📏 ${safeOptimizedRoute.estimatedDistance}\n⏱️ ${safeOptimizedRoute.estimatedTime}\n🚦 ${safeOptimizedRoute.trafficLevel} Traffic\n⛽ ${safeOptimizedRoute.fuelEstimate} Fuel\n🌱 ${safeOptimizedRoute.carbonFootprint} CO2\n📊 ${safeRouteInfo.reportCount} Reports\n${safeRouteInfo.priority}\n⭐ Efficiency: ${safeOptimizedRoute.efficiencyScore}`,
           [
             {
               text: '🚀 Start Optimized Navigation',
@@ -258,7 +266,7 @@ const openOptimizedNavigation = async (route: AssignedRoute) => {
               onPress: () => {
                 Alert.alert(
                   '🤖 AI Route Analysis',
-                  `Optimization: ${optimizedRoute.optimizationType}\nTraffic: ${optimizedRoute.trafficLevel}\nFuel: ${optimizedRoute.fuelEstimate}\nCarbon: ${optimizedRoute.carbonFootprint}\nEfficiency: ${optimizedRoute.efficiencyScore}\n\nThis AI-optimized route saves time, fuel, and reduces emissions!`
+                  `Optimization: AI Optimized\nTraffic: ${safeOptimizedRoute.trafficLevel}\nFuel: ${safeOptimizedRoute.fuelEstimate}\nCarbon: ${safeOptimizedRoute.carbonFootprint}\nEfficiency: ${safeOptimizedRoute.efficiencyScore}\n\nThis AI-optimized route saves time, fuel, and reduces emissions!`
                 );
               }
             },
@@ -266,23 +274,17 @@ const openOptimizedNavigation = async (route: AssignedRoute) => {
           ]
         );
         return;
-      } else {
-        console.log('🔍 DEBUG: API success is false:', data);
       }
-    } else {
-      console.log('🔍 DEBUG: Response not OK, status:', response.status);
-      const errorText = await response.text();
-      console.log('🔍 DEBUG: Error response:', errorText);
     }
     
     // 🎯 FALLBACK: Use basic navigation with route data
-    console.log('🔄 DEBUG: Using fallback navigation with route data:', route);
+    console.log('🔄 Using fallback navigation');
     
     const collectionCoords = route.gpsCoordinates || route.destinationCoordinates;
     if (collectionCoords && collectionCoords.length >= 2) {
       Alert.alert(
         '📍 Basic Navigation', 
-        'AI optimization unavailable. Using direct navigation.',
+        `Navigate to ${route.clusterName}?\n📏 ${route.distance || 'Unknown distance'}\n⏱️ ${route.estimatedTime || 'Unknown time'}`,
         [
           { 
             text: 'Navigate', 
@@ -305,7 +307,7 @@ const openOptimizedNavigation = async (route: AssignedRoute) => {
     
   } catch (error) {
     console.error('🔍 DEBUG: Catch block error:', error);
-    Alert.alert('Navigation Error', 'AI optimization failed: ' + (error instanceof Error ? error.message : String(error)));
+    Alert.alert('Navigation Error', 'AI optimization failed');
   }
 };
 
