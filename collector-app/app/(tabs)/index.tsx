@@ -214,14 +214,32 @@ const openOptimizedNavigation = async (route: AssignedRoute) => {
   try {
     Alert.alert('🤖 AI Route Optimization', 'Calculating most efficient route with real-time data...');
 
+    // 🎯 USE ROUTE COORDINATES DIRECTLY (they're correct!)
+    const collectionCoords = route.gpsCoordinates || route.destinationCoordinates;
+    
+    if (!collectionCoords || collectionCoords.length < 2) {
+      Alert.alert('Navigation Error', 'No valid coordinates available');
+      return;
+    }
+
+    console.log('🔍 USING COORDINATES:', collectionCoords);
+    
+    // Validate coordinates are in Nairobi area
+    const [lat, lng] = collectionCoords;
+    if (lat < -1.5 || lat > -1.1 || lng < 36.6 || lng > 37.0) {
+      Alert.alert('📍 Coordinate Warning', 'Coordinates appear outside Nairobi. Using fallback location.');
+      // Use Nairobi center as fallback
+      collectionCoords[0] = -1.2921;
+      collectionCoords[1] = 36.8219;
+    }
+
     const response = await fetch(`https://smart-waste-nairobi-chi.vercel.app/api/collectors/${collector._id}/routes/${route._id}/navigation`);
     
     if (response.ok) {
       const data = await response.json();
-      console.log('🔍 DEBUG: Full API response:', data);
       
       if (data.success && data.navigation) {
-        const { coordinates, optimizedRoute, routeInfo } = data.navigation;
+        const { optimizedRoute, routeInfo } = data.navigation;
         
         // 🛡️ SAFE ACCESS with fallbacks
         const safeRouteInfo = routeInfo || {
@@ -239,11 +257,6 @@ const openOptimizedNavigation = async (route: AssignedRoute) => {
           efficiencyScore: 'Unknown'
         };
 
-        if (!coordinates) {
-          Alert.alert('Navigation Error', 'No coordinates available');
-          return;
-        }
-
         Alert.alert(
           '🎯 ULTIMATE OPTIMIZED ROUTE READY',
           `📍 ${safeRouteInfo.collectionPoint}\n📏 ${safeOptimizedRoute.estimatedDistance}\n⏱️ ${safeOptimizedRoute.estimatedTime}\n🚦 ${safeOptimizedRoute.trafficLevel} Traffic\n⛽ ${safeOptimizedRoute.fuelEstimate} Fuel\n🌱 ${safeOptimizedRoute.carbonFootprint} CO2\n📊 ${safeRouteInfo.reportCount} Reports\n${safeRouteInfo.priority}\n⭐ Efficiency: ${safeOptimizedRoute.efficiencyScore}`,
@@ -252,11 +265,12 @@ const openOptimizedNavigation = async (route: AssignedRoute) => {
               text: '🚀 Start Optimized Navigation',
               onPress: () => {
                 const directUrl = Platform.select({
-                  ios: `maps://app?daddr=${coordinates.lat},${coordinates.lng}&dirflg=d`,
-                  android: `google.navigation:q=${coordinates.lat},${coordinates.lng}`,
+                  ios: `maps://app?daddr=${collectionCoords[0]},${collectionCoords[1]}&dirflg=d`,
+                  android: `google.navigation:q=${collectionCoords[0]},${collectionCoords[1]}`,
                 });
+                console.log('🌐 Opening navigation to:', collectionCoords);
                 Linking.openURL(directUrl!).catch((error) => {
-                  const webUrl = `https://www.google.com/maps/dir/?api=1&destination=${coordinates.lat},${coordinates.lng}&travelmode=driving`;
+                  const webUrl = `https://www.google.com/maps/dir/?api=1&destination=${collectionCoords[0]},${collectionCoords[1]}&travelmode=driving`;
                   Linking.openURL(webUrl);
                 });
               }
@@ -277,33 +291,27 @@ const openOptimizedNavigation = async (route: AssignedRoute) => {
       }
     }
     
-    // 🎯 FALLBACK: Use basic navigation with route data
-    console.log('🔄 Using fallback navigation');
-    
-    const collectionCoords = route.gpsCoordinates || route.destinationCoordinates;
-    if (collectionCoords && collectionCoords.length >= 2) {
-      Alert.alert(
-        '📍 Basic Navigation', 
-        `Navigate to ${route.clusterName}?\n📏 ${route.distance || 'Unknown distance'}\n⏱️ ${route.estimatedTime || 'Unknown time'}`,
-        [
-          { 
-            text: 'Navigate', 
-            onPress: () => {
-              const fallbackUrl = Platform.select({
-                ios: `maps://app?daddr=${collectionCoords[0]},${collectionCoords[1]}&dirflg=d`,
-                android: `google.navigation:q=${collectionCoords[0]},${collectionCoords[1]}`,
-              });
-              Linking.openURL(fallbackUrl!).catch((error) => {
-                Alert.alert('Navigation Error', 'Could not open navigation app');
-              });
-            }
-          },
-          { text: 'Cancel', style: 'cancel' }
-        ]
-      );
-    } else {
-      Alert.alert('Navigation Error', 'No valid coordinates available');
-    }
+    // 🎯 FALLBACK: Basic navigation without AI
+    Alert.alert(
+      '📍 Navigation', 
+      `Navigate to ${route.clusterName}?\n📏 ${route.distance || 'Unknown distance'}\n⏱️ ${route.estimatedTime || 'Unknown time'}`,
+      [
+        { 
+          text: 'Navigate', 
+          onPress: () => {
+            const fallbackUrl = Platform.select({
+              ios: `maps://app?daddr=${collectionCoords[0]},${collectionCoords[1]}&dirflg=d`,
+              android: `google.navigation:q=${collectionCoords[0]},${collectionCoords[1]}`,
+            });
+            console.log('🌐 Fallback navigation to:', collectionCoords);
+            Linking.openURL(fallbackUrl!).catch((error) => {
+              Alert.alert('Navigation Error', 'Could not open navigation app');
+            });
+          }
+        },
+        { text: 'Cancel', style: 'cancel' }
+      ]
+    );
     
   } catch (error) {
     console.error('🔍 DEBUG: Catch block error:', error);
