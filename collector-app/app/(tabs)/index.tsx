@@ -214,15 +214,24 @@ const openOptimizedNavigation = async (route: AssignedRoute) => {
   try {
     Alert.alert('🤖 AI Route Optimization', 'Calculating most efficient route with real-time data...');
 
+    console.log('🔍 DEBUG: Making API call to:', `https://smart-waste-nairobi-chi.vercel.app/api/collectors/${collector._id}/routes/${route._id}/navigation`);
+    
     const response = await fetch(`https://smart-waste-nairobi-chi.vercel.app/api/collectors/${collector._id}/routes/${route._id}/navigation`);
+    
+    console.log('🔍 DEBUG: Response status:', response.status);
+    console.log('🔍 DEBUG: Response ok:', response.ok);
     
     if (response.ok) {
       const data = await response.json();
+      console.log('🔍 DEBUG: Full API response:', data);
       
       if (data.success) {
+        console.log('🔍 DEBUG: Navigation data:', data.navigation);
+        
         const { coordinates, optimizedRoute, routeInfo } = data.navigation;
         
         if (!coordinates) {
+          console.log('🔍 DEBUG: No coordinates found');
           Alert.alert('Navigation Error', 'No coordinates available');
           return;
         }
@@ -257,29 +266,46 @@ const openOptimizedNavigation = async (route: AssignedRoute) => {
           ]
         );
         return;
+      } else {
+        console.log('🔍 DEBUG: API success is false:', data);
       }
+    } else {
+      console.log('🔍 DEBUG: Response not OK, status:', response.status);
+      const errorText = await response.text();
+      console.log('🔍 DEBUG: Error response:', errorText);
     }
+    
+    // 🎯 FALLBACK: Use basic navigation with route data
+    console.log('🔄 DEBUG: Using fallback navigation with route data:', route);
     
     const collectionCoords = route.gpsCoordinates || route.destinationCoordinates;
     if (collectionCoords && collectionCoords.length >= 2) {
-      Alert.alert('📍 Basic Navigation', 'AI optimization unavailable. Using direct navigation.', [
-        { text: 'Navigate', onPress: () => {
-          const fallbackUrl = Platform.select({
-            ios: `maps://app?daddr=${collectionCoords[0]},${collectionCoords[1]}&dirflg=d`,
-            android: `google.navigation:q=${collectionCoords[0]},${collectionCoords[1]}`,
-          });
-          Linking.openURL(fallbackUrl!).catch((error) => {
-            Alert.alert('Navigation Error', 'Could not open navigation app');
-          });
-        }},
-        { text: 'Cancel', style: 'cancel' }
-      ]);
+      Alert.alert(
+        '📍 Basic Navigation', 
+        'AI optimization unavailable. Using direct navigation.',
+        [
+          { 
+            text: 'Navigate', 
+            onPress: () => {
+              const fallbackUrl = Platform.select({
+                ios: `maps://app?daddr=${collectionCoords[0]},${collectionCoords[1]}&dirflg=d`,
+                android: `google.navigation:q=${collectionCoords[0]},${collectionCoords[1]}`,
+              });
+              Linking.openURL(fallbackUrl!).catch((error) => {
+                Alert.alert('Navigation Error', 'Could not open navigation app');
+              });
+            }
+          },
+          { text: 'Cancel', style: 'cancel' }
+        ]
+      );
     } else {
       Alert.alert('Navigation Error', 'No valid coordinates available');
     }
     
   } catch (error) {
-    Alert.alert('Navigation Error', 'AI optimization failed');
+    console.error('🔍 DEBUG: Catch block error:', error);
+    Alert.alert('Navigation Error', 'AI optimization failed: ' + (error instanceof Error ? error.message : String(error)));
   }
 };
 
