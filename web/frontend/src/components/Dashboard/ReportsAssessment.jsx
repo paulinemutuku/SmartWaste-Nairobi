@@ -7,12 +7,6 @@ const ReportsAssessment = () => {
 
   useEffect(() => {
     loadReports();
-    
-    const interval = setInterval(() => {
-      loadReports();
-    }, 10000);
-
-    return () => clearInterval(interval);
   }, []);
 
   const loadReports = async () => {
@@ -48,10 +42,7 @@ const ReportsAssessment = () => {
           report._id === reportId ? { ...report, priority } : report
         ));
         setSelectedReport(null);
-        console.log(`✅ Priority updated to: ${priority}`);
         loadReports();
-      } else {
-        console.error("❌ Failed to update priority:", result.message);
       }
     } catch (error) {
       console.error("Error updating priority:", error);
@@ -108,18 +99,9 @@ const ReportsAssessment = () => {
       <div className="row">
         <div className="col-md-12">
           <div className="card">
-            <div className="card-header bg-success text-white d-flex justify-content-between align-items-center">
-              <div>
-                <h4 className="mb-0">📋 Reports Assessment</h4>
-                <small>Review photos and set priority levels</small>
-              </div>
-              <button 
-                className="btn btn-light btn-sm"
-                onClick={loadReports}
-                disabled={loading}
-              >
-                🔄 Refresh
-              </button>
+            <div className="card-header bg-success text-white">
+              <h4 className="mb-0">📋 Reports Assessment</h4>
+              <small>Review photos and set priority levels</small>
             </div>
             <div className="card-body">
               <div className="row">

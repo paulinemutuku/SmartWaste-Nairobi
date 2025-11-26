@@ -3,12 +3,10 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { 
   faTrash, 
-  faUsers, 
   faMapMarkerAlt, 
   faExclamationTriangle,
   faCheckCircle,
-  faClock,
-  faSync
+  faClock
 } from "@fortawesome/free-solid-svg-icons";
 
 function Home() {
@@ -20,16 +18,9 @@ function Home() {
     recentReports: []
   });
   const [loading, setLoading] = useState(true);
-  const [lastUpdated, setLastUpdated] = useState(null);
 
   useEffect(() => {
     loadMobileReports();
-    
-    const interval = setInterval(() => {
-      loadMobileReports();
-    }, 10000);
-
-    return () => clearInterval(interval);
   }, []);
 
   const loadMobileReports = async () => {
@@ -69,8 +60,6 @@ function Home() {
           criticalReports,
           recentReports: transformedReports.slice(0, 10)
         });
-
-        setLastUpdated(new Date());
       }
     } catch (error) {
       console.error("Error loading mobile reports:", error);
@@ -147,23 +136,7 @@ function Home() {
 
   return (
     <div className="container-fluid">
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h3 style={style.header}>SmartWaste Nairobi - Live Dashboard</h3>
-        <button 
-          className="btn btn-outline-primary btn-sm"
-          onClick={loadMobileReports}
-          disabled={loading}
-        >
-          <FontAwesomeIcon icon={faSync} className={loading ? "fa-spin" : ""} />
-          {loading ? " Refreshing..." : " Refresh"}
-        </button>
-      </div>
-
-      {lastUpdated && (
-        <div className="alert alert-info">
-          <small>Last updated: {lastUpdated.toLocaleTimeString()}</small>
-        </div>
-      )}
+      <h3 style={style.header}>SmartWaste Nairobi - Live Dashboard</h3>
       
       <div className="row justify-content-center mb-4">
         <div className="col-md-3 col-sm-6 mb-3">
@@ -210,12 +183,11 @@ function Home() {
       <div className="row">
         <div className="col-md-12">
           <div className="card">
-            <div className="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <div className="card-header bg-dark text-white">
               <h5 className="mb-0">
                 <FontAwesomeIcon icon={faClock} className="me-2" />
                 Live Citizen Reports
               </h5>
-              <span className="badge bg-primary">{dashboardData.recentReports.length} reports</span>
             </div>
             <div className="card-body">
               <div className="table-responsive">
