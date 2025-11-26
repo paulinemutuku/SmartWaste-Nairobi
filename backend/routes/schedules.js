@@ -76,47 +76,39 @@ router.put('/:id/complete', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Schedule not found' });
     }
 
-    if (schedule.clusterId) {
-      try {
-        const allReports = await Report.find({
-          status: { $in: ['submitted', 'in-progress'] }
-        });
+    console.log(`🔄 COMPLETING SCHEDULE: ${schedule._id}`);
+    console.log(`📊 Schedule details:`, {
+      clusterId: schedule.clusterId,
+      clusterName: schedule.clusterName,
+      reportCount: schedule.reportCount,
+      collectorId: schedule.collectorId
+    });
 
-        const clusterCenter = schedule.gpsCoordinates || [-1.2921, 36.8219];
-        const maxDistance = 0.002;
+    const allReportsBefore = await Report.find({});
+    console.log(`📋 TOTAL REPORTS IN DB: ${allReportsBefore.length}`);
+    
+    const pendingBefore = allReportsBefore.filter(r => r.status === 'submitted' || r.status === 'in-progress');
+    const completedBefore = allReportsBefore.filter(r => r.status === 'completed');
+    console.log(`📋 BEFORE - Pending: ${pendingBefore.length}, Completed: ${completedBefore.length}`);
 
-        const clusterReports = allReports.filter(report => {
-          if (!report.latitude || !report.longitude) return false;
-          
-          const distance = Math.sqrt(
-            Math.pow(report.latitude - clusterCenter[0], 2) + 
-            Math.pow(report.longitude - clusterCenter[1], 2)
-          );
-          
-          return distance <= maxDistance;
-        });
-
-        console.log(`Found ${clusterReports.length} reports near cluster ${schedule.clusterName}`);
-
-        if (clusterReports.length > 0) {
-          const reportIds = clusterReports.map(report => report._id);
-          
-          const updateResult = await Report.updateMany(
-            { _id: { $in: reportIds } },
-            { 
-              $set: { 
-                status: 'completed',
-                priority: 'completed'
-              } 
-            }
-          );
-
-          console.log(`Updated ${updateResult.modifiedCount} reports to completed status`);
+    const updateResult = await Report.updateMany(
+      {
+        status: { $in: ['submitted', 'in-progress'] }
+      },
+      {
+        $set: {
+          status: 'completed',
+          priority: 'completed'
         }
-      } catch (reportError) {
-        console.error('Failed to update reports:', reportError.message);
       }
-    }
+    );
+
+    console.log(`✅ UPDATED ${updateResult.modifiedCount} REPORTS TO COMPLETED`);
+
+    const allReportsAfter = await Report.find({});
+    const pendingAfter = allReportsAfter.filter(r => r.status === 'submitted' || r.status === 'in-progress');
+    const completedAfter = allReportsAfter.filter(r => r.status === 'completed');
+    console.log(`📋 AFTER - Pending: ${pendingAfter.length}, Completed: ${completedAfter.length}`);
 
     if (schedule.routeId) {
       const collector = await Collector.findById(schedule.collectorId);
@@ -125,11 +117,10 @@ router.put('/:id/complete', async (req, res) => {
         if (route) {
           route.status = 'completed';
           route.completedAt = new Date();
-          
           collector.performance.routesCompleted += 1;
-          collector.performance.reportsCompleted += (schedule.reportCount || 0);
-          
+          collector.performance.reportsCompleted += (updateResult.modifiedCount || schedule.reportCount || 0);
           await collector.save();
+          console.log(`✅ UPDATED COLLECTOR ROUTE: ${collector.name}`);
         }
       }
     }
@@ -138,13 +129,18 @@ router.put('/:id/complete', async (req, res) => {
     schedule.completedAt = new Date();
     const updatedSchedule = await schedule.save();
 
+    console.log(`🎉 SCHEDULE COMPLETION SUCCESSFUL`);
+    console.log(`📊 Final stats: ${updateResult.modifiedCount} reports marked completed`);
+
     res.json({ 
       success: true, 
-      message: 'Schedule and related reports completed successfully', 
-      schedule: updatedSchedule 
+      message: `Successfully completed schedule and updated ${updateResult.modifiedCount} reports`,
+      schedule: updatedSchedule,
+      reportsUpdated: updateResult.modifiedCount
     });
     
   } catch (error) {
+    console.error('❌ SCHEDULE COMPLETION ERROR:', error);
     res.status(500).json({ success: false, message: 'Error completing schedule', error: error.message });
   }
 });
