@@ -91,72 +91,74 @@ function ScheduleComponent() {
     }
   };
 
-  const createGeographicClusters = (reports, maxDistanceMeters = 200) => {
-    const activeReports = reports.filter(report => 
-      report.status !== 'completed' && 
-      report.latitude && 
-      report.longitude
-    );
+const createGeographicClusters = (reports, maxDistanceMeters = 200) => {
+  const activeReports = reports.filter(report => 
+    report.latitude && report.longitude  
+  );
 
-    if (activeReports.length === 0) return [];
+  if (activeReports.length === 0) return [];
 
-    const clusters = [];
-    const visited = new Set();
-    const maxDistanceDegrees = maxDistanceMeters / 111000;
+  const clusters = [];
+  const visited = new Set();
+  const maxDistanceDegrees = maxDistanceMeters / 111000;
 
-    activeReports.forEach((report, index) => {
-      if (visited.has(index)) return;
+  activeReports.forEach((report, index) => {
+    if (visited.has(index)) return;
 
-      const cluster = {
-        reports: [report],
-        center: [report.latitude, report.longitude],
-        totalReports: 1,
-        urgentCount: 0
-      };
+    const cluster = {
+      reports: [report],
+      center: [report.latitude, report.longitude],
+      totalReports: 1,
+      urgentCount: 0,
+      completedCount: 0  
+    };
 
-      visited.add(index);
+    visited.add(index);
 
-      const urgency = getUrgencyFromDescription(report.description);
-      if (urgency === 'critical' || urgency === 'high') cluster.urgentCount++;
+    const urgency = getUrgencyFromDescription(report.description);
+    if (urgency === 'critical' || urgency === 'high') cluster.urgentCount++;
+    if (report.status === 'completed') cluster.completedCount++;  
 
-      activeReports.forEach((otherReport, otherIndex) => {
-        if (!visited.has(otherIndex) && index !== otherIndex) {
-          const distance = Math.sqrt(
-            Math.pow(otherReport.latitude - report.latitude, 2) + 
-            Math.pow(otherReport.longitude - report.longitude, 2)
-          );
+    activeReports.forEach((otherReport, otherIndex) => {
+      if (!visited.has(otherIndex) && index !== otherIndex) {
+        const distance = Math.sqrt(
+          Math.pow(otherReport.latitude - report.latitude, 2) + 
+          Math.pow(otherReport.longitude - report.longitude, 2)
+        );
 
-          if (distance <= maxDistanceDegrees) {
-            cluster.reports.push(otherReport);
-            visited.add(otherIndex);
-            cluster.totalReports++;
-            
-            cluster.center = [
-              cluster.reports.reduce((sum, r) => sum + r.latitude, 0) / cluster.reports.length,
-              cluster.reports.reduce((sum, r) => sum + r.longitude, 0) / cluster.reports.length
-            ];
+        if (distance <= maxDistanceDegrees) {
+          cluster.reports.push(otherReport);
+          visited.add(otherIndex);
+          cluster.totalReports++;
+          
+          cluster.center = [
+            cluster.reports.reduce((sum, r) => sum + r.latitude, 0) / cluster.reports.length,
+            cluster.reports.reduce((sum, r) => sum + r.longitude, 0) / cluster.reports.length
+          ];
 
-            const otherUrgency = getUrgencyFromDescription(otherReport.description);
-            if (otherUrgency === 'critical' || otherUrgency === 'high') cluster.urgentCount++;
-          }
+          const otherUrgency = getUrgencyFromDescription(otherReport.description);
+          if (otherUrgency === 'critical' || otherUrgency === 'high') cluster.urgentCount++;
+          if (otherReport.status === 'completed') cluster.completedCount++;  
         }
-      });
-
-      const locationName = getBestLocationName(cluster.reports);
-      
-      clusters.push({
-        id: `CLUSTER-${clusters.length + 1}`,
-        name: locationName,
-        location: locationName,
-        reports: cluster.reports,
-        center: cluster.center,
-        reportCount: cluster.totalReports,
-        urgentCount: cluster.urgentCount
-      });
+      }
     });
 
-    return clusters;
-  };
+    const locationName = getBestLocationName(cluster.reports);
+    
+    clusters.push({
+      id: `CLUSTER-${clusters.length + 1}`,
+      name: locationName,
+      location: locationName,
+      reports: cluster.reports,
+      center: cluster.center,
+      reportCount: cluster.totalReports,
+      urgentCount: cluster.urgentCount,
+      completedCount: cluster.completedCount  
+    });
+  });
+
+  return clusters;
+};
 
   const getBestLocationName = (reports) => {
     for (let report of reports) {

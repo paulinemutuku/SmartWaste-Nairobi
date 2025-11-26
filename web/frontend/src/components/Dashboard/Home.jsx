@@ -45,12 +45,12 @@ function Home() {
   description: report.description,
   urgency: report.priority || 'pending', 
   status: report.status === 'submitted' ? 'pending' : 
-          report.status === 'in-progress' ? 'assigned' : 'completed',
+          report.status === 'in-progress' ? 'assigned' : 
+          report.status === 'completed' ? 'completed' : 'pending',
   location: report.location || 'Nairobi',
   submittedAt: report.createdAt,
   images: report.photo ? [report.photo] : []
 }));
-
         const totalReports = reports.length;
         const pendingReports = reports.filter(r => r.status === 'submitted').length;
         const completedReports = reports.filter(r => r.status === 'completed').length;

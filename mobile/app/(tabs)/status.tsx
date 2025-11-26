@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image, RefreshControl } from 'react-native';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -20,83 +20,100 @@ export default function StatusScreen() {
   const params = useLocalSearchParams();
   const { t } = useLanguage();
   const [reports, setReports] = useState<Report[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // 🚀 FIX: Auto-refresh when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      loadReports();
+    }, [])
+  );
 
   useEffect(() => {
     loadReports();
   }, []);
 
   useEffect(() => {
-  if (params.newReport) {
-    try {
-      const newReport: Report = JSON.parse(params.newReport as string);
-      setReports(prev => [newReport, ...prev]);
-    } catch (error) {
-      console.log('Error parsing new report:', error);
-    }
-  }
-}, [params.newReport]);
-
-const loadReports = async () => {
-  try {
-    const { reportService } = require('../../services/api');
-    const { getStoredPhotos } = require('../../utils/userHelper');
-    
-    const { getUserId } = require('../../utils/userHelper');
-    const userId = await getUserId();
-
-    if (!userId) {
-      setReports([]);
-      return;
-    }
-
-    const allStoredPhotos = await getStoredPhotos();
-
-    const result = await reportService.getUserReports(userId);
-
-    if (result.success) {
-  const allStoredPhotos = await getStoredPhotos();
-
-  const transformedReports = result.reports.map((report: any) => {
-    const localPhotos = [];
-    Object.keys(allStoredPhotos).forEach(key => {
-      if (key.startsWith(report._id + '_')) {
-        localPhotos.push(allStoredPhotos[key]);
+    if (params.newReport) {
+      try {
+        const newReport: Report = JSON.parse(params.newReport as string);
+        setReports(prev => [newReport, ...prev]);
+      } catch (error) {
+        console.log('Error parsing new report:', error);
       }
-    });
-    
-    if (localPhotos.length === 0 && allStoredPhotos[report._id]) {
-      localPhotos.push(allStoredPhotos[report._id]);
     }
+  }, [params.newReport]);
 
-    const priority = report.priority || 'pending';
-    
-    let photoUrl = report.photo;
-    if (photoUrl && photoUrl.startsWith('/uploads/')) {
-      photoUrl = `https://smart-waste-nairobi-chi.vercel.app${photoUrl}`;
+  const loadReports = async () => {
+    try {
+      setRefreshing(true);
+      const { reportService } = require('../../services/api');
+      const { getStoredPhotos } = require('../../utils/userHelper');
+      
+      const { getUserId } = require('../../utils/userHelper');
+      const userId = await getUserId();
+
+      if (!userId) {
+        setReports([]);
+        return;
+      }
+
+      const allStoredPhotos = await getStoredPhotos();
+
+      const result = await reportService.getUserReports(userId);
+
+      if (result.success) {
+        const allStoredPhotos = await getStoredPhotos();
+
+        const transformedReports = result.reports.map((report: any) => {
+          const localPhotos = [];
+          Object.keys(allStoredPhotos).forEach(key => {
+            if (key.startsWith(report._id + '_')) {
+              localPhotos.push(allStoredPhotos[key]);
+            }
+          });
+          
+          if (localPhotos.length === 0 && allStoredPhotos[report._id]) {
+            localPhotos.push(allStoredPhotos[report._id]);
+          }
+
+          const priority = report.priority || 'pending';
+          
+          let photoUrl = report.photo;
+          if (photoUrl && photoUrl.startsWith('/uploads/')) {
+            photoUrl = `https://smart-waste-nairobi-chi.vercel.app${photoUrl}`;
+          }
+          
+          return {
+            id: report._id,
+            address: report.location,
+            location: report.location,
+            status: report.status === 'submitted' ? t('submitted') : 
+                    report.status === 'in-progress' ? t('inProgress') : 
+                    report.status === 'completed' ? t('completed') : t('submitted'),
+            timestamp: report.createdAt,
+            description: report.description,
+            priority: priority,
+            images: localPhotos.length > 0 ? localPhotos : 
+                    (report.photos && report.photos.length > 0 ? report.photos : 
+                    (photoUrl ? [photoUrl] : []))
+          };
+        });
+        
+        setReports(transformedReports);
+      }
+    } catch (error) {
+      console.error('Failed to load user reports:', error);
+      setReports([]);
+    } finally {
+      setRefreshing(false);
     }
-    
-    return {
-      id: report._id,
-      address: report.location,
-      location: report.location,
-      status: report.status === 'submitted' ? t('submitted') : 
-              report.status === 'in-progress' ? t('inProgress') : t('completed'),
-      timestamp: report.createdAt,
-      description: report.description,
-      priority: priority,
-      images: localPhotos.length > 0 ? localPhotos : 
-              (report.photos && report.photos.length > 0 ? report.photos : 
-              (photoUrl ? [photoUrl] : []))
-    };
-  });
-  
-  setReports(transformedReports);
-}
-  } catch (error) {
-    console.error('Failed to load user reports:', error);
-    setReports([]);
-  }
-};
+  };
+
+  // 🚀 FIX: Add pull-to-refresh function
+  const onRefresh = useCallback(() => {
+    loadReports();
+  }, []);
 
   const getStatusColor = (status: string) => {
     switch(status) {
@@ -166,6 +183,15 @@ const loadReports = async () => {
         data={reports}
         keyExtractor={(item) => `${item.id}-${item.timestamp}`}
         showsVerticalScrollIndicator={false}
+        // 🚀 FIX: Add refresh control
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#2d5a3c']}
+            tintColor={'#2d5a3c'}
+          />
+        }
         renderItem={({ item }) => (
           <View style={styles.reportCard}>
             <View style={styles.cardHeader}>
@@ -332,7 +358,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginBottom: 15,
   },
-  // FIXED: Remove red border and debug text
   imagesContainer: {
     marginBottom: 15,
     padding: 8,

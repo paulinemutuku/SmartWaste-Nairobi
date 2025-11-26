@@ -78,18 +78,25 @@ router.put('/:id/complete', async (req, res) => {
 
     if (schedule.clusterId) {
       try {
-        // Get all reports that belong to this cluster
-        // Since clusters are created from reports with similar coordinates, we need to find reports
-        // that match the cluster's characteristics. We'll use the cluster name as a reference.
-        const clusterReports = await Report.find({
-          $or: [
-            { location: { $regex: schedule.clusterName, $options: 'i' } },
-            { description: { $regex: schedule.clusterName, $options: 'i' } }
-          ],
-          status: { $in: ['submitted', 'in-progress'] } 
+        const allReports = await Report.find({
+          status: { $in: ['submitted', 'in-progress'] }
         });
 
-        console.log(`🔄 STATUS SYNC: Found ${clusterReports.length} reports to update for cluster ${schedule.clusterName}`);
+        const clusterCenter = schedule.gpsCoordinates || [-1.2921, 36.8219];
+        const maxDistance = 0.002;
+
+        const clusterReports = allReports.filter(report => {
+          if (!report.latitude || !report.longitude) return false;
+          
+          const distance = Math.sqrt(
+            Math.pow(report.latitude - clusterCenter[0], 2) + 
+            Math.pow(report.longitude - clusterCenter[1], 2)
+          );
+          
+          return distance <= maxDistance;
+        });
+
+        console.log(`Found ${clusterReports.length} reports near cluster ${schedule.clusterName}`);
 
         if (clusterReports.length > 0) {
           const reportIds = clusterReports.map(report => report._id);
@@ -99,15 +106,15 @@ router.put('/:id/complete', async (req, res) => {
             { 
               $set: { 
                 status: 'completed',
-                priority: 'completed' 
+                priority: 'completed'
               } 
             }
           );
 
-          console.log(`✅ STATUS SYNC: Updated ${updateResult.modifiedCount} reports to 'completed' status`);
+          console.log(`Updated ${updateResult.modifiedCount} reports to completed status`);
         }
       } catch (reportError) {
-        console.error('❌ STATUS SYNC ERROR: Failed to update reports:', reportError.message);
+        console.error('Failed to update reports:', reportError.message);
       }
     }
 
@@ -133,7 +140,7 @@ router.put('/:id/complete', async (req, res) => {
 
     res.json({ 
       success: true, 
-      message: 'Schedule completed, collector route updated, and all related reports marked as completed', 
+      message: 'Schedule and related reports completed successfully', 
       schedule: updatedSchedule 
     });
     
