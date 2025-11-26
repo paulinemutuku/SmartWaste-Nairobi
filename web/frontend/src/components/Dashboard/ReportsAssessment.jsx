@@ -7,6 +7,12 @@ const ReportsAssessment = () => {
 
   useEffect(() => {
     loadReports();
+    
+    const interval = setInterval(() => {
+      loadReports();
+    }, 10000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const loadReports = async () => {
@@ -102,9 +108,18 @@ const ReportsAssessment = () => {
       <div className="row">
         <div className="col-md-12">
           <div className="card">
-            <div className="card-header bg-success text-white">
-              <h4 className="mb-0">📋 Reports Assessment</h4>
-              <small>Review photos and set priority levels</small>
+            <div className="card-header bg-success text-white d-flex justify-content-between align-items-center">
+              <div>
+                <h4 className="mb-0">📋 Reports Assessment</h4>
+                <small>Review photos and set priority levels</small>
+              </div>
+              <button 
+                className="btn btn-light btn-sm"
+                onClick={loadReports}
+                disabled={loading}
+              >
+                🔄 Refresh
+              </button>
             </div>
             <div className="card-body">
               <div className="row">
@@ -127,51 +142,51 @@ const ReportsAssessment = () => {
                         </p>
                         
                         {report.photos && report.photos.length > 0 ? (
-  <div className="mb-3">
-    <h6>Photos ({report.photos.length}):</h6>
-    <div className="d-flex gap-2 flex-wrap">
-      {report.photos.map((photo, index) => (
-        <img 
-          key={index}
-          src={photo}
-          alt={`Report photo ${index + 1}`}
-          className="img-thumbnail"
-          style={{ 
-            width: '80px', 
-            height: '80px', 
-            objectFit: 'cover',
-            cursor: 'pointer'
-          }}
-          onError={(e) => {
-            e.target.src = 'https://placehold.co/80x80/2d5a3c/ffffff/png?text=No+Photo';
-          }}
-          onClick={() => setSelectedReport({...report, selectedPhoto: photo})}
-        />
-      ))}
-    </div>
-  </div>
-) : report.photo ? (
-  <div className="mb-3">
-    <h6>Photo:</h6>
-    <img 
-      src={report.photo}
-      alt="Report photo"
-      className="img-thumbnail"
-      style={{ 
-        width: '80px', 
-        height: '80px', 
-        objectFit: 'cover',
-        cursor: 'pointer'
-      }}
-      onError={(e) => {
-        e.target.src = 'https://placehold.co/80x80/2d5a3c/ffffff/png?text=No+Photo';
-      }}
-      onClick={() => setSelectedReport({...report, selectedPhoto: report.photo})}
-    />
-  </div>
-) : (
-  <p className="text-muted small">No photos available</p>
-)}
+                          <div className="mb-3">
+                            <h6>Photos ({report.photos.length}):</h6>
+                            <div className="d-flex gap-2 flex-wrap">
+                              {report.photos.map((photo, index) => (
+                                <img 
+                                  key={index}
+                                  src={photo}
+                                  alt={`Report photo ${index + 1}`}
+                                  className="img-thumbnail"
+                                  style={{ 
+                                    width: '80px', 
+                                    height: '80px', 
+                                    objectFit: 'cover',
+                                    cursor: 'pointer'
+                                  }}
+                                  onError={(e) => {
+                                    e.target.src = 'https://placehold.co/80x80/2d5a3c/ffffff/png?text=No+Photo';
+                                  }}
+                                  onClick={() => setSelectedReport({...report, selectedPhoto: photo})}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        ) : report.photo ? (
+                          <div className="mb-3">
+                            <h6>Photo:</h6>
+                            <img 
+                              src={report.photo}
+                              alt="Report photo"
+                              className="img-thumbnail"
+                              style={{ 
+                                width: '80px', 
+                                height: '80px', 
+                                objectFit: 'cover',
+                                cursor: 'pointer'
+                              }}
+                              onError={(e) => {
+                                e.target.src = 'https://placehold.co/80x80/2d5a3c/ffffff/png?text=No+Photo';
+                              }}
+                              onClick={() => setSelectedReport({...report, selectedPhoto: report.photo})}
+                            />
+                          </div>
+                        ) : (
+                          <p className="text-muted small">No photos available</p>
+                        )}
 
                         <div className="btn-group w-100">
                           <button 

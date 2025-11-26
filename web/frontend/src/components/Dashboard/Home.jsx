@@ -7,7 +7,8 @@ import {
   faMapMarkerAlt, 
   faExclamationTriangle,
   faCheckCircle,
-  faClock
+  faClock,
+  faSync
 } from "@fortawesome/free-solid-svg-icons";
 
 function Home() {
@@ -19,38 +20,41 @@ function Home() {
     recentReports: []
   });
   const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState(null);
 
   useEffect(() => {
     loadMobileReports();
+    
+    const interval = setInterval(() => {
+      loadMobileReports();
+    }, 10000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const loadMobileReports = async () => {
     try {
       setLoading(true);
-      console.log("🔄 Fetching reports from:", "https://smart-waste-nairobi-chi.vercel.app/api/reports/all");
       
       const response = await fetch("https://smart-waste-nairobi-chi.vercel.app/api/reports/all");
-      console.log("📡 Response status:", response.status);
-      
       const result = await response.json();
-      console.log("📦 Response data:", result);
       
       if (response.ok && result.success) {
         const reports = result.reports;
-        console.log("✅ Reports found:", reports.length);
         
         const transformedReports = reports.map(report => ({
-  id: report._id,
-  type: "citizen_report",
-  description: report.description,
-  urgency: report.priority || 'pending', 
-  status: report.status === 'submitted' ? 'pending' : 
-          report.status === 'in-progress' ? 'assigned' : 
-          report.status === 'completed' ? 'completed' : 'pending',
-  location: report.location || 'Nairobi',
-  submittedAt: report.createdAt,
-  images: report.photo ? [report.photo] : []
-}));
+          id: report._id,
+          type: "citizen_report",
+          description: report.description,
+          urgency: report.priority || 'pending', 
+          status: report.status === 'submitted' ? 'pending' : 
+                  report.status === 'in-progress' ? 'assigned' : 
+                  report.status === 'completed' ? 'completed' : 'pending',
+          location: report.location || 'Nairobi',
+          submittedAt: report.createdAt,
+          images: report.photo ? [report.photo] : []
+        }));
+
         const totalReports = reports.length;
         const pendingReports = reports.filter(r => r.status === 'submitted').length;
         const completedReports = reports.filter(r => r.status === 'completed').length;
@@ -65,11 +69,11 @@ function Home() {
           criticalReports,
           recentReports: transformedReports.slice(0, 10)
         });
-      } else {
-        console.log("❌ API response not successful:", result);
+
+        setLastUpdated(new Date());
       }
     } catch (error) {
-      console.error("❌ Error loading mobile reports:", error);
+      console.error("Error loading mobile reports:", error);
     } finally {
       setLoading(false);
     }
@@ -143,7 +147,23 @@ function Home() {
 
   return (
     <div className="container-fluid">
-      <h3 style={style.header}>SmartWaste Nairobi - Live Dashboard</h3>
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h3 style={style.header}>SmartWaste Nairobi - Live Dashboard</h3>
+        <button 
+          className="btn btn-outline-primary btn-sm"
+          onClick={loadMobileReports}
+          disabled={loading}
+        >
+          <FontAwesomeIcon icon={faSync} className={loading ? "fa-spin" : ""} />
+          {loading ? " Refreshing..." : " Refresh"}
+        </button>
+      </div>
+
+      {lastUpdated && (
+        <div className="alert alert-info">
+          <small>Last updated: {lastUpdated.toLocaleTimeString()}</small>
+        </div>
+      )}
       
       <div className="row justify-content-center mb-4">
         <div className="col-md-3 col-sm-6 mb-3">
@@ -190,11 +210,12 @@ function Home() {
       <div className="row">
         <div className="col-md-12">
           <div className="card">
-            <div className="card-header bg-dark text-white">
+            <div className="card-header bg-dark text-white d-flex justify-content-between align-items-center">
               <h5 className="mb-0">
                 <FontAwesomeIcon icon={faClock} className="me-2" />
                 Live Citizen Reports
               </h5>
+              <span className="badge bg-primary">{dashboardData.recentReports.length} reports</span>
             </div>
             <div className="card-body">
               <div className="table-responsive">
