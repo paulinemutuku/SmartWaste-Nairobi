@@ -1,6 +1,7 @@
 const express = require('express');
 const Schedule = require('../models/Schedule');
 const Collector = require('../models/Collector');
+const Report = require('../models/Report');
 const router = express.Router();
 
 router.get('/', async (req, res) => {
@@ -16,7 +17,6 @@ router.post('/', async (req, res) => {
   try {
     const { clusterId, clusterName, collectorId, collectorName, date, reportCount } = req.body;
     
-    // 🚀 NEW: Actually assign route to collector
     const collector = await Collector.findById(collectorId);
     if (!collector) {
       return res.status(404).json({ 
@@ -25,7 +25,6 @@ router.post('/', async (req, res) => {
       });
     }
 
-    // Create route assignment
     const routeAssignment = {
       routeId: `route-${Date.now()}`,
       clusterId: clusterId,
@@ -36,17 +35,14 @@ router.post('/', async (req, res) => {
       reportCount: reportCount
     };
 
-    // Add to collector's assigned routes
     collector.assignedRoutes.push(routeAssignment);
     
-    // Add to assigned clusters if not already there
     if (!collector.assignedClusters.includes(clusterId)) {
       collector.assignedClusters.push(clusterId);
     }
 
     await collector.save();
 
-    // Create schedule record (existing functionality)
     const newSchedule = new Schedule({
       clusterId,
       clusterName, 
@@ -55,7 +51,7 @@ router.post('/', async (req, res) => {
       date,
       reportCount,
       status: 'scheduled',
-      routeId: routeAssignment.routeId // 🆕 Link to route
+      routeId: routeAssignment.routeId 
     });
 
     const savedSchedule = await newSchedule.save();
@@ -80,7 +76,41 @@ router.put('/:id/complete', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Schedule not found' });
     }
 
-    // 🚀 NEW: Also update collector's route status
+    if (schedule.clusterId) {
+      try {
+        // Get all reports that belong to this cluster
+        // Since clusters are created from reports with similar coordinates, we need to find reports
+        // that match the cluster's characteristics. We'll use the cluster name as a reference.
+        const clusterReports = await Report.find({
+          $or: [
+            { location: { $regex: schedule.clusterName, $options: 'i' } },
+            { description: { $regex: schedule.clusterName, $options: 'i' } }
+          ],
+          status: { $in: ['submitted', 'in-progress'] } 
+        });
+
+        console.log(`🔄 STATUS SYNC: Found ${clusterReports.length} reports to update for cluster ${schedule.clusterName}`);
+
+        if (clusterReports.length > 0) {
+          const reportIds = clusterReports.map(report => report._id);
+          
+          const updateResult = await Report.updateMany(
+            { _id: { $in: reportIds } },
+            { 
+              $set: { 
+                status: 'completed',
+                priority: 'completed' 
+              } 
+            }
+          );
+
+          console.log(`✅ STATUS SYNC: Updated ${updateResult.modifiedCount} reports to 'completed' status`);
+        }
+      } catch (reportError) {
+        console.error('❌ STATUS SYNC ERROR: Failed to update reports:', reportError.message);
+      }
+    }
+
     if (schedule.routeId) {
       const collector = await Collector.findById(schedule.collectorId);
       if (collector) {
@@ -89,7 +119,6 @@ router.put('/:id/complete', async (req, res) => {
           route.status = 'completed';
           route.completedAt = new Date();
           
-          // Update performance metrics
           collector.performance.routesCompleted += 1;
           collector.performance.reportsCompleted += (schedule.reportCount || 0);
           
@@ -98,13 +127,13 @@ router.put('/:id/complete', async (req, res) => {
       }
     }
 
-    // Update schedule status (existing functionality)
     schedule.status = 'completed';
+    schedule.completedAt = new Date();
     const updatedSchedule = await schedule.save();
 
     res.json({ 
       success: true, 
-      message: 'Schedule completed and collector route updated', 
+      message: 'Schedule completed, collector route updated, and all related reports marked as completed', 
       schedule: updatedSchedule 
     });
     
@@ -113,7 +142,6 @@ router.put('/:id/complete', async (req, res) => {
   }
 });
 
-// 🆕 NEW: Get collector's scheduled routes
 router.get('/collector/:collectorId', async (req, res) => {
   try {
     const collector = await Collector.findById(req.params.collectorId);

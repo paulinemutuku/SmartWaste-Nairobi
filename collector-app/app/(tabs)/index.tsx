@@ -204,7 +204,7 @@ export default function TodayTasksScreen() {
   };
 
 const openOptimizedNavigation = async (route: AssignedRoute) => {
-  console.log('🚀 ULTIMATE OPTIMIZED NAVIGATION:', route.routeId);
+  console.log('🚀 Starting optimized navigation for route:', route.routeId);
   
   if (!collector) {
     Alert.alert('Error', 'Please login again');
@@ -212,110 +212,34 @@ const openOptimizedNavigation = async (route: AssignedRoute) => {
   }
 
   try {
-    Alert.alert('🤖 AI Route Optimization', 'Calculating most efficient route with real-time data...');
-
-    // 🎯 USE ROUTE COORDINATES DIRECTLY (they're correct!)
     const collectionCoords = route.gpsCoordinates || route.destinationCoordinates;
     
     if (!collectionCoords || collectionCoords.length < 2) {
-      Alert.alert('Navigation Error', 'No valid coordinates available');
+      Alert.alert('Navigation Error', 'No valid coordinates available for this route');
       return;
     }
 
-    console.log('🔍 USING COORDINATES:', collectionCoords);
-    
-    // Validate coordinates are in Nairobi area
     const [lat, lng] = collectionCoords;
-    if (lat < -1.5 || lat > -1.1 || lng < 36.6 || lng > 37.0) {
-      Alert.alert('📍 Coordinate Warning', 'Coordinates appear outside Nairobi. Using fallback location.');
-      // Use Nairobi center as fallback
-      collectionCoords[0] = -1.2921;
-      collectionCoords[1] = 36.8219;
-    }
 
-    const response = await fetch(`https://smart-waste-nairobi-chi.vercel.app/api/collectors/${collector._id}/routes/${route._id}/navigation`);
+    // 🗺️ USE GOOGLE MAPS WITH PROPER DIRECTIONS
+    const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving&dir_action=navigate`;
     
-    if (response.ok) {
-      const data = await response.json();
-      
-      if (data.success && data.navigation) {
-        const { optimizedRoute, routeInfo } = data.navigation;
-        
-        // 🛡️ SAFE ACCESS with fallbacks
-        const safeRouteInfo = routeInfo || {
-          collectionPoint: route.clusterName || 'Collection Site',
-          reportCount: route.reportCount || 0,
-          priority: '✅ Normal'
-        };
+    console.log('🌐 Opening Google Maps with directions:', googleMapsUrl);
+    
+    // Try to open in Google Maps app first
+    const googleMapsAppUrl = `comgooglemaps://?daddr=${lat},${lng}&directionsmode=driving`;
+    
+    Linking.openURL(googleMapsAppUrl).catch(() => {
+      // If Google Maps app not installed, use browser
+      Linking.openURL(googleMapsUrl).catch((error) => {
+        console.log('❌ Navigation error:', error);
+        Alert.alert('Navigation Error', 'Please install Google Maps for turn-by-turn directions');
+      });
+    });
 
-        const safeOptimizedRoute = optimizedRoute || {
-          estimatedDistance: route.distance || 'Unknown',
-          estimatedTime: route.estimatedTime || 'Unknown',
-          trafficLevel: 'Unknown',
-          fuelEstimate: 'Unknown',
-          carbonFootprint: 'Unknown',
-          efficiencyScore: 'Unknown'
-        };
-
-        Alert.alert(
-          '🎯 ULTIMATE OPTIMIZED ROUTE READY',
-          `📍 ${safeRouteInfo.collectionPoint}\n📏 ${safeOptimizedRoute.estimatedDistance}\n⏱️ ${safeOptimizedRoute.estimatedTime}\n🚦 ${safeOptimizedRoute.trafficLevel} Traffic\n⛽ ${safeOptimizedRoute.fuelEstimate} Fuel\n🌱 ${safeOptimizedRoute.carbonFootprint} CO2\n📊 ${safeRouteInfo.reportCount} Reports\n${safeRouteInfo.priority}\n⭐ Efficiency: ${safeOptimizedRoute.efficiencyScore}`,
-          [
-            {
-              text: '🚀 Start Optimized Navigation',
-              onPress: () => {
-                const directUrl = Platform.select({
-                  ios: `maps://app?daddr=${collectionCoords[0]},${collectionCoords[1]}&dirflg=d`,
-                  android: `google.navigation:q=${collectionCoords[0]},${collectionCoords[1]}`,
-                });
-                console.log('🌐 Opening navigation to:', collectionCoords);
-                Linking.openURL(directUrl!).catch((error) => {
-                  const webUrl = `https://www.google.com/maps/dir/?api=1&destination=${collectionCoords[0]},${collectionCoords[1]}&travelmode=driving`;
-                  Linking.openURL(webUrl);
-                });
-              }
-            },
-            {
-              text: '📊 View AI Analysis',
-              onPress: () => {
-                Alert.alert(
-                  '🤖 AI Route Analysis',
-                  `Optimization: AI Optimized\nTraffic: ${safeOptimizedRoute.trafficLevel}\nFuel: ${safeOptimizedRoute.fuelEstimate}\nCarbon: ${safeOptimizedRoute.carbonFootprint}\nEfficiency: ${safeOptimizedRoute.efficiencyScore}\n\nThis AI-optimized route saves time, fuel, and reduces emissions!`
-                );
-              }
-            },
-            { text: 'Cancel', style: 'cancel' }
-          ]
-        );
-        return;
-      }
-    }
-    
-    // 🎯 FALLBACK: Basic navigation without AI
-    Alert.alert(
-      '📍 Navigation', 
-      `Navigate to ${route.clusterName}?\n📏 ${route.distance || 'Unknown distance'}\n⏱️ ${route.estimatedTime || 'Unknown time'}`,
-      [
-        { 
-          text: 'Navigate', 
-          onPress: () => {
-            const fallbackUrl = Platform.select({
-              ios: `maps://app?daddr=${collectionCoords[0]},${collectionCoords[1]}&dirflg=d`,
-              android: `google.navigation:q=${collectionCoords[0]},${collectionCoords[1]}`,
-            });
-            console.log('🌐 Fallback navigation to:', collectionCoords);
-            Linking.openURL(fallbackUrl!).catch((error) => {
-              Alert.alert('Navigation Error', 'Could not open navigation app');
-            });
-          }
-        },
-        { text: 'Cancel', style: 'cancel' }
-      ]
-    );
-    
   } catch (error) {
-    console.error('🔍 DEBUG: Catch block error:', error);
-    Alert.alert('Navigation Error', 'AI optimization failed');
+    console.error('❌ Navigation error:', error);
+    Alert.alert('Navigation Error', 'Failed to start navigation');
   }
 };
 
