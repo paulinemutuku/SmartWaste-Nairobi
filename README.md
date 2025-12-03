@@ -207,28 +207,6 @@ npm install
 npx expo start
 ```
 
-### **Environment Variables Configuration**
-Create `.env` files in each project:
-
-**Backend (.env):**
-```env
-MONGODB_URI=your_mongodb_connection_string
-JWT_SECRET=your_jwt_secret_key
-NODE_ENV=development
-PORT=3000
-```
-
-**Mobile Apps (app.config.js):**
-```javascript
-export default {
-  expo: {
-    extra: {
-      apiUrl: process.env.API_URL || "https://smart-waste-nairobi-chi.vercel.app",
-    },
-  },
-};
-```
-
 ---
 
 ## 📁 Complete Project Structure
@@ -272,7 +250,6 @@ SmartWaste-Nairobi/
 │
 └── README.md                     # This Documentation
 ```
-
 ---
 
 ## 🔄 System Workflow & Data Flow
