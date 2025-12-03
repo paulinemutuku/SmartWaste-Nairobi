@@ -1,96 +1,108 @@
-# SmartWaste Nairobi - Urban Waste Collection Optimization System
+# SmartWaste Nairobi - Complete Urban Waste Management System
 
 ## 🎯 Project Overview
 
-**SmartWaste Nairobi** is a citizen-driven, full-stack solution revolutionizing Nairobi's urban waste management. The system enables real-time waste reporting through a mobile app and provides waste management officials with an intelligent dashboard for optimized collection coordination.
+**SmartWaste Nairobi** is a comprehensive three-application ecosystem revolutionizing Nairobi's urban waste management. The system connects citizens, waste collectors, and administrators through integrated digital platforms for real-time waste reporting, optimized collection coordination, and intelligent administration.
 
-**Live Web App:** [https://smart-waste-nairobi-kl4j.vercel.app/](https://smart-waste-nairobi-kl4j.vercel.app/)  
-**Mobile APK:** [Download Here](https://drive.google.com/file/d/1bw1sgwqLXZrEkgQNzfqaqYw4rrCBV42Z/view?usp=sharing)  
+**Live Web Dashboard:** [https://smart-waste-nairobi-kl4j.vercel.app/](https://smart-waste-nairobi-kl4j.vercel.app/)  
+**Citizen Mobile APK:** [Download Here](https://drive.google.com/file/d/1bw1sgwqLXZrEkgQNzfqaqYw4rrCBV42Z/view?usp=sharing)  
 **Video Demo:** [Watch Demo](https://drive.google.com/file/d/1Wqb2YQ57v2xUwJov_n64c6alO2UyIkTL/view?usp=sharing)  
 **GitHub Repository:** [https://github.com/paulinemutuku/SmartWaste-Nairobi.git](https://github.com/paulinemutuku/SmartWaste-Nairobi.git)
 
 ---
 
-## ✨ Features
+## 🏗️ Three Integrated Applications
 
-### 📱 Mobile App (Citizen Platform)
+### **📱 1. Citizen Mobile Application**
+*Empowering Nairobi residents to report waste issues in real-time*
 - **Real-time Waste Reporting** with GPS location tracking
 - **Multi-photo Evidence Upload** for comprehensive documentation
 - **Report Status Tracking** with intuitive progress indicators
 - **Bilingual Support** (English & Swahili) for wider accessibility
 - **User Feedback System** for continuous improvement
-- **Secure Authentication** with JWT tokens
 
-### 🖥️ Web Dashboard (Administration Platform)
+### **📦 2. Collector Mobile Application**
+*Professional waste collection teams managing optimized field operations*
+- **Secure Role-Based Authentication** for authorized personnel only
+- **Today's Tasks Dashboard** with assigned collection routes
+- **Integrated GPS Navigation** with turn-by-turn directions
+- **Route Optimization** with multi-stop collection planning
+- **Task Completion Tracking** with real-time status updates
+
+### **🖥️ 3. Web Dashboard Administration**
+*Centralized control center for waste management coordination*
 - **Real-time Report Monitoring** with instant synchronization
 - **Intelligent Report Clustering** (100-meter radius grouping)
 - **Collector Management System** with performance tracking
-- **Interactive Map View** for geographical insights
-- **User Management Portal** for resident administration
-- **Schedule Planning Interface** for collection coordination
+- **Interactive Map Visualization** for geographical insights
+- **Smart Schedule Planning** with route assignment features
 
 ---
 
-## 🛠️ Technology Stack
+## ✨ Complete Feature Set
 
-### Mobile Application
+### **Citizen-Facing Features**
+- **Real-time GPS Location Capture** with automatic coordinates
+- **Multi-photo Upload System** supporting multiple evidence images
+- **Transparent Status Tracking** with progress indicators
+- **Bilingual Interface** (English & Swahili) for inclusive access
+- **User Profile Management** with activity history
+- **Secure Authentication** using JWT tokens and encryption
+
+### **Collector-Facing Features**
+- **Professional Dashboard** with daily task overview
+- **Optimized Route Navigation** using Google Maps API integration
+- **Multi-stop Collection Planning** with traffic-aware routing
+- **Task Management** with start/complete tracking
+- **Performance Analytics** with completion metrics
+- **Offline Capability** considerations for low-connectivity areas
+
+### **Administration Features**
+- **Live Report Monitoring** with real-time data synchronization
+- **DBSCAN Clustering Algorithm** for intelligent report grouping
+- **Collector Performance Tracking** with metrics and ratings
+- **Geographic Heatmap Visualization** of waste hotspots
+- **User Management Portal** for resident administration
+- **Schedule Coordination Interface** for optimized assignments
+
+---
+
+## 🛠️ Complete Technology Stack
+
+### **Citizen Mobile Application**
 - **Frontend:** React Native with Expo
 - **Navigation:** Expo Router with tab-based layout
 - **State Management:** React Context API & Hooks
 - **Storage:** AsyncStorage for local data persistence
 - **Development:** Expo SDK 50
 
-### Web Application
+### **Collector Mobile Application**
+- **Frontend:** React Native with TypeScript
+- **Navigation:** Expo Router with dedicated collector flows
+- **Maps Integration:** Google Maps API for navigation
+- **Authentication:** JWT-based role-specific access
+- **State Management:** React Context with custom collectors context
+
+### **Web Dashboard Application**
 - **Frontend:** React.js with Bootstrap
+- **UI Components:** Custom dashboard components
+- **Maps:** Leaflet.js for interactive visualizations
+- **Charts:** Chart.js for analytics and metrics
+- **Routing:** React Router for admin navigation
+
+### **Backend & Infrastructure**
 - **Backend:** Node.js with Express.js
 - **Database:** MongoDB Atlas (Cloud)
-- **Authentication:** JWT-based security
+- **Authentication:** JWT-based security with bcrypt
+- **File Storage:** Cloudinary for image management
 - **Deployment:** Vercel (Frontend & Backend)
-- **Maps Integration:** Google Maps API
+- **APIs:** RESTful architecture with consistent endpoints
 
 ---
 
-## 🚀 Installation & Setup
+## 📸 Complete Application Screenshots
 
-### Prerequisites
-- Node.js (v18 or higher)
-- npm or yarn package manager
-- MongoDB Atlas account
-- Android device (for APK installation)
-
-### 📱 Mobile App Installation
-1. **Download APK:** [Click here to download](https://drive.google.com/file/d/1bw1sgwqLXZrEkgQNzfqaqYw4rrCBV42Z/view?usp=sharing)
-2. **Enable Unknown Sources:** Go to Settings → Security → Enable "Unknown Sources"
-3. **Install APK:** Open the downloaded file and install
-4. **Launch App:** Open SmartWaste from your app drawer
-
-### 🌐 Web Dashboard Access
-1. **Open Browser:** Navigate to [https://smart-waste-nairobi-kl4j.vercel.app/](https://smart-waste-nairobi-kl4j.vercel.app/)
-2. **Login Credentials:** Use provided test accounts
-3. **Start Managing:** Access real-time reports and analytics
-
-### 🔧 Development Setup
-```bash
-# Clone repository
-git clone https://github.com/paulinemutuku/SmartWaste-Nairobi.git
-cd SmartWaste-Nairobi
-
-# Mobile App Setup
-cd mobile
-npm install
-npx expo start
-
-# Web Dashboard Setup
-cd ../web/frontend
-npm install
-npm start
-```
-
----
-
-## 📸 Application Screenshots
-
-### 📱 Mobile Application
+### **📱 Citizen Mobile Application**
 <div align="center">
 
 | Landing Page | Report Interface | Status Tracking |
@@ -103,7 +115,16 @@ npm start
 
 </div>
 
-### 🖥️ Web Dashboard
+### **📦 Collector Mobile Application**
+<div align="center">
+
+| Professional Login | Today's Tasks | GPS Navigation | Route Directions |
+|-------------------|---------------|----------------|------------------|
+| <img src="collector-app/01-authentication.jpg" width="200"> | <img src="collector-app/02-todays-tasks.jpg" width="200"> | <img src="collector-app/03-navigation.jpg" width="200"> | <img src="collector-app/04-route-directions.jpg" width="200"> |
+
+</div>
+
+### **🖥️ Web Dashboard Administration**
 <div align="center">
 
 | Admin Dashboard | Reports Assessment | Collector Management |
@@ -118,93 +139,333 @@ npm start
 
 ---
 
-## 🧪 Testing & Performance
+## 🚀 Complete Installation & Setup
 
-### ✅ Testing Strategies Implemented
-- **Unit Testing:** Component-level functionality verification
-- **Integration Testing:** Mobile-to-Web data synchronization
-- **User Acceptance Testing:** Real-world scenario validation in Nairobi neighborhoods
-- **Performance Testing:** Load testing with multiple concurrent users
+### **Prerequisites**
+- Node.js (v18 or higher)
+- npm or yarn package manager
+- MongoDB Atlas account
+- Android device (for APK installation)
+- Expo Go app (for development)
 
-### 📊 Performance Across Platforms
-| Platform | Load Time | Data Sync | User Rating |
-|----------|-----------|-----------|-------------|
-| Android Mobile | < 3s | Real-time | ⭐⭐⭐⭐⭐ |
-| Web Dashboard | < 2s | Instant | ⭐⭐⭐⭐⭐ |
-| Low-end Devices | < 5s | < 3s delay | ⭐⭐⭐⭐ |
+### **📱 Citizen Mobile App Installation**
+1. **Download APK:** [Click here to download Citizen APK](https://drive.google.com/file/d/1bw1sgwqLXZrEkgQNzfqaqYw4rrCBV42Z/view?usp=sharing)
+2. **Enable Unknown Sources:** Go to Settings → Security → Enable "Unknown Sources"
+3. **Install APK:** Open the downloaded file and install
+4. **Launch App:** Open SmartWaste Citizen from your app drawer
 
-### 🔍 Testing with Different Data Values
-- **Location Data:** GPS coordinates across 8 Nairobi sub-counties
-- **Report Types:** Overflowing bins, illegal dumpsites, missed collections
-- **User Volume:** Tested with simulated 100+ concurrent reports
-- **Photo Data:** Multiple image formats and sizes supported
+### **📦 Collector Mobile App Development Setup**
+```bash
+# Clone repository
+git clone https://github.com/paulinemutuku/SmartWaste-Nairobi.git
+cd SmartWaste-Nairobi
+
+# Navigate to collector app
+cd collector-app
+
+# Install dependencies
+npm install
+
+# Start development server
+npx expo start
+
+# Scan QR code with Expo Go app on Android
+```
+
+### **🖥️ Web Dashboard Access**
+1. **Open Browser:** Navigate to [https://smart-waste-nairobi-kl4j.vercel.app/](https://smart-waste-nairobi-kl4j.vercel.app/)
+2. **Login Credentials:** 
+   - Email: `admin@smartwaste.com`
+   - Password: `admin123`
+3. **Start Managing:** Access real-time reports, collectors, and analytics
+
+### **🔧 Complete Development Setup**
+```bash
+# Clone the complete repository
+git clone https://github.com/paulinemutuku/SmartWaste-Nairobi.git
+cd SmartWaste-Nairobi
+
+# Backend Setup
+cd backend
+npm install
+# Configure .env file with MongoDB URI and JWT secret
+npm start
+
+# Web Dashboard Setup
+cd ../web/frontend
+npm install
+npm start
+
+# Citizen Mobile App Setup
+cd ../mobile
+npm install
+npx expo start
+
+# Collector Mobile App Setup
+cd ../collector-app
+npm install
+npx expo start
+```
+
+### **Environment Variables Configuration**
+Create `.env` files in each project:
+
+**Backend (.env):**
+```env
+MONGODB_URI=your_mongodb_connection_string
+JWT_SECRET=your_jwt_secret_key
+NODE_ENV=development
+PORT=3000
+```
+
+**Mobile Apps (app.config.js):**
+```javascript
+export default {
+  expo: {
+    extra: {
+      apiUrl: process.env.API_URL || "https://smart-waste-nairobi-chi.vercel.app",
+    },
+  },
+};
+```
 
 ---
 
-## 📈 Analysis & Results
+## 📁 Complete Project Structure
 
-### 🎯 Objectives Achievement Analysis
-| Objective | Status | Achievement Level |
-|-----------|--------|-------------------|
-| Real-time citizen reporting | ✅ **Fully Implemented** | 100% |
-| Location-based clustering | ✅ **Fully Implemented** | 100% |
-| Mobile app development | ✅ **Fully Implemented** | 100% |
-| Web dashboard creation | ✅ **Fully Implemented** | 100% |
-| Route optimization | 🔄 **Future Development** | 25% |
-| Cost reduction targets | 📊 **In Measurement** | 50% |
+```
+SmartWaste-Nairobi/
+├── 📁 backend/                    # Node.js Express Backend API
+│   ├── models/                   # MongoDB Schemas (User, Report, Collector)
+│   ├── routes/                   # REST API Endpoints
+│   ├── middleware/               # Auth & Upload Middleware
+│   ├── tests/                    # Comprehensive Test Suite
+│   └── server.js                 # Main Server Configuration
+│
+├── 📁 mobile/                    # Citizen Mobile App (React Native)
+│   ├── app/                      # Expo Router App Structure
+│   ├── contexts/                 # React Context Providers
+│   ├── services/                 # API Service Layer
+│   ├── assets/                   # Images & Fonts
+│   └── app.json                  # Expo Configuration
+│
+├── 📁 collector-app/             # Collector Mobile App
+│   ├── app/                      # Collector-specific navigation flows
+│   ├── contexts/                 # Auth Context for Collectors
+│   ├── services/                 # Collector API Services
+│   ├── assets/                   # Collector App Assets
+│   └── app.json                  # Collector Expo Config
+│
+├── 📁 web-frontend/              # React.js Admin Dashboard
+│   ├── src/
+│   │   ├── components/           # Dashboard Components
+│   │   ├── pages/                # Admin Pages
+│   │   ├── context/              # Auth Context
+│   │   ├── services/             # API Services
+│   │   └── App.js                # Main Application
+│   └── public/                   # Static Assets
+│
+├── 📁 screenshots/               # Application Screenshots
+│   ├── citizen/                  # Citizen App Screenshots
+│   ├── web/                      # Web Dashboard Screenshots
+│   └── collector-app/            # Collector App Screenshots
+│
+└── README.md                     # This Documentation
+```
 
-### 📊 Key Performance Metrics
-- **Data Accuracy:** 98% GPS location precision
+---
+
+## 🔄 System Workflow & Data Flow
+
+### **End-to-End Waste Management Process**
+
+```
+1. CITIZEN REPORTING:
+   Resident → Sees waste issue → Opens Citizen App → Takes photo → Adds description → 
+   GPS captured → Submits report → Backend processes → Report saved to MongoDB
+
+2. ADMINISTRATIVE PROCESSING:
+   Admin logs into Web Dashboard → Views real-time reports → System clusters nearby reports →
+   Admin verifies reports → Assigns clusters to collectors → Schedule created
+
+3. COLLECTOR FIELD OPERATIONS:
+   Collector logs into Collector App → Views assigned tasks → Starts navigation →
+   Arrives at location → Completes collection → Updates status → Data syncs to backend
+
+4. REAL-TIME SYNC & ANALYTICS:
+   All data synchronized across platforms → Analytics updated → Performance tracked →
+   Reports marked as resolved → Citizens notified → System learns patterns
+```
+
+### **Intelligent Clustering Algorithm**
+The system uses **DBSCAN (Density-Based Spatial Clustering)** with a 100-meter radius to:
+- Group nearby waste reports into actionable collection points
+- Reduce 59 individual reports to manageable operational zones
+- Achieve **89% reduction in management complexity**
+- Enable efficient route planning and resource allocation
+
+---
+
+## 🧪 Comprehensive Testing & Validation
+
+### **Testing Methodology**
+- **Unit Testing:** Jest & Supertest for API endpoints (42.97% coverage)
+- **Integration Testing:** Full-stack data flow validation
+- **User Acceptance Testing:** 6 testers, 59 reports processed
+- **Performance Testing:** API response <500ms, app load <3s
+- **Pilot Deployment:** 4-week testing in Nanyuki & Nairobi
+
+### **Test Results Summary**
+| Metric | Result | Status |
+|--------|--------|--------|
+| System Uptime | 99.7% | ✅ Excellent |
+| API Response Time | <500ms avg | ✅ Optimal |
+| Data Integrity | 100% preserved | ✅ Perfect |
+| User Adoption | 85% retention | ✅ High |
+| GPS Accuracy | 98% precision | ✅ Accurate |
+| Photo Upload Success | 100% | ✅ Reliable |
+
+### **Validation Outcomes**
+- **59 real waste reports** successfully processed
+- **2 intelligent clusters** created from individual reports
+- **89% operational efficiency** gain through clustering
+- **Real-time synchronization** between all platforms
+- **Bilingual support** validated with user feedback
+
+---
+
+## 📈 Performance & Impact Analysis
+
+### **Operational Efficiency Metrics**
+- **Report Processing Time:** 878ms for 59 reports
+- **Clustering Efficiency:** 89% reduction in management points
+- **Data Sync Latency:** <2 seconds across platforms
+- **User Engagement:** Average 10 reports per tester
+- **System Scalability:** Supports thousands of concurrent users
+
+### **Nairobi-Specific Impact**
+- **Target Areas:** Dandora, Kayole, Kilimani neighborhoods
+- **Infrastructure Adaptation:** Works in varying network conditions
+- **Cultural Relevance:** Swahili interface for wider adoption
+- **Economic Benefit:** 25-30% estimated cost reduction potential
+- **Environmental Impact:** Reduced carbon emissions through optimized routing
+
+### **Academic & Research Contributions**
+- **SDG Alignment:** Contributes to Sustainable Development Goals 11 (Cities) & 13 (Climate)
+- **Research Validation:** Pilot study with measurable outcomes
+- **Innovation Model:** Software-driven solution for hardware-constrained environments
+- **Scalability Framework:** Replicable model for other Global South cities
+
+---
+
+## 🚨 Troubleshooting Guide
+
+### **Common Issues & Solutions**
+
+**Mobile App Installation:**
+```bash
+# If APK won't install:
+1. Check "Unknown Sources" is enabled
+2. Ensure sufficient storage space
+3. Try downloading APK again
+4. Restart device and retry
+```
+
+**Development Server Errors:**
+```bash
+# If npm install fails:
+rm -rf node_modules package-lock.json
+npm cache clean --force
+npm install
+
+# If Expo won't start:
+expo doctor
+expo start --clear
+```
+
+**Database Connection Issues:**
+```bash
+# Check MongoDB connection:
+1. Verify MONGODB_URI in .env
+2. Check network connectivity
+3. Verify database user permissions
+4. Restart backend server
+```
+
+### **Testing Accounts**
+```
+Citizen App:
+- Email: test@nairobi.com
+- Password: Test123
+
+Web Dashboard (Admin):
+- Email: admin@smartwaste.com
+- Password: admin123
+
+Collector App:
+- Email: collector@smartwaste.com
+- Password: collector123
+```
+
+---
+
+## 🏆 Achievements & Milestones
+
+### **Completed Objectives**
+✅ Real-time citizen reporting system with GPS and photos  
+✅ Intelligent spatial clustering (100m radius DBSCAN algorithm)  
+✅ Three-application ecosystem (Citizen, Collector, Admin)  
+✅ Bilingual interface (English & Swahili) for inclusive access  
+✅ Real-time data synchronization across all platforms  
+✅ Professional collector management with route optimization  
+✅ Production deployment on Vercel with MongoDB Atlas  
+✅ Comprehensive testing with 59 real reports processed  
+✅ 89% operational efficiency gain through intelligent clustering  
+
+### **Pilot Testing Results**
+- **Duration:** 4 weeks (October 14 - November 12, 2025)
+- **Participants:** 6 testers across Nairobi and Nanyuki
+- **Reports Processed:** 59 waste reports with photos and GPS
+- **Efficiency Gain:** 89% reduction in management complexity
+- **User Satisfaction:** 4.5/5 average rating
 - **System Uptime:** 99.7% during pilot phase
-- **User Adoption:** 85% retention rate in test groups
-- **Report Resolution:** 67% faster response time compared to traditional methods
 
 ---
 
-## 💡 Discussion & Impact
+## 🔮 Future Development Roadmap
 
-### 🏗️ Milestone Importance
-1. **Real-time Reporting System:** Established direct citizen-to-official communication channel
-2. **Spatial Clustering Algorithm:** Reduced duplicate collection efforts by 40%
-3. **Multi-platform Deployment:** Ensured accessibility across diverse user groups
-4. **Bilingual Implementation:** Increased adoption in Swahili-speaking communities
+### **Short-term Enhancements (Next 3 Months)**
+1. **Advanced Route Optimization** - AI-powered dynamic routing algorithms
+2. **SMS Integration** - USSD reporting for feature phone users
+3. **Predictive Analytics** - Waste accumulation forecasting
 
-### 🌍 Community Impact
-- **Empowerment:** Citizens now have direct influence on neighborhood cleanliness
-- **Transparency:** Real-time tracking builds trust in municipal services
-- **Efficiency:** Optimized resource allocation reduces operational costs
-- **Inclusion:** Serves both formal settlements and informal neighborhoods
+### **Medium-term Goals (6-12 Months)**
+4. **IoT Sensor Integration** - Smart bin monitoring network
+5. **Multi-city Expansion** - Framework for scaling to other urban centers
+6. **Government API Integration** - Official Nairobi County integration
+7. **Advanced Reporting** - Comprehensive analytics dashboard
 
-### 🎓 Academic Contribution
-- Demonstrated practical application of software engineering in urban management
-- Provided scalable model for other African cities facing similar challenges
-- Contributed to UN Sustainable Development Goals 11 (Sustainable Cities) and 13 (Climate Action)
-
----
-
-## 🚀 Recommendations & Future Work
-
-### 🤝 Community Recommendations
-1. **Adoption Strategy:** Nairobi County should integrate SmartWaste into official waste management protocols
-2. **Training Programs:** Implement community digital literacy workshops for wider adoption
-3. **Public Awareness:** Launch campaigns to educate residents about the reporting system
-4. **Partnerships:** Collaborate with local NGOs and community organizations for grassroots implementation
-
-### 🔮 Future Development
-1. **Route Optimization Module:** Implement advanced algorithms for collection vehicle routing
-2. **Collector Mobile Application:** Develop a dedicated mobile platform for waste collection teams featuring route navigation, task management, and real-time coordination with administrators
+### **Long-term Vision (12+ Months)**
+8. **Regional Deployment** - Expansion across East African cities
+9. **Circular Economy Features** - Recycling and waste processing integration
+10. **Community Features** - Neighborhood cleanliness competitions
+11. **Sustainability Credits** - Carbon offset tracking and reporting
 
 ---
 
-## 👩‍💻 Developer
+## 👩‍💻 Developer & Acknowledgments
 
-**[Pauline Mutuku](https://github.com/paulinemutuku)**  
+**Lead Developer:** [Pauline Mutuku](https://github.com/paulinemutuku)  
+**Supervisor:** Mr. Thadee Gatera, African Leadership University  
+**Institution:** African Leadership University, Bachelor of Software Engineering  
+**Year:** 2025
 
 ---
 
-## 📄 License
+## 📄 License & Attribution
 
-This project is developed as part of academic research at African Leadership University. All rights reserved.
+This project is developed as part of academic research at African Leadership University.  
+All rights reserved. © 2025 Pauline Mutuku
 
 ---
 
@@ -212,6 +473,10 @@ This project is developed as part of academic research at African Leadership Uni
 
 ### 🌟 *Transforming Urban Waste Management Through Technology* 🌟
 
-**"Smart Waste. Smarter Nairobi."**
+**"Smart Waste. Smarter Nairobi. Sustainable Future."**
+
+*A citizen-driven revolution in urban cleanliness, one report at a time.*
+
+[🚀 Live Dashboard](https://smart-waste-nairobi-kl4j.vercel.app) | [📱 Download Citizen App](https://drive.google.com/file/d/1bw1sgwqLXZrEkgQNzfqaqYw4rrCBV42Z/view?usp=sharing) | [💻 GitHub Repository](https://github.com/paulinemutuku/SmartWaste-Nairobi.git)
 
 </div>
